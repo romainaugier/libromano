@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv)
 {
-    const char t[] = ".M0n4rch";
+    const char t[] = "monarch";
     
     uint32_t hash = hash_fnv1a(t);
 

@@ -46,10 +46,15 @@
 #endif // defined(ROMANO_X64)
 #endif // defined(_WIN32)
 
+#if defined(ROMANO_WIN)
 #if defined(ROMANO_MSVC)
 #define ROMANO_EXPORT __declspec(dllexport)
 #define ROMANO_IMPORT __declspec(dllimport)
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+#define ROMANO_EXPORT __attribute__((dllexport))
+#define ROMANO_IMPORT __attribute__((dllimport))
+#endif // defined(ROMANO_MSVC)
+#elif defined(ROMANO_LINUX)
 #define ROMANO_EXPORT __attribute__((visibility(default)))
 #define ROMANO_IMPORT
 #endif // defined(ROMANO_MSVC)

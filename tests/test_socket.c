@@ -9,8 +9,8 @@
 
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
-#define PASSWORD_HASH 1605181743
-#define ROMANO_TEST_SOCKET_SERVER 
+#define PASSWORD_HASH 1785690117
+// #define ROMANO_TEST_SOCKET_SERVER 
 
 int main(int argc, char** argv)
 {
@@ -85,8 +85,7 @@ int main(int argc, char** argv)
                     }
 
                     if((count > 0) &&
-                       ((hash_fnv1a(buffer_split[0]) == PASSWORD_HASH) || 
-                        buffer_split == PASSWORD_HASH))
+                       (hash_fnv1a(buffer_split[0]) == PASSWORD_HASH))
                     {
                         logger_log(LogLevel_Info, "Password is verified");
                         logger_log(LogLevel_Info, "Executing command");

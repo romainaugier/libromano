@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(romanolib)
+project(libromano)
 
 if(DEFINED RUN_TESTS)
     message(STATUS "RUN_TESTS defined, building and running tests")
