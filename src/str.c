@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define GET_STR_PTR(ptr) ((char*)ptr + sizeof(size_t))
+#define GET_RAW_PTR(ptr) ((char*)ptr - sizeof(size_t))
+
 str str_new(const char* string)
 {
     size_t length = strlen(string);
@@ -25,7 +28,7 @@ str str_new(const char* string)
 
 str str_new_fmt(const char* format, ...)
 {
-
+    return NULL;
 }
 
 void str_free(str string)
@@ -36,12 +39,12 @@ void str_free(str string)
     }
 }
 
-size_t str_len(str string)
+size_t str_length(str string)
 {
     return (size_t)*GET_RAW_PTR(string);
 }
 
 str* str_split(const char* string, char separator)
 {
-    
+    return NULL;
 }

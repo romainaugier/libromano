@@ -2,19 +2,14 @@
 // Copyright (c) 2023 - Present Romain Augier
 // All rights reserved.
 
-#ifndef __ROMANO_STR
-#define __ROMANO_STR
+#ifndef __LIBROMANO_STR
+#define __LIBROMANO_STR
 
 #include "libromano/libromano.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ROMANO_CPP_ENTER
 
 typedef char* str;
-
-#define GET_STR_PTR(ptr) ((char*)ptr + sizeof(size_t))
-#define GET_RAW_PTR(ptr) ((char*)ptr - sizeof(size_t))
 
 // Creates a new heap allocated string
 ROMANO_API str str_new(const char* string);
@@ -26,13 +21,11 @@ ROMANO_API str str_new_fmt(const char* format, ...);
 ROMANO_API void str_free(str string);
 
 // Returns the length of the string
-ROMANO_API size_t str_len(str string);
+ROMANO_API size_t str_length(str string);
 
-// Splits a string into multiple ones
+// Splits a string into multiple ones and returns a pointer to the list of strings
 ROMANO_API str* str_split(const char* string, char separator);
 
-#ifdef __cplusplus
-}
-#endif
+ROMANO_CPP_END
 
-#endif // __ROMANO_STR
+#endif // __LIBROMANO_STR

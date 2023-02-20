@@ -13,11 +13,11 @@
 #define ROMANO_GCC
 #elif defined(__clang__)
 #define ROMANO_CLANG
-#endif
+#endif // defined(_MSC_VER)
 
 #if !defined(ROMANO_VERSION_STR)
 #define ROMANO_VERSION_STR "Debug"
-#endif
+#endif // !defined(ROMANO_VERSION_STR)
 
 #include <stdint.h>
 
@@ -25,25 +25,26 @@
 #define ROMANO_X64
 #elif INTPTR_MAX == INT32_MAX
 #define ROMANO_X86
-#endif
+#endif // INTPTR_MAX == INT64_MAX || defined(__x86_64__)
 
-#if !defined(ROMANO_PLATFORM_STR)
 #if defined(_WIN32)
 #define ROMANO_WIN
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN
+#endif // !defined(WIN32_LEAN_AND_MEAN)
 #if defined(ROMANO_X64)
 #define ROMANO_PLATFORM_STR "WIN64"
 #else
 #define ROMANO_PLATFORM_STR "WIN32"
-#endif
+#endif // defined(ROMANO_x64)
 #elif defined(__linux__)
 #define ROMANO_LINUX
 #if defined(ROMANO_X64)
 #define ROMANO_PLATFORM_STR "LINUX64"
 #else
 #define ROMANO_PLATFORM_STR "LINUX32"
-#endif
-#endif
-#endif
+#endif // defined(ROMANO_X64)
+#endif // defined(_WIN32)
 
 #if defined(ROMANO_MSVC)
 #define ROMANO_EXPORT __declspec(dllexport)
@@ -51,12 +52,24 @@
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
 #define ROMANO_EXPORT __attribute__((visibility(default)))
 #define ROMANO_IMPORT
-#endif
+#endif // defined(ROMANO_MSVC)
 
 #if defined(ROMANO_BUILD_SHARED)
 #define ROMANO_API ROMANO_EXPORT
 #else
 #define ROMANO_API ROMANO_IMPORT
-#endif
+#endif // defined(ROMANO_BUILD_SHARED)
+
+#if defined __cplusplus
+#define ROMANO_CPP_ENTER extern "C" {
+#define ROMANO_CPP_END }
+#else
+#define ROMANO_CPP_ENTER
+#define ROMANO_CPP_END
+#endif // DEFINED __cplusplus
+
+#if !defined NULL
+#define NULL (void*)0
+#endif // !defined NULL
 
 #endif // __LIBROMANO

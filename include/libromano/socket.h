@@ -4,15 +4,42 @@
 
 #pragma once
 
-#if !defined ROMANO_SOCKET
-#define ROMANO_SOCKET
+#if !defined __LIBROMANO_SOCKET
+#define __LIBROMANO_SOCKET
 
 #include "libromano/libromano.h"
 
-#ifdef _WIN32
+#if defined(ROMANO_WIN)
+#include <WinSock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+#elif defined(ROMANO_LINUX)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h> // close
+#include <netdb.h>  // gethostbyname
 
-#include "WinSock2.h"
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket(s) close(s)
 
-#endif
+typedef int SOCKET;
+typedef struct sockaddr_in SOCKADDR_IN;
+typedef struct sockadd SOCKADDR;
+typedef struct in_addr IN_ADDR;
+#else
+#warning Sockets not defined on this platform
+#endif // defined(ROMANO_WIN)
 
-#endif // ROMANO_SOCKET
+ROMANO_CPP_ENTER
+
+// Initialize the socket context
+ROMANO_API void socket_init();
+
+// Release the socket context
+ROMANO_API void socket_release();
+
+ROMANO_CPP_END
+
+#endif // __LIBROMANO_SOCKET
