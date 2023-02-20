@@ -14,9 +14,19 @@ int main(int argc, char** argv)
 
     const size_t len_t = strlen(t);
     const size_t len_s = str_length(s);
-    printf("Len t : %lu, len s : %lu\n", len_t, len_s);
+    printf("Len t : %llu, len s : %llu\n", len_t, len_s);
 
     str_free(s);
     
+    char t2[] = "test split string";
+
+    uint32_t count = 0;
+    str* t2_split = str_split(t2, " ", &count);
+    
+    printf("Splits (%d): \n", count);
+    printf(" - %s\n", t2_split[0]);
+    printf(" - %s\n", t2_split[1]);
+    printf(" - %s\n", t2_split[2]);
+
     return 0;
 }

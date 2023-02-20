@@ -4,11 +4,17 @@
 
 #include "libromano/socket.h"
 #include "libromano/logger.h"
+#include "libromano/hash.h"
+#include "libromano/str.h"
 
 #define MAX_CONNECTIONS 5
+#define RECEPTION_BUFFER_SIZE 1024
+#define PASSWORD_HASH 1605181743
+#define ROMANO_TEST_SOCKET_SERVER 
 
 int main(int argc, char** argv)
 {
+#if defined(ROMANO_TEST_SOCKET_SERVER)
     socket_init();
     
     SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -55,9 +61,9 @@ int main(int argc, char** argv)
 
         while(1)
         {
-            char reception_buffer[512];
+            char reception_buffer[RECEPTION_BUFFER_SIZE];
 
-            int32_t result = recv(new_connection, reception_buffer, 512, 0);
+            int32_t result = recv(new_connection, reception_buffer, RECEPTION_BUFFER_SIZE, 0);
 
             if(result > 0)
             {
@@ -67,6 +73,29 @@ int main(int argc, char** argv)
                 {
                     end_server = 1;
                     logger_log(LogLevel_Info, "Stopping server");
+                }
+                else
+                {
+                    uint32_t count = 0;
+                    str* buffer_split = str_split(reception_buffer, "#", &count);
+
+                    for(uint32_t i = 0; i < count; i++)
+                    {
+                        logger_log(LogLevel_Debug, "Split : %s", buffer_split[i]);
+                    }
+
+                    if((count > 0) &&
+                       ((hash_fnv1a(buffer_split[0]) == PASSWORD_HASH) || 
+                        buffer_split == PASSWORD_HASH))
+                    {
+                        logger_log(LogLevel_Info, "Password is verified");
+                        logger_log(LogLevel_Info, "Executing command");
+                    
+                        int return_code = system(buffer_split[1]);
+
+                        logger_log(LogLevel_Info, "Command returned : %d", return_code);
+                    }
+
                 }
             }
             else if(result == 0)
@@ -85,6 +114,6 @@ int main(int argc, char** argv)
     }
 
     closesocket(sock);
-
+#endif //defined(ROMANO_TEST_SOCKET_SERVER)
     return 0;
 }

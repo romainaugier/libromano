@@ -7,6 +7,10 @@
 #if !defined(__LIBROMANO_BIT)
 #define __LIBROMANO_BIT
 
+ROMANO_CPP_ENTER
+
 #define BIT(bit) (size_t)1 << bit
+
+ROMANO_CPP_END
 
 #endif // __LIBROMANO_BIT

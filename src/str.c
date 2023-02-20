@@ -44,7 +44,28 @@ size_t str_length(str string)
     return (size_t)*GET_RAW_PTR(string);
 }
 
-str* str_split(const char* string, char separator)
+str* str_split(char* string, const char* separator, uint32_t* count)
 {
-    return NULL;
+    *count = 0;
+
+    for(uint32_t i = 0; i < strlen(string); i++)
+    {
+        if(string[i] == (char)separator[0]) (*count)++;
+    }
+
+    (*count)++;
+
+    str* result = malloc(*count * sizeof(str));
+    char* token = strtok(string, separator);
+
+    uint32_t i = 0;
+
+    while(token != NULL)
+    {
+        result[i] = str_new(token);
+        token = strtok(NULL, separator);
+        i++;
+    }
+    
+    return result;
 }

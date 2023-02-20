@@ -24,7 +24,7 @@ ROMANO_API void str_free(str string);
 ROMANO_API size_t str_length(str string);
 
 // Splits a string into multiple ones and returns a pointer to the list of strings
-ROMANO_API str* str_split(const char* string, char separator);
+ROMANO_API str* str_split(char* string, const char* separator, uint32_t* count);
 
 ROMANO_CPP_END
 
