@@ -60,7 +60,7 @@ void logger_enable_file(const char* file_path)
     _log_mode |= LogMode_File;
     _log_file_path = file_path;
 
-    _log_file = fopen(_log_file_path, "a");
+    // _log_file = fopen(_log_file_path, "a");
 }
 
 void logger_disable_file()
@@ -106,6 +106,8 @@ void logger_log(log_level level, const char* format, ...)
 
         if(_log_mode & LogMode_File)
         {
+            _log_file = fopen(_log_file_path, "a");
+
             assert(_log_file != NULL);
 
             fprintf(_log_file,
@@ -115,6 +117,8 @@ void logger_log(log_level level, const char* format, ...)
                     local_time->tm_min,
                     local_time->tm_sec,
                     buffer);
+
+            fclose(_log_file);
         }
     }
 }
@@ -123,6 +127,6 @@ void logger_release()
 {
     if(_log_file != NULL)
     {
-        fclose(_log_file);
+        // fclose(_log_file);
     }
 }

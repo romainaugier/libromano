@@ -95,6 +95,7 @@ int main(int argc, char** argv)
                         logger_log(LogLevel_Info, "Command returned : %d", return_code);
                     }
 
+                    free(buffer_split);
                 }
             }
             else if(result == 0)
