@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
+
 cmake_minimum_required(VERSION 3.15)
 
 project(romanolib)

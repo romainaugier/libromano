@@ -1,4 +1,8 @@
-#include "romanolib/str.h"
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2023 - Present Romain Augier
+// All rights reserved.
+
+#include "libromano/str.h"
 
 #include <string.h>
 #include <stdio.h>

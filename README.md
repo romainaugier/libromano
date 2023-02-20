@@ -1,2 +1,2 @@
-# romanolib
-C personal standard library for projects and learning
+# libromano
+ANSI C personal library for projects and learning

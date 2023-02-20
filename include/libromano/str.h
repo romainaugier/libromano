@@ -1,7 +1,11 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2023 - Present Romain Augier
+// All rights reserved.
+
 #ifndef __ROMANO_STR
 #define __ROMANO_STR
 
-#include "romanolib/romanolib.h"
+#include "libromano/libromano.h"
 
 #ifdef __cplusplus
 extern "C" {
