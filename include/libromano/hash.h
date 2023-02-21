@@ -17,4 +17,4 @@ ROMANO_API uint32_t hash_fnv1a(const char* str);
 
 ROMANO_CPP_END
 
-#endif // __LIBROMANO_HASH
+#endif // !defined(__LIBROMANO_HASH)

@@ -13,4 +13,4 @@ ROMANO_CPP_ENTER
 
 ROMANO_CPP_END
 
-#endif // __LIBROMANO_BIT
+#endif // !defined(__LIBROMANO_BIT)

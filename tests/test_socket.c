@@ -95,6 +95,11 @@ int main(int argc, char** argv)
                         logger_log(LogLevel_Info, "Command returned : %d", return_code);
                     }
 
+                    for(uint32_t i = 0; i < count; i++)
+                    {
+                        str_free(buffer_split[i]);
+                    }
+
                     free(buffer_split);
                 }
             }

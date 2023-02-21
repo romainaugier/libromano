@@ -77,4 +77,4 @@
 #define NULL (void*)0
 #endif // !defined NULL
 
-#endif // __LIBROMANO
+#endif // !defined(__LIBROMANO)

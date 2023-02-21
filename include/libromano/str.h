@@ -2,7 +2,7 @@
 // Copyright (c) 2023 - Present Romain Augier
 // All rights reserved.
 
-#ifndef __LIBROMANO_STR
+#if !defined(__LIBROMANO_STR)
 #define __LIBROMANO_STR
 
 #include "libromano/libromano.h"
@@ -28,4 +28,4 @@ ROMANO_API str* str_split(char* string, const char* separator, uint32_t* count);
 
 ROMANO_CPP_END
 
-#endif // __LIBROMANO_STR
+#endif // !defined(__LIBROMANO_STR)

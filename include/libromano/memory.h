@@ -32,4 +32,4 @@ ROMANOAPI void debug_free_override(void* ptr,
 
 ROMANO_CPP_END
 
-#endif // __LIBROMANO_MEMORY
+#endif // !defined(__LIBROMANO_MEMORY)

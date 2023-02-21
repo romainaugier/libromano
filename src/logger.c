@@ -4,6 +4,7 @@
 
 #include "libromano/logger.h"
 #include "libromano/bit.h"
+#include "libromano/time.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -76,8 +77,10 @@ void logger_log(log_level level, const char* format, ...)
     {
         time_t raw_time;
         time(&raw_time);
+        // struct timeval current_time;
 
         struct tm* local_time = localtime(&raw_time);
+        
 
         char buffer[ROMANO_LOG_BUFFER_SIZE];
 
@@ -96,7 +99,7 @@ void logger_log(log_level level, const char* format, ...)
             }
 
             fprintf(output_stream,
-                    "[%s] %02d:%02d:%02d : %s\n", 
+                    "[%s] %02d:%02d:%02d:%03d : %s\n", 
                     _levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
@@ -111,7 +114,7 @@ void logger_log(log_level level, const char* format, ...)
             assert(_log_file != NULL);
 
             fprintf(_log_file,
-                    "[%s] %02d:%02d:%02d : %s\n",
+                    "[%s] %02d:%02d:%02d:%03d : %s\n",
                     _levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
