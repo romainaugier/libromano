@@ -33,12 +33,15 @@ int main(int argc, char** argv)
 {
     logger_init();
 
+    logger_log(LogLevel_Info, "Creating threads");
     thread* t1 = thread_create(t1_func, NULL);
     thread* t2 = thread_create(t2_func, NULL);
 
+    logger_log(LogLevel_Info, "Starting threads");
     thread_start(t1);
     thread_start(t2);
 
+    logger_log(LogLevel_Info, "Joining threads");
     thread_join(t1);
     thread_join(t2);
 

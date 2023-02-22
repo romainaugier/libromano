@@ -77,7 +77,9 @@ void logger_log(log_level level, const char* format, ...)
     {
         time_t raw_time;
         time(&raw_time);
-        // struct timeval current_time;
+        
+        struct timeval current_time;
+        gettimeofday(&current_time, NULL);
 
         struct tm* local_time = localtime(&raw_time);
         
@@ -104,6 +106,7 @@ void logger_log(log_level level, const char* format, ...)
                     local_time->tm_hour,
                     local_time->tm_min,
                     local_time->tm_sec,
+                    current_time.tv_usec / 1000,
                     buffer);
         }
 
@@ -119,6 +122,7 @@ void logger_log(log_level level, const char* format, ...)
                     local_time->tm_hour,
                     local_time->tm_min,
                     local_time->tm_sec,
+                    current_time.tv_usec / 1000,
                     buffer);
 
             fclose(_log_file);

@@ -36,6 +36,7 @@ void str_free(str string)
     if(string != NULL)
     {
         free(GET_RAW_PTR(string));
+        string = NULL;
     }
 }
 

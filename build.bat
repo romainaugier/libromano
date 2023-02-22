@@ -33,7 +33,7 @@ else (
 cd build
 cmake --build . --config %BUILDTYPE%
 
-if %RUNTESTS% equ 1 ctest
+if %RUNTESTS% equ 1 ctest --output-on-failure
 
 cd ..
 

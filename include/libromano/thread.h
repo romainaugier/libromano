@@ -37,9 +37,10 @@ ROMANO_API threadpool* threadpool_init(size_t workers_count);
 // Adds some work to the threadpool 
 ROMANO_API uint32_t threadpool_add_work(threadpool* threadpool, thread_func func, void* arg);
 
-//
+// Wait for all the work to be done
 ROMANO_API void threadpool_wait(threadpool* threadpool);
 
+// Release all the workers and the threadpool
 ROMANO_API void threadpool_release(threadpool* threadpool);
 
 ROMANO_CPP_END

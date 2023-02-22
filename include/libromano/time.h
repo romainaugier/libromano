@@ -20,6 +20,11 @@ struct timezone {
     int tz_dsttime;
 };   
 
+struct timeval {
+    time_t tv_sec;
+    long tv_usec;
+};
+
 ROMANO_API int gettimeofday(struct timeval* tv, struct timezone *tz);
 
 #elif defined(ROMANO_LINUX)
