@@ -5,6 +5,8 @@
 #include "libromano/vector.h"
 #include "libromano/logger.h"
 
+#include <stdio.h>
+
 int main(int argc, char** argv)
 {
     logger_init();
@@ -14,7 +16,7 @@ int main(int argc, char** argv)
     
     logger_log(LogLevel_Info, "Pushing new elements in the vector");
 
-    for(uint32_t i = 0; i < 100000; i++)
+    for(uint32_t i = 0; i < 100000000; i++)
     {
         float f = (float)i;
         vector_push_back(&float_vec, &f);

@@ -91,7 +91,7 @@ void vector_push_back(vector* vector, void* element)
     size_t vec_capacity = vector_capacity(*vector);
     size_t elem_size = vector_element_size(*vector);
 
-    if(vec_capacity == (vec_size - 1))
+    if(vec_capacity == vec_size)
     {
         _vector_grow(vector);
     }
