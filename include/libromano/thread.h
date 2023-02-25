@@ -13,8 +13,17 @@ ROMANO_CPP_ENTER
 
 ROMANO_API size_t get_num_procs();
 
-struct _mutex;
-typedef struct _mutex mutex;
+#if defined(ROMANO_WIN)
+#include <Windows.h>
+typedef CRITICAL_SECTION mutex;
+typedef CONDITION_VARIABLE conditional_variable;
+#elif defined(ROMANO_LINUX)
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+typedef pthread_mutex_t mutex;
+typedef pthread_cond_t conditional_variable;
+#endif // defined(ROMANO_WIN)
 
 // Creates a new mutex (memory allocated)
 ROMANO_API mutex* mutex_new();
@@ -33,9 +42,6 @@ ROMANO_API void mutex_release(mutex* mutex);
 
 // Releases and frees the given mutex
 ROMANO_API void mutex_free(mutex* mutex);
-
-struct _conditional_variable;
-typedef struct _conditional_variable conditional_variable;
 
 // Creates a new conditional variable (memory allocated) and initializes it
 ROMANO_API conditional_variable* conditional_variable_new();
@@ -60,7 +66,7 @@ ROMANO_API void conditional_variable_free(conditional_variable* cond_var);
 
 struct _thread;
 typedef struct _thread thread;
-typedef void (*thread_func)(void* arg);
+typedef void* (*thread_func)(void* arg);
 
 // Creates a new thread and launches it. The func is the function the thread will execute, 
 // and the arg can be a pointer to anything that will be passed to the function
@@ -71,6 +77,9 @@ ROMANO_API void thread_start(thread* thread);
 
 // Sleeps for x milliseconds
 ROMANO_API void thread_sleep(int sleep_duration_ms);
+
+// Returns the current thread id
+ROMANO_API size_t thread_get_id();
 
 // Detach the given thread
 ROMANO_API void thread_detach(thread* thread);
@@ -85,7 +94,7 @@ typedef struct _threadpool threadpool;
 ROMANO_API threadpool* threadpool_init(size_t workers_count);
 
 // Adds some work to the threadpool 
-ROMANO_API uint32_t threadpool_add_work(threadpool* threadpool, thread_func func, void* arg);
+ROMANO_API int threadpool_work_add(threadpool* threadpool, thread_func func, void* arg);
 
 // Wait for all the work to be done
 ROMANO_API void threadpool_wait(threadpool* threadpool);

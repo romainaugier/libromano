@@ -78,7 +78,7 @@ void _vector_grow(vector* vector)
 {
     assert(*vector != NULL);
 
-    size_t new_capacity = (size_t)rint((float)vector_capacity(*vector) * GOLDEN_RATIO);
+    size_t new_capacity = (size_t)round((float)vector_capacity(*vector) * GOLDEN_RATIO);
 
     vector_resize(vector, new_capacity);
 }

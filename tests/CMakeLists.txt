@@ -3,7 +3,7 @@ file(GLOB_RECURSE TEST_FILES *.c)
 
 foreach(test_file ${TEST_FILES})
     get_filename_component(TESTNAME ${test_file} NAME_WLE)
-    message(STATUS "Adding romanolib test : ${TESTNAME}")
+    message(STATUS "Adding libromano test : ${TESTNAME}")
 
     add_executable(${TESTNAME} ${test_file})
     target_link_libraries(${TESTNAME} ${PROJECT_NAME})
@@ -25,4 +25,17 @@ if(WIN32)
             ${dll_file} $<TARGET_FILE_DIR:${TESTNAME}>
         )
     endforeach(dll_file)
+elseif(UNIX)
+    set(SO_DIR ${CMAKE_SOURCE_DIR}/bin)
+
+    file(GLOB_RECURSE SOS ${SO_DIR}/*.so)
+
+    foreach(so_file ${SOS})
+        add_custom_command(
+            TARGET ${TESTNAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${so_file} $<TARGET_FILE_DIR:${TESTNAME}>
+        )
+    endforeach(so_file)
 endif()

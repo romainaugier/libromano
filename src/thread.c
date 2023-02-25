@@ -3,24 +3,19 @@
 // All rights reserved.
 
 #include "libromano/thread.h"
-#include "libromano/libromano.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <time.h>
 
 #if defined(ROMANO_WIN)
-#include <Windows.h>
 typedef HANDLE thread_handle;
 typedef DWORD thread_id;
-typedef CRITICAL_SECTION mutex;
-typedef CONDITION_VARIABLE conditional_variable;
 #elif defined(ROMANO_LINUX)
-#include <pthread.h>
-#include <unistd.h>
 typedef pthread_t thread_handle;
 typedef int thread_id;
-typedef pthread_mutex_t mutex;
-typedef pthread_cond_t cconditional_variable;
 #endif // defined(ROMANO_WIN)
 
 size_t get_num_procs()
@@ -36,11 +31,12 @@ size_t get_num_procs()
 
 mutex* mutex_new()
 {
-#if defined(ROMANO_WIN)
     mutex* new_mutex = malloc(sizeof(mutex));
 
+#if defined(ROMANO_WIN)
     InitializeCriticalSection(new_mutex);
 #elif defined(ROMANO_LINUX)
+    pthread_mutex_init(new_mutex, NULL);
 #endif // defined(ROMANO_WIN)
 
     return new_mutex;
@@ -51,6 +47,7 @@ void mutex_init(mutex* mutex)
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(mutex);
 #elif defined(ROMANO_LINUX)
+    pthread_mutex_init(mutex, NULL);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -62,6 +59,7 @@ void mutex_lock(mutex* mutex)
 #if defined(ROMANO_WIN)
     EnterCriticalSection(mutex);
 #elif defined(ROMANO_LINUX)
+    pthread_mutex_lock(mutex);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -72,6 +70,7 @@ void mutex_unlock(mutex* mutex)
 #if defined(ROMANO_WIN)
     LeaveCriticalSection(mutex);
 #elif defined(ROMANO_LINUX)
+    pthread_mutex_unlock(mutex);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -82,7 +81,7 @@ void mutex_release(mutex* mutex)
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
 #elif defined(ROMANO_LINUX)
-
+    pthread_mutex_destroy(mutex);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -92,9 +91,11 @@ void mutex_free(mutex* mutex)
 
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
-    free(mutex);
 #elif defined(ROMANO_LINUX)
+    pthread_mutex_destroy(mutex);
 #endif // defined(ROMANO_WIN)
+    
+    free(mutex);
 }
 
 conditional_variable* conditional_variable_new()
@@ -103,7 +104,8 @@ conditional_variable* conditional_variable_new()
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(new_cond_var);
-#else if defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX)
+    pthread_cond_init(new_cond_var, NULL);
 #endif // defined(ROMANO_WIN)
 
     return new_cond_var;
@@ -115,7 +117,8 @@ void conditional_variable_init(conditional_variable* cond_var)
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(cond_var);
-#else if defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX)
+    pthread_cond_init(cond_var, NULL);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -124,8 +127,25 @@ void conditional_variable_wait(conditional_variable* cond_var, mutex* mtx, uint3
     assert(cond_var != NULL && mtx != NULL);
 
 #if defined(ROMANO_WIN)
+    if(wait_duration_ms == 0)
+    {
+        wait_duration_ms = INFINITE;
+    }
+
     SleepConditionVariableCS(cond_var, mtx, (DWORD)wait_duration_ms);
 #elif defined(ROMANO_LINUX)
+    if(wait_duration_ms == 0)
+    {
+        pthread_cond_wait(cond_var, mtx);
+    }
+    else
+    {
+        struct timespec wait_duration;
+        wait_duration.tv_sec = 0;
+        wait_duration.tv_nsec = wait_duration_ms * 1000000;
+
+        pthread_cond_timedwait(cond_var, mtx, &wait_duration);
+    }
 #endif // defined(ROMANO_WIN)
 }
 
@@ -135,6 +155,7 @@ void conditional_variable_signal(conditional_variable* cond_var)
 #if defined(ROMANO_WIN)
     WakeConditionVariable(cond_var);
 #elif defined(ROMANO_LINUX)
+    pthread_cond_signal(cond_var);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -145,17 +166,26 @@ void conditional_variable_broadcast(conditional_variable* cond_var)
 #if defined(ROMANO_WIN)
     WakeAllConditionVariable(cond_var);
 #elif defined(ROMANO_LINUX)
+    pthread_cond_broadcast(cond_var);
 #endif // defined(ROMANO_WIN)
 }
 
 void conditional_variable_release(conditional_variable* cond_var)
 {
     assert(cond_var != NULL);
+
+#if defined(ROMANO_LINUX)
+    pthread_cond_destroy(cond_var);
+#endif // defined(ROMANO_LINUX)
 }
 
 void conditional_variable_free(conditional_variable* cond_var)
 {
     assert(cond_var != NULL);
+
+#if defined(ROMANO_LINUX)
+    pthread_cond_destroy(cond_var);
+#endif // defined(ROMANO_LINUX)
 
     free(cond_var);
 }
@@ -163,6 +193,10 @@ void conditional_variable_free(conditional_variable* cond_var)
 struct _thread {
     thread_handle _thread_handle;
     thread_id _id;
+#if defined(ROMANO_LINUX)
+    thread_func _func;
+    void* _data;
+#endif // defined(ROMANO_LINUX)
 };
 
 thread* thread_create(thread_func func, void* arg)
@@ -178,6 +212,9 @@ thread* thread_create(thread_func func, void* arg)
                                               arg,
                                               CREATE_SUSPENDED,
                                               &new_thread->_id);
+#elif defined(ROMANO_LINUX)
+    new_thread->_func = func;
+    new_thread->_data = arg;
 #endif // defined(ROMANO_WIN)
 
     return new_thread;
@@ -190,10 +227,10 @@ void thread_start(thread* thread)
 #if defined(ROMANO_WIN)
     ResumeThread(thread->_thread_handle);
 #elif defined(ROMANO_LINUX)
-    pthread_create(&new_thread->_thread_handle,
+    pthread_create(&thread->_thread_handle,
                    NULL,
-                   func,
-                   arg)
+                   thread->_func,
+                   thread->_data);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -202,7 +239,20 @@ void thread_sleep(int sleep_duration_ms)
 #if defined(ROMANO_WIN)
     Sleep((DWORD)sleep_duration_ms);
 #elif defined(ROMANO_LINUX)
-    nanosleep(sleep_duration_ms * 1000000);
+    struct timespec wait_duration;
+    wait_duration.tv_sec = sleep_duration_ms / 1000;
+    wait_duration.tv_nsec = (sleep_duration_ms % 1000) * 1000000;
+
+    nanosleep(&wait_duration, NULL);
+#endif // defined(ROMANO_WIN)
+}
+
+size_t thread_get_id()
+{
+#if defined(ROMANO_WIN)
+    return (size_t)GetCurrentThreadId();
+#elif defined(ROMANO_LINUX)
+    return (size_t)syscall(SYS_gettid);
 #endif // defined(ROMANO_WIN)
 }
 
@@ -213,6 +263,7 @@ void thread_detach(thread* thread)
 #if defined(ROMANO_WIN)
     CloseHandle(thread->_thread_handle);
 #elif defined(ROMANO_LINUX)
+    pthread_detach(thread->_thread_handle);
 #endif // defined(ROMANO_WIN)
 
     free(thread);
@@ -239,12 +290,28 @@ struct _work
 {
     thread_func func;
     void* arg;
-    void* next;
+    struct _work* next;
 };
 
 typedef struct _work work;
 
-work* threadpool_work_create(thread_func func, void* arg)
+struct _threadpool
+{
+    work* first;
+    work* last;
+    
+    mutex work_mutex;
+    
+    conditional_variable work_cond_var;
+    conditional_variable working_cond_var;
+    
+    size_t working_count;
+    size_t workers_count;
+
+    size_t stop : 1;
+};
+
+work* threadpool_work_new(thread_func func, void* arg)
 {
     assert(func != NULL);
 
@@ -265,43 +332,84 @@ void threadpool_work_free(work* work)
 
 work* threadpool_work_get(threadpool* threadpool)
 {
+    assert(threadpool != NULL);
 
+    work* work = threadpool->first;
+
+    if(work == NULL)
+    {
+        return NULL;
+    }
+
+    if(work->next == NULL)
+    {
+        threadpool->first = NULL;
+        threadpool->last = NULL;
+    }
+    else
+    {
+        threadpool->first = work->next;
+    }
+
+    return work;
 }
 
 void* threadpool_worker_func(void* arg)
 {
     threadpool* threadpool = arg;
-    work* work;
+    work* work = NULL;
 
     while(1)
     {
-        
+        mutex_lock(&(threadpool->work_mutex));
+    
+        while(threadpool->first == NULL && !threadpool->stop)
+        {
+            conditional_variable_wait(&(threadpool->work_cond_var), 
+                                      &(threadpool->work_mutex), 
+                                      0);
+        }
+
+        if(threadpool->stop)
+        {
+            break;
+        }
+
+        work = threadpool_work_get(threadpool);
+        threadpool->working_count++;
+        mutex_unlock(&(threadpool->work_mutex));
+
+        if(work != NULL)
+        {
+            work->func(work->arg);
+            threadpool_work_free(work);
+        }
+
+        mutex_lock(&(threadpool->work_mutex));
+        threadpool->working_count--;
+
+        if(!threadpool->stop && threadpool->working_count == 0 && threadpool->first == NULL)
+        {
+            conditional_variable_signal(&(threadpool->working_cond_var));
+        }
+
+
+        mutex_unlock(&(threadpool->work_mutex));
     }
+
+    threadpool->workers_count--;
+    conditional_variable_signal(&(threadpool->working_cond_var));
+    
+    mutex_unlock(&(threadpool->work_mutex));
+
+    return NULL;
 }
-
-struct _threadpool
-{
-    work* first;
-    work* last;
-    
-    mutex work_mutex;
-    
-    conditional_variable work_cond_var;
-    conditional_variable working_cond_var;
-    
-    size_t working_count;
-    size_t workers_count;
-
-    uint32_t stop : 1;
-};
-
-typedef struct _threadpool threadpool;
 
 threadpool* threadpool_init(size_t workers_count)
 {
     workers_count = workers_count == 0 ? get_num_procs() : workers_count;
 
-    threadpool* threadpool= malloc(sizeof(threadpool));
+    threadpool* threadpool = malloc(sizeof(struct _threadpool));
 
     threadpool->workers_count = workers_count;
     threadpool->working_count = 0;
@@ -314,26 +422,95 @@ threadpool* threadpool_init(size_t workers_count)
     threadpool->first = NULL;
     threadpool->last = NULL;
 
-    for(size_t i = 0; i < workers_count; i++)
+    size_t i;
+
+    for(i = 0; i < workers_count; i++)
     {
-        thread* new_thread = thread_create(NULL, threadpool_worker_func);
+        thread* new_thread = thread_create(threadpool_worker_func, (void*)threadpool);
+        thread_start(new_thread);
         thread_detach(new_thread);
     }
 
     return threadpool;
 }
 
-uint32_t threadpool_add_work(threadpool* threadpool, thread_func func, void* arg)
+int threadpool_work_add(threadpool* threadpool, thread_func func, void* arg)
 {
+    assert(threadpool != NULL);
 
+    work* work = threadpool_work_new(func, arg);
+
+    if(work == NULL)
+    {
+        return 0;
+    }
+
+    mutex_lock(&(threadpool->work_mutex));
+    
+    if(threadpool->first == NULL)
+    {
+        threadpool->first = work;
+        threadpool->last = threadpool->first;
+    }
+    else
+    {
+        threadpool->last->next = work;
+        threadpool->last = work;
+    }
+    
+    conditional_variable_broadcast(&(threadpool->work_cond_var));
+    mutex_unlock(&(threadpool->work_mutex));
+
+    return 1;
 }
 
 void threadpool_wait(threadpool* threadpool)
 {
+    assert(threadpool != NULL);
 
+    mutex_lock(&(threadpool->work_mutex));
+
+    while(1)
+    {
+        if((!threadpool->stop && threadpool->working_count != 0) || (threadpool->stop && threadpool->workers_count != 0))
+        {
+            conditional_variable_wait(&(threadpool->working_cond_var), &(threadpool->work_mutex), 0);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    mutex_unlock(&(threadpool->work_mutex));
 }
 
 void threadpool_release(threadpool* threadpool)
 {
-    mutex_release(&threadpool->work_mutex);
+    assert(threadpool != NULL);
+
+    mutex_lock(&(threadpool->work_mutex));
+
+    work* work1 = threadpool->first;
+    work* work2;
+
+    while(work1 != NULL)
+    {
+        work2 = work1->next;
+        threadpool_work_free(work1);
+        work1 = work2;
+    }
+
+    threadpool->stop = 1;
+
+    conditional_variable_broadcast(&(threadpool->work_cond_var));
+    mutex_unlock(&(threadpool->work_mutex));
+
+    threadpool_wait(threadpool);
+
+    mutex_release(&(threadpool->work_mutex));
+    conditional_variable_release(&(threadpool->work_cond_var));
+    conditional_variable_release(&(threadpool->working_cond_var));
+
+    free(threadpool);
 }

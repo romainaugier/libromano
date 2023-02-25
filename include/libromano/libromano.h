@@ -19,6 +19,7 @@
 #define ROMANO_VERSION_STR "Debug"
 #endif // !defined(ROMANO_VERSION_STR)
 
+#include <stddef.h>
 #include <stdint.h>
 
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
@@ -55,7 +56,7 @@
 #define ROMANO_IMPORT __attribute__((dllimport))
 #endif // defined(ROMANO_MSVC)
 #elif defined(ROMANO_LINUX)
-#define ROMANO_EXPORT __attribute__((visibility(default)))
+#define ROMANO_EXPORT __attribute__((visibility("default")))
 #define ROMANO_IMPORT
 #endif // defined(ROMANO_MSVC)
 

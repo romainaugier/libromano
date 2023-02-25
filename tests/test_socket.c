@@ -79,7 +79,9 @@ int main(int argc, char** argv)
                     uint32_t count = 0;
                     str* buffer_split = str_split(reception_buffer, "#", &count);
 
-                    for(uint32_t i = 0; i < count; i++)
+                    size_t i;
+
+                    for(i = 0; i < count; i++)
                     {
                         logger_log(LogLevel_Debug, "Split : %s", buffer_split[i]);
                     }
@@ -95,7 +97,9 @@ int main(int argc, char** argv)
                         logger_log(LogLevel_Info, "Command returned : %d", return_code);
                     }
 
-                    for(uint32_t i = 0; i < count; i++)
+                    size_t i;
+                    
+                    for(i = 0; i < count; i++)
                     {
                         str_free(buffer_split[i]);
                     }

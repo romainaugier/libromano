@@ -6,8 +6,11 @@
 #include "libromano/logger.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
-void t1_func(void* data)
+#define WORK_COUNT 100
+
+void* t1_func(void* data)
 {
     logger_log(LogLevel_Info, "Hello from thread 1");
 
@@ -18,7 +21,7 @@ void t1_func(void* data)
     logger_log(LogLevel_Info, "Thread 1 joining");
 }
 
-void t2_func(void* data)
+void* t2_func(void* data)
 {
     logger_log(LogLevel_Info, "Hello from thread 2");
 
@@ -27,6 +30,15 @@ void t2_func(void* data)
     thread_sleep(2000);
 
     logger_log(LogLevel_Info, "Thread 2 joining");
+}
+
+void* tpool_func(void* data)
+{
+    int work_id = *(int*)data;
+
+    logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), work_id);
+
+    thread_sleep(2000);
 }
 
 int main(int argc, char** argv)
@@ -44,6 +56,33 @@ int main(int argc, char** argv)
     logger_log(LogLevel_Info, "Joining threads");
     thread_join(t1);
     thread_join(t2);
+
+    logger_log(LogLevel_Info, "Initializing threadpool");
+    
+    threadpool* tp = threadpool_init(0);
+
+    int* work_data = malloc(sizeof(int) * WORK_COUNT);
+
+    size_t i;
+
+    logger_log(LogLevel_Info, "Adding work to the threadpool");
+
+    for(i = 0; i < WORK_COUNT; i++)
+    {
+        work_data[i] = (int)i;
+
+        threadpool_work_add(tp, tpool_func, (void*)&work_data[i]);
+    }
+
+    logger_log(LogLevel_Info, "Waiting for threadpool to complete work");
+
+    threadpool_wait(tp);
+
+    free(work_data);
+
+    logger_log(LogLevel_Info, "Releasing threadpool");
+
+    threadpool_release(tp);
 
     logger_release();
 

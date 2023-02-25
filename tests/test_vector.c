@@ -16,7 +16,9 @@ int main(int argc, char** argv)
     
     logger_log(LogLevel_Info, "Pushing new elements in the vector");
 
-    for(uint32_t i = 0; i < 100000000; i++)
+    size_t i;
+
+    for(i = 0; i < 100000000; i++)
     {
         float f = (float)i;
         vector_push_back(&float_vec, &f);
@@ -38,7 +40,7 @@ int main(int argc, char** argv)
 
     logger_log(LogLevel_Info, "Removing 1000 elements at position 78392 : %f", *(float*)vector_at(float_vec, 78392));
     
-    for(uint32_t i = 0; i < 1000; i++)
+    for(i = 0; i < 1000; i++)
     {
         vector_remove(&float_vec, 78392);
     }

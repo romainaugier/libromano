@@ -49,7 +49,9 @@ str* str_split(char* string, const char* separator, uint32_t* count)
 {
     *count = 0;
 
-    for(uint32_t i = 0; i < strlen(string); i++)
+    size_t i;
+
+    for(i = 0; i < strlen(string); i++)
     {
         if(string[i] == (char)separator[0]) (*count)++;
     }
@@ -59,7 +61,7 @@ str* str_split(char* string, const char* separator, uint32_t* count)
     str* result = malloc(*count * sizeof(str));
     char* token = strtok(string, separator);
 
-    uint32_t i = 0;
+    i = 0;
 
     while(token != NULL)
     {

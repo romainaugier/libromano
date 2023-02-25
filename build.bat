@@ -2,7 +2,7 @@
 
 rem Little utility batch script to build the library
 
-echo Building romanolib
+echo Building libromano
 
 set BUILDTYPE=Release
 set RUNTESTS=0
