@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/thread.h"
 #include "libromano/logger.h"
@@ -19,6 +19,8 @@ void* t1_func(void* data)
     thread_sleep(2000);
 
     logger_log(LogLevel_Info, "Thread 1 joining");
+
+    return NULL;
 }
 
 void* t2_func(void* data)
@@ -30,6 +32,8 @@ void* t2_func(void* data)
     thread_sleep(2000);
 
     logger_log(LogLevel_Info, "Thread 2 joining");
+    
+    return NULL;
 }
 
 void* tpool_func(void* data)
@@ -39,6 +43,8 @@ void* tpool_func(void* data)
     logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), work_id);
 
     thread_sleep(2000);
+    
+    return NULL;
 }
 
 int main(int argc, char** argv)
@@ -63,9 +69,9 @@ int main(int argc, char** argv)
 
     int* work_data = malloc(sizeof(int) * WORK_COUNT);
 
-    size_t i;
-
     logger_log(LogLevel_Info, "Adding work to the threadpool");
+
+    size_t i;
 
     for(i = 0; i < WORK_COUNT; i++)
     {

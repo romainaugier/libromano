@@ -8,23 +8,11 @@ REMOVEOLDDIR=0
 
 parse_args()
 {
-    [ "$1" == "Debug" ] && BUILDTYPE="Debug"
-    [ "$1" == "debug" ] && BUILDTYPE="Debug"
-    [ "$1" == "dbg" ] && BUILDTYPE="Debug"
+    [ "$1" == "--debug" ] && BUILDTYPE="Debug"
 
-    [ "$1" == "RunTests" ] && RUNTESTS=1
-    [ "$1" == "Tests" ] && RUNTESTS=1
-    [ "$1" == "Test" ] && RUNTESTS=1
-    [ "$1" == "runtests" ] && RUNTESTS=1
-    [ "$1" == "tests" ] && RUNTESTS=1
-    [ "$1" == "test" ] && RUNTESTS=1
+    [ "$1" == "--tests" ] && RUNTESTS=1
 
-    [ "$1" == "RemoveDir" ] && REMOVEOLDDIR=1
-    [ "$1" == "Remove" ] && REMOVEOLDDIR=1
-    [ "$1" == "remove" ] && REMOVEOLDDIR=1
-    [ "$1" == "removedir" ] && REMOVEOLDDIR=1
-    [ "$1" == "rmdir" ] && REMOVEOLDDIR=1
-    [ "$1" == "rdir" ] && REMOVEOLDDIR=1
+    [ "$1" == "--clean" ] && REMOVEOLDDIR=1
 }
 
 for arg in "$@"

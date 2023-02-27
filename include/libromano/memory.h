@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #pragma once
 
@@ -15,12 +15,12 @@ ROMANO_CPP_ENTER
 
 #if defined(ROMANO_DEBUG_MEMORY)
 
-// Memory debug utility function, just malloc with a log of where it happens 
+/* Memory debug utility function, just malloc with a log of where it happens */
 ROMANOAPI void* debug_malloc_override(size_t size,
                                       const char* line,
                                       const char* file);
 
-// Memory debug utility function, just free with a log of where it happens
+/* Memory debug utility function, just free with a log of where it happens */
 ROMANOAPI void debug_free_override(void* ptr,
                                    const char* line,
                                    const char* file);
@@ -28,8 +28,18 @@ ROMANOAPI void debug_free_override(void* ptr,
 #define malloc(size) debug_malloc_override(size, __LINE__, __FILE__)
 #define free(ptr) debug_free_override(pt, __LINE__, __FILE__)
 
-#endif // defined(ROMANO_DEBUG_MEMORY)
+#endif /* defined(ROMANO_DEBUG_MEMORY) */
+
+ROMANO_FORCE_INLINE int is_big_endian()
+{
+    union {
+        uint32_t i;
+        char c[4];
+    } e = { 0x01000000 };
+
+    return e.c[0];
+}
 
 ROMANO_CPP_END
 
-#endif // !defined(__LIBROMANO_MEMORY)
+#endif /* !defined(__LIBROMANO_MEMORY) */

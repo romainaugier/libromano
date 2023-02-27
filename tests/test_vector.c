@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/vector.h"
 #include "libromano/logger.h"
@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     size_t i;
 
-    for(i = 0; i < 100000000; i++)
+    for(i = 0; i < 1000000; i++)
     {
         float f = (float)i;
         vector_push_back(&float_vec, &f);

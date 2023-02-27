@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #pragma once
 
@@ -22,31 +22,31 @@ typedef enum
     LogLevel_Debug
 } log_level;
 
-// Initializes the logger. Be careful to release the logger once your program ends, otherwise file logging won't end 
-// Best practice is to register the logger_release at exit
+/* Initializes the logger. Be careful to release the logger once your program ends, otherwise file logging won't end */
+/* Best practice is to register the logger_release at exit */
 ROMANO_API void logger_init();
 
-// Sets the log level
+/* Sets the log level */
 ROMANO_API void logger_set_level(log_level level);
 
-// Enable console logging, which is enabled by default
+/* Enable console logging, which is enabled by default */
 ROMANO_API void logger_enable_console();
 
-// Disalbe console logging, which is enable by default
+/* Disable console logging, which is enable by default */
 ROMANO_API void logger_disable_console();
 
-// Sets the file the logger should output to, and enables file logging
+/* Sets the file the logger should output to, and enables file logging */
 ROMANO_API void logger_enable_file(const char* file_path);
 
-// Disable file logging
+/* Disable file logging */
 ROMANO_API void logger_disable_file();
 
-// Logs a message
+/* Logs a message */
 ROMANO_API void logger_log(log_level level, const char* format, ...);
 
-// Releases the logger
+/* Releases the logger */
 ROMANO_API void logger_release();
 
 ROMANO_CPP_END
 
-#endif // !defined(__LIBROMANO_LOGGER)
+#endif /* !defined(__LIBROMANO_LOGGER) */

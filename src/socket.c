@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/socket.h"
 #include "libromano/logger.h"
@@ -12,8 +12,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h> // close
-#include <netdb.h>  // gethostbyname
+#include <unistd.h> /* close */
+#include <netdb.h>  /* gethostbyname */
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
@@ -25,15 +25,16 @@ typedef struct sockadd SOCKADDR;
 typedef struct in_addr IN_ADDR;
 #else
 #warning Sockets not defined on this platform
-#endif // defined(ROMANO_WIN)
+#endif /* defined(ROMANO_WIN) */
 
 void socket_init()
 {
 #if defined(ROMANO_WIN)
-    // Used to call WS2_32.dll
+    /* Used to call WS2_32.dll */
     WSADATA wsa_data;
-
-    int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    int result;
+    
+    result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
 
     if(result != 0)
     {
@@ -42,7 +43,7 @@ void socket_init()
     }
 
     logger_log(LogLevel_Debug, "WSAStartup done");
-#endif // defined(ROMANO_WIN)
+#endif /* defined(ROMANO_WIN) */
 }
 
 void socket_release()
@@ -57,5 +58,5 @@ void socket_release()
     }
 
     logger_log(LogLevel_Debug, "WSACleanup done");
-#endif // defined(ROMANO_WIN)
+#endif /* defined(ROMANO_WIN) */
 }

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #pragma once
 
@@ -13,4 +13,4 @@ ROMANO_CPP_ENTER
 
 ROMANO_CPP_END
 
-#endif // !defined(__LIBROMANO_BIT)
+#endif /* !defined(__LIBROMANO_BIT) */

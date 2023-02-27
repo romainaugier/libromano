@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/socket.h"
 #include "libromano/logger.h"
@@ -10,7 +10,7 @@
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
 #define PASSWORD_HASH 1785690117
-// #define ROMANO_TEST_SOCKET_SERVER 
+/* #define ROMANO_TEST_SOCKET_SERVER */
 
 int main(int argc, char** argv)
 {

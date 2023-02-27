@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/str.h"
 
@@ -13,9 +13,12 @@
 
 str str_new(const char* string)
 {
-    size_t length = strlen(string);
+    size_t length;
+    char* str_ptr;
+    
+    length = strlen(string);
 
-    char* str_ptr = (char*)malloc(length + 1 + sizeof(size_t));
+    str_ptr = (char*)malloc(length + 1 + sizeof(size_t));
 
     if(str_ptr == NULL) return NULL;
 
@@ -47,9 +50,11 @@ size_t str_length(str string)
 
 str* str_split(char* string, const char* separator, uint32_t* count)
 {
-    *count = 0;
-
     size_t i;
+    str* result;
+    char* token;
+    
+    *count = 0;
 
     for(i = 0; i < strlen(string); i++)
     {
@@ -58,8 +63,8 @@ str* str_split(char* string, const char* separator, uint32_t* count)
 
     (*count)++;
 
-    str* result = malloc(*count * sizeof(str));
-    char* token = strtok(string, separator);
+    result = malloc(*count * sizeof(str));
+    token = strtok(string, separator);
 
     i = 0;
 

@@ -1,25 +1,26 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/logger.h"
 #include "libromano/bit.h"
+
+#if defined(ROMANO_WIN)
 #include "libromano/time.h"
+#elif defined(ROMANO_LINUX)
+#include <sys/time.h>
+#endif /* defined(ROMANO_WIN) */
 
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
 #include <assert.h>
 
-// Log mode
-
 typedef enum 
 {
     LogMode_Console = BIT(0),
     LogMode_File = BIT(1)
 } log_mode;
-
-// Global variables
 
 static int _logger_initialized = 0;
 static int _log_level = LogLevel_Info;
@@ -28,8 +29,6 @@ static const char* _log_file_path = NULL;
 static FILE* _log_file = NULL;
 
 static const char* _levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
-
-// API
 
 void logger_init()
 {
@@ -61,7 +60,7 @@ void logger_enable_file(const char* file_path)
     _log_mode |= LogMode_File;
     _log_file_path = file_path;
 
-    // _log_file = fopen(_log_file_path, "a");
+    /* _log_file = fopen(_log_file_path, "a"); */
 }
 
 void logger_disable_file()
@@ -76,17 +75,17 @@ void logger_log(log_level level, const char* format, ...)
     if(level <= _log_level)
     {
         time_t raw_time;
-        time(&raw_time);
-        
         struct timeval current_time;
+        struct tm* local_time;
+        char buffer[ROMANO_LOG_BUFFER_SIZE];
+        va_list args;
+        
+        time(&raw_time);
+
         gettimeofday(&current_time, NULL);
 
-        struct tm* local_time = localtime(&raw_time);
-        
+        local_time = localtime(&raw_time);
 
-        char buffer[ROMANO_LOG_BUFFER_SIZE];
-
-        va_list args;
         va_start(args, format);
         vsnprintf(buffer, ROMANO_LOG_BUFFER_SIZE, format, args);
         va_end(args);
@@ -101,7 +100,7 @@ void logger_log(log_level level, const char* format, ...)
             }
 
             fprintf(output_stream,
-                    "[%s] %02d:%02d:%02d:%03d : %s\n", 
+                    "[%s] %02d:%02d:%02d:%03ld : %s\n", 
                     _levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
@@ -117,7 +116,7 @@ void logger_log(log_level level, const char* format, ...)
             assert(_log_file != NULL);
 
             fprintf(_log_file,
-                    "[%s] %02d:%02d:%02d:%03d : %s\n",
+                    "[%s] %02d:%02d:%02d:%03ld : %s\n",
                     _levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
@@ -134,6 +133,6 @@ void logger_release()
 {
     if(_log_file != NULL)
     {
-        // fclose(_log_file);
+        /* fclose(_log_file); */
     }
 }

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #include "libromano/memory.h"
 #include "libromano/logger.h"
@@ -11,9 +11,11 @@ void* debug_malloc_override(size_t size,
                             const char* line,
                             const char* file)
 {
+    void* ptr;
+    
     logger_log(LogLevel_Debug, "Allocating %lu bytes of memory at L.%s in file \"%s\"", size, line, file);
 
-    void* ptr = malloc(size);
+    ptr = malloc(size);
 
     if(ptr == NULL)
     {
@@ -32,4 +34,4 @@ void debug_free_override(void* ptr,
     free(ptr);
 }
 
-#endif // defined(ROMANO_DEBUG_MEMORY)
+#endif /* defined(ROMANO_DEBUG_MEMORY) */

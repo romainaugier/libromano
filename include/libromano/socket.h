@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2023 - Present Romain Augier
-// All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
 
 #pragma once
 
@@ -11,12 +11,12 @@
 
 ROMANO_CPP_ENTER
 
-// Initialize the socket context
+/* Initialize the socket context */
 ROMANO_API void socket_init();
 
-// Release the socket context
+/* Release the socket context */
 ROMANO_API void socket_release();
 
 ROMANO_CPP_END
 
-#endif // !defined(__LIBROMANO_SOCKET)
+#endif /* !defined(__LIBROMANO_SOCKET) */
