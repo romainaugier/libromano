@@ -29,3 +29,4 @@ ROMANO_API str* str_split(char* string, const char* separator, uint32_t* count);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_STR) */
+
