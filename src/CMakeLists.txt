@@ -11,7 +11,7 @@ if(UNIX)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
 elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch)
 endif()
 
 # Copy to shared lib to the bin directory

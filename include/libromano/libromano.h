@@ -86,5 +86,15 @@
 #define NULL (void*)0
 #endif /* !defined NULL */
 
+#if defined(ROMANO_WIN)
+#define ROMANO_FUNCTION __FUNCTION__
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+#define ROMANO_FUNCTION __PRETTY_FUNCTION__
+#endif /* ROMANO_WIN */
+
+#define STATIC_ASSERT(CONDITION, MSG) typedef char static_assert_##MSG[(CONDITION) ? 1 : -1]
+
+#define ROMANO_NOT_IMPLEMENTED "Function "ROMANO_FUNCTION" not implemented" 
+
 #endif /* !defined(__LIBROMANO) */
 
