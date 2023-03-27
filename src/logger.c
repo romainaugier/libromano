@@ -30,7 +30,7 @@ static FILE* _log_file = NULL;
 
 static const char* _levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
 
-void logger_init()
+void logger_init(void)
 {
     if(_logger_initialized)
     {
@@ -45,12 +45,12 @@ void logger_set_level(log_level level)
     _log_level = level;
 }
 
-void logger_enable_console()
+void logger_enable_console(void)
 {
     _log_mode |= LogMode_Console;
 }
 
-void logger_disable_console()
+void logger_disable_console(void)
 {
     _log_mode &= LogMode_Console;
 }
@@ -63,7 +63,7 @@ void logger_enable_file(const char* file_path)
     /* _log_file = fopen(_log_file_path, "a"); */
 }
 
-void logger_disable_file()
+void logger_disable_file(void)
 {
     _log_mode &= LogMode_File;
 }
@@ -129,10 +129,11 @@ void logger_log(log_level level, const char* format, ...)
     }
 }
 
-void logger_release()
+void logger_release(void)
 {
     if(_log_file != NULL)
     {
         /* fclose(_log_file); */
     }
 }
+

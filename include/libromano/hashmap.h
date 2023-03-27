@@ -14,7 +14,7 @@ ROMANO_CPP_ENTER
 struct _hashmap;
 typedef struct _hashmap hashmap;
 
-ROMANO_API hashmap* hashmap_new();
+ROMANO_API hashmap* hashmap_new(void);
 
 ROMANO_API void hashmap_insert(hashmap* hashmap, 
                                const char* key, 
@@ -29,3 +29,4 @@ ROMANO_API void hashmap_free(hashmap* hashmap);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_HASHMAP) */
+

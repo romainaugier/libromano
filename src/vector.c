@@ -196,3 +196,4 @@ void vector_free(vector vector)
         vector = NULL;
     }
 }
+

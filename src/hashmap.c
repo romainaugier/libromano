@@ -4,6 +4,8 @@
 
 #include "libromano/hashmap.h"
 #include "libromano/str.h"
+#include <stdlib.h>
+#include <string.h>
 
 struct _entry {
     str key;
@@ -42,7 +44,7 @@ struct _hashmap {
    size_t capacity;
 };
 
-hashmap* hashmap_new()
+hashmap* hashmap_new(void)
 {
     hashmap* hashmap = malloc(sizeof(hashmap));
 

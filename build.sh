@@ -16,7 +16,7 @@ parse_args()
 
     [ "$1" == "--tests" ] && RUNTESTS=1
 
-    [ "$1" == "--clean" ] && #OVEOLDDIR=1
+    [ "$1" == "--clean" ] && REMOVEOLDDIR=1
 }
 
 for arg in "$@"
@@ -24,7 +24,7 @@ do
     parse_args "$arg"
 done
 
-if [[ -d "build" && $#OVEOLDDIR -eq 1 ]]
+if [[ -d "build" && $REMOVEOLDDIR -eq 1 ]]
 then
     rm -rf build
 fi

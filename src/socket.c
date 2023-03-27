@@ -27,7 +27,7 @@ typedef struct in_addr IN_ADDR;
 #warning Sockets not defined on this platform
 #endif /* defined(ROMANO_WIN) */
 
-void socket_init()
+void socket_init(void)
 {
 #if defined(ROMANO_WIN)
     /* Used to call WS2_32.dll */
@@ -46,7 +46,7 @@ void socket_init()
 #endif /* defined(ROMANO_WIN) */
 }
 
-void socket_release()
+void socket_release(void)
 {
 #if defined(ROMANO_WIN)
     int result = WSACleanup();
@@ -60,3 +60,4 @@ void socket_release()
     logger_log(LogLevel_Debug, "WSACleanup done");
 #endif /* defined(ROMANO_WIN) */
 }
+

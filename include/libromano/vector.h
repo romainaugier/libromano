@@ -49,3 +49,4 @@ ROMANO_API void vector_free(vector vector);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_VECTOR) */
+

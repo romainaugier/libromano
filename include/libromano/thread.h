@@ -11,7 +11,7 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_API size_t get_num_procs();
+ROMANO_API size_t get_num_procs(void);
 
 #if defined(ROMANO_WIN)
 #include <Windows.h>
@@ -26,7 +26,7 @@ typedef pthread_cond_t conditional_variable;
 #endif /* defined(ROMANO_WIN) */
 
 /* Creates a new mutex (memory allocated) */
-ROMANO_API mutex* mutex_new();
+ROMANO_API mutex* mutex_new(void);
 
 /* Initializes a mutex */
 ROMANO_API void mutex_init(mutex* mutex);
@@ -44,7 +44,7 @@ ROMANO_API void mutex_release(mutex* mutex);
 ROMANO_API void mutex_free(mutex* mutex);
 
 /* Creates a new conditional variable (memory allocated) and initializes it */
-ROMANO_API conditional_variable* conditional_variable_new();
+ROMANO_API conditional_variable* conditional_variable_new(void);
 
 /* Initializes the given conditional variable */
 ROMANO_API void conditional_variable_init(conditional_variable* cond_var);
@@ -79,7 +79,7 @@ ROMANO_API void thread_start(thread* thread);
 ROMANO_API void thread_sleep(int sleep_duration_ms);
 
 /* Returns the current thread id */
-ROMANO_API size_t thread_get_id();
+ROMANO_API size_t thread_get_id(void);
 
 /* Detach the given thread */
 ROMANO_API void thread_detach(thread* thread);
@@ -105,3 +105,4 @@ ROMANO_API void threadpool_release(threadpool* threadpool);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_SOCKET) */
+

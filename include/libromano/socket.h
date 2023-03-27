@@ -12,11 +12,12 @@
 ROMANO_CPP_ENTER
 
 /* Initialize the socket context */
-ROMANO_API void socket_init();
+ROMANO_API void socket_init(void);
 
 /* Release the socket context */
-ROMANO_API void socket_release();
+ROMANO_API void socket_release(void);
 
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_SOCKET) */
+

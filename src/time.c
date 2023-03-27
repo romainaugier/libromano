@@ -39,3 +39,4 @@ void gettimeofday(struct timeval* tv, struct timezone *tz)
 }
 
 #endif /* defined(ROMANO_WIN) */
+

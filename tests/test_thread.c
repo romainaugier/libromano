@@ -49,6 +49,8 @@ void* tpool_func(void* data)
 
 int main(int argc, char** argv)
 {
+    size_t i = 0;
+
     logger_init();
 
     logger_log(LogLevel_Info, "Creating threads");
@@ -71,8 +73,6 @@ int main(int argc, char** argv)
 
     logger_log(LogLevel_Info, "Adding work to the threadpool");
 
-    size_t i;
-
     for(i = 0; i < WORK_COUNT; i++)
     {
         work_data[i] = (int)i;
@@ -94,3 +94,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+

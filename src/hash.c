@@ -19,3 +19,4 @@ uint32_t hash_fnv1a(const char* str)
 
     return result;
 }
+

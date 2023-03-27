@@ -18,7 +18,7 @@ typedef pthread_t thread_handle;
 typedef int thread_id;
 #endif /* defined(ROMANO_WIN) */
 
-size_t get_num_procs()
+size_t get_num_procs(void)
 {
 #if defined(ROMANO_WIN)
     SYSTEM_INFO sys_info;
@@ -29,7 +29,7 @@ size_t get_num_procs()
 #endif
 }
 
-mutex* mutex_new()
+mutex* mutex_new(void)
 {
     mutex* new_mutex = malloc(sizeof(mutex));
 
@@ -98,7 +98,7 @@ void mutex_free(mutex* mutex)
     free(mutex);
 }
 
-conditional_variable* conditional_variable_new()
+conditional_variable* conditional_variable_new(void)
 {
     conditional_variable* new_cond_var = malloc(sizeof(conditional_variable));
 
@@ -247,7 +247,7 @@ void thread_sleep(int sleep_duration_ms)
 #endif /* defined(ROMANO_WIN) */
 }
 
-size_t thread_get_id()
+size_t thread_get_id(void)
 {
 #if defined(ROMANO_WIN)
     return (size_t)GetCurrentThreadId();
@@ -528,3 +528,4 @@ void threadpool_release(threadpool* threadpool)
 
     free(threadpool);
 }
+

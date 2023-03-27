@@ -24,29 +24,30 @@ typedef enum
 
 /* Initializes the logger. Be careful to release the logger once your program ends, otherwise file logging won't end */
 /* Best practice is to register the logger_release at exit */
-ROMANO_API void logger_init();
+ROMANO_API void logger_init(void);
 
 /* Sets the log level */
 ROMANO_API void logger_set_level(log_level level);
 
 /* Enable console logging, which is enabled by default */
-ROMANO_API void logger_enable_console();
+ROMANO_API void logger_enable_console(void);
 
 /* Disable console logging, which is enable by default */
-ROMANO_API void logger_disable_console();
+ROMANO_API void logger_disable_console(void);
 
 /* Sets the file the logger should output to, and enables file logging */
 ROMANO_API void logger_enable_file(const char* file_path);
 
 /* Disable file logging */
-ROMANO_API void logger_disable_file();
+ROMANO_API void logger_disable_file(void);
 
 /* Logs a message */
 ROMANO_API void logger_log(log_level level, const char* format, ...);
 
 /* Releases the logger */
-ROMANO_API void logger_release();
+ROMANO_API void logger_release(void);
 
 ROMANO_CPP_END
 
 #endif /* __LIBROMANO_LOGGER */
+

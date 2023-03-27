@@ -30,7 +30,7 @@ ROMANOAPI void debug_free_override(void* ptr,
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
-ROMANO_FORCE_INLINE int is_big_endian()
+ROMANO_FORCE_INLINE int is_big_endian(void)
 {
     union {
         uint32_t i;
@@ -43,3 +43,4 @@ ROMANO_FORCE_INLINE int is_big_endian()
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_MEMORY) */
+
