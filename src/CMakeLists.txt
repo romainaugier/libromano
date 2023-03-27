@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: BSD-3-Clause 
+# Copyright (c) 2023 - Present Romain Augier 
+# All rights reserved. 
+
 file(GLOB_RECURSE src_files *.c)
 
 add_definitions(-DROMANO_BUILD_SHARED)

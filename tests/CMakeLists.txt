@@ -1,5 +1,8 @@
-file(GLOB_RECURSE TEST_FILES *.c)
+# SPDX-License-Identifier: BSD-3-Clause 
+# Copyright (c) 2023 - Present Romain Augier 
+# All rights reserved. 
 
+file(GLOB_RECURSE TEST_FILES *.c)
 
 foreach(test_file ${TEST_FILES})
     get_filename_component(TESTNAME ${test_file} NAME_WLE)

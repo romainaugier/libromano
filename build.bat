@@ -1,3 +1,7 @@
+rem SPDX-License-Identifier: BSD-3-Clause 
+rem Copyright (c) 2023 - Present Romain Augier 
+rem All rights reserved. 
+
 @echo off
 
 rem Little utility batch script to build the library
