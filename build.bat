@@ -7,6 +7,7 @@ echo Building libromano
 set BUILDTYPE=Release
 set RUNTESTS=0
 set REMOVEOLDDIR=0
+set ARCH=x64
 
 for %%x in (%*) do (
     call :ParseArg %%~x
@@ -23,12 +24,7 @@ if not EXIST bin mkdir bin
 
 echo Build type : %BUILDTYPE%
 
-if %RUNTESTS% equ 1 (
-    cmake -S . -B build -DRUN_TESTS=1
-)
-else (
-    cmake -S . -B build
-)
+cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%"
 
 cd build
 cmake --build . --config %BUILDTYPE%
