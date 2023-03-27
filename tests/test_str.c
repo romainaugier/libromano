@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     size_t len_t = strlen(t);
     size_t len_s = str_length(s);
-    printf("Len t : %lu, len s : %lu\n", len_t, len_s);
+    printf("Len t : %llu, len s : %llu\n", len_t, len_s);
 
     str_free(s);
     

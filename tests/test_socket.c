@@ -10,11 +10,11 @@
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
 #define PASSWORD_HASH 1785690117
-/* #define ROMANO_TEST_SOCKET_SERVER */
+#define ROMANO_TEST_SOCKET_SERVER 0
 
 int main(int argc, char** argv)
 {
-#if defined(ROMANO_TEST_SOCKET_SERVER)
+#if ROMANO_TEST_SOCKET_SERVER
     socket_init();
     
     SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
