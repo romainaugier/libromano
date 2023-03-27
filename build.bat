@@ -34,15 +34,13 @@ set TESTERR=0
 if %RUNTESTS% equ 1 ctest --output-on-failure
 
 if %errorlevel% neq 0 (
-    echo "Error catched during testing"
+    echo Error catched during testing
     if %RUNTESTS% equ 1 type build\Testing\Temporary\LastTest.log
 
     set TESTERR=1
 )
 
 cd ..
-
-dir "D:/a/libromano/libromano/build/tests/Release"
 
 exit /B %TESTERR%
 

@@ -12,30 +12,9 @@ foreach(test_file ${TEST_FILES})
 endforeach()
 
 # Copy all binaries from the bin in the runtime directory to link dynamic libraries to test executables
-if(WIN32)
-    set(DLL_DIR ${CMAKE_SOURCE_DIR}/bin)
-
-    file(GLOB_RECURSE DLLS ${DLL_DIR}/*.dll)
-
-    foreach(dll_file ${DLLS})
-        add_custom_command(
-            TARGET ${TESTNAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${dll_file} $<TARGET_FILE_DIR:${TESTNAME}>
-        )
-    endforeach(dll_file)
-elseif(UNIX)
-    set(SO_DIR ${CMAKE_SOURCE_DIR}/bin)
-
-    file(GLOB_RECURSE SOS ${SO_DIR}/*.so)
-
-    foreach(so_file ${SOS})
-        add_custom_command(
-            TARGET ${TESTNAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${so_file} $<TARGET_FILE_DIR:${TESTNAME}>
-        )
-    endforeach(so_file)
-endif()
+add_custom_command(
+    TARGET ${TESTNAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    $<TARGET_FILE:${PROJECT_NAME}> $<TARGET_FILE_DIR:${TESTNAME}>
+)
