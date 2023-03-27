@@ -37,6 +37,8 @@ if %RUNTESTS% equ 1 ctest --output-on-failure
 
 cd ..
 
+if %RUNTESTS% equ 1 type build\Testing\Temporary\LastTest.log
+
 rem //////////////////////////////////
 rem Little function to process args
 :ParseArg
