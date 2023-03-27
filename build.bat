@@ -29,11 +29,22 @@ cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%"
 cd build
 cmake --build . --config %BUILDTYPE%
 
+set TESTERR=0
+
 if %RUNTESTS% equ 1 ctest --output-on-failure
+
+if %errorlevel% neq 0 (
+    echo "Error catched during testing"
+    if %RUNTESTS% equ 1 type build\Testing\Temporary\LastTest.log
+
+    set TESTERR=1
+)
 
 cd ..
 
-if %RUNTESTS% equ 1 type build\Testing\Temporary\LastTest.log
+dir "D:/a/libromano/libromano/build/tests/Release"
+
+exit /B %TESTERR%
 
 rem //////////////////////////////////
 rem Little function to process args
