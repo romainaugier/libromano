@@ -47,7 +47,7 @@ void fs_parent_dir(const char* path,
                    char* out_path)
 {
 #if defined(ROMANO_WIN)
-    wchar_t path[MAX_PATH];
+    wchar_t w_path[MAX_PATH];
 #elif defined(ROMANO_LINUX)
     unsigned long path_len = strlen(path);
 #endif /* defined(ROMANO_WIN)*/
@@ -55,7 +55,6 @@ void fs_parent_dir(const char* path,
     assert(out_path != NULL);
 
 #if defined(ROMANO_WIN)
-    wchar_t w_path[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path, strlen(path), w_path, MAX_PATH);
     w_path[MAX_PATH - 1] = L'\0';
 
