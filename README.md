@@ -15,10 +15,10 @@ Roadmap (C library) :
 - :clock3: hashmap
 - :heavy_check_mark: logger
 - :clock3: socket (sockets and websockets)
-- :x: maths (float optimized maths library
+- :x: maths (float optimized maths library)
 - :x: linear algebra (float optimized linear algebra library)
 - :clock3: filesystem (python-like functions to interact with the filesystem)
-- :clock3: hash (various hash functions
+- :clock3: hash (various hash functions)
 - :clock3: memory (memory_arena, allocators...)
 - :x: finance maths 
 - :x: optimization (differential evolution, gradient descent...)
@@ -32,11 +32,11 @@ Roadmap (C++ Bindings) :
 - :x: json
 - :x: hashmap
 - :x: logger
-- :x: socket (sockets and websockets)
-- :x: maths (float optimized maths library
-- :x: linear algebra (float optimized linear algebra library)
-- :x: filesystem (python-like functions to interact with the filesystem)
-- :x: hash (various hash functions
-- :x: memory (memory_arena, allocators...)
+- :x: socket
+- :x: maths
+- :x: linear algebra
+- :x: filesystem
+- :x: hash
+- :x: memory
 - :x: finance maths 
 - :x: optimization
