@@ -5,8 +5,8 @@
 
 ANSI C utility library for projects and learning
 
-Roadmap :
-- :clock3:string
+Roadmap (C library) :
+- :clock3: string
 - :x: stringview
 - :heavy_check_mark: thread (threads, threadpool, mutexes...)
 - :heavy_check_mark: vector
@@ -20,3 +20,23 @@ Roadmap :
 - :clock3: filesystem (python-like functions to interact with the filesystem)
 - :clock3: hash (various hash functions
 - :clock3: memory (memory_arena, allocators...)
+- :x: finance maths 
+- :x: optimization (differential evolution, gradient descent...)
+
+Roadmap (C++ Bindings) :
+- :x: string
+- :x: stringview
+- :x: thread
+- :x: vector
+- :x: command line arguments parser
+- :x: json
+- :x: hashmap
+- :x: logger
+- :x: socket (sockets and websockets)
+- :x: maths (float optimized maths library
+- :x: linear algebra (float optimized linear algebra library)
+- :x: filesystem (python-like functions to interact with the filesystem)
+- :x: hash (various hash functions
+- :x: memory (memory_arena, allocators...)
+- :x: finance maths 
+- :x: optimization
