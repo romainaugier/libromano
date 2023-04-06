@@ -38,7 +38,7 @@ fi
 
 if [[ $? -ne 0 ]]; then
     echo Error during CMake configuration
-    exit $?
+    exit 1 
 fi
 
 cd build
@@ -48,7 +48,7 @@ cmake --build . --config "$BUILDTYPE"
 if [[ $? -ne 0 ]]; then
     echo Error during compilation
     cd ..
-    exit $?
+    exit 1
 fi
 
 if [[ $RUNTESTS -eq 1 ]]; then
@@ -57,7 +57,7 @@ if [[ $RUNTESTS -eq 1 ]]; then
     if [[ $? -ne 0 ]]; then
         echo Error during testing
         cd ..
-        exit $?
+        exit 1
     fi
 fi
 
