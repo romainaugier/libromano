@@ -13,7 +13,7 @@ strview strview_new(const char* data, size_t count)
 {
    strview sv;
    sv.size = count;
-   sv.data = data;
+   sv.data = (char*)data;
    return sv;
 }
 
@@ -36,7 +36,7 @@ strview* strview_split(const char* data, const char* separator, size_t* count)
     (*count)++;
 
     result = malloc(*count * sizeof(strview));
-    buffer = data;
+    buffer = (char*)data;
     previous_length = 0;
     j = 0;
 
@@ -47,7 +47,7 @@ strview* strview_split(const char* data, const char* separator, size_t* count)
         {
             result[j] = strview_new(buffer, i - previous_length);
 
-            buffer = &data[i + 1];
+            buffer = (char*)&data[i + 1];
             previous_length = i + 1;
             j++;
         }
@@ -67,7 +67,7 @@ strview strview_trim(const char* data)
       return STRVIEW_NULL;
    }
 
-   result.data = data;
+   result.data = (char*)data;
    result.size = strlen(data);
 
    while((result.size > 0 && isspace(data[result.size--])) || data[result.size--] == '\0')
