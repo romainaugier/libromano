@@ -32,23 +32,35 @@ echo Build type : %BUILDTYPE%
 
 cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%"
 
+if %errorlevel% neq 0 (
+    echo Error catched during CMake configuration
+    exit /B 1
+)
+
 cd build
 cmake --build . --config %BUILDTYPE%
 
-set TESTERR=0
-
-if %RUNTESTS% equ 1 ctest --output-on-failure
-
 if %errorlevel% neq 0 (
-    echo Error catched during testing
-    if %RUNTESTS% equ 1 type build\Testing\Temporary\LastTest.log
+    echo Error catched during compilation
+    cd ..
+    exit /B 1
+)
 
-    set TESTERR=1
+if %RUNTESTS% equ 1 (
+    ctest --output-on-failure
+
+    if %errorlevel% neq 0 (
+        echo Error catched during testing
+        type build\Testing\Temporary\LastTest.log
+
+        cd ..
+        exit /B 1
+    )
 )
 
 cd ..
 
-exit /B %TESTERR%
+exit /B 0
 
 rem //////////////////////////////////
 rem Little function to process args
@@ -62,4 +74,16 @@ if "%~1" equ "--clean" set REMOVEOLDDIR=1
 
 exit /B 0
 
+rem //////////////////////////////////
+
+rem //////////////////////////////////
+rem Little function to check for errors
+:CheckErrors
+
+if %errorlevel% neq 0 (
+    echo %~1
+    exit /B 1
+)
+
+exit /B 0
 rem //////////////////////////////////

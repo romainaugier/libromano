@@ -24,25 +24,41 @@ do
     parse_args "$arg"
 done
 
-if [[ -d "build" && $REMOVEOLDDIR -eq 1 ]]
-then
+if [[ -d "build" && $REMOVEOLDDIR -eq 1 ]]; then
     rm -rf build
+    rm -rf bin
+    rm -rf static
 fi
 
-if [[ $RUNTESTS -eq 1 ]]
-then
+if [[ $RUNTESTS -eq 1 ]]; then
     cmake -S . -B build -DRUN_TESTS=1 
 else
     cmake -S . -B build
+fi
+
+if [[ $? -ne 0 ]]; then
+    echo Error during CMake configuration
+    exit $?
 fi
 
 cd build
 
 cmake --build . --config "$BUILDTYPE" 
 
-if [[ $RUNTESTS -eq 1 ]]
-then
+if [[ $? -ne 0 ]]; then
+    echo Error during compilation
+    cd ..
+    exit $?
+fi
+
+if [[ $RUNTESTS -eq 1 ]]; then
     ctest --output-on-failure
+    
+    if [[ $? -ne 0 ]]; then
+        echo Error during testing
+        cd ..
+        exit $?
+    fi
 fi
 
 cd ..
