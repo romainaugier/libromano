@@ -7,7 +7,7 @@ ANSI C utility library for projects and learning
 
 Roadmap (C library) :
 - :clock3: string
-- :x: stringview
+- :clock3: stringview
 - :heavy_check_mark: thread (threads, threadpool, mutexes...)
 - :heavy_check_mark: vector
 - :x: command line arguments parser
