@@ -4,19 +4,19 @@
 
 #include "libromano/str.h"
 
-#include <string.h>
+#include <data.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define GET_STR_PTR(ptr) ((char*)ptr + sizeof(size_t))
 #define GET_RAW_PTR(ptr) ((char*)ptr - sizeof(size_t))
 
-str str_new(const char* string)
+str str_new(const char* data)
 {
     size_t length;
     char* str_ptr;
     
-    length = strlen(string);
+    length = strlen(data);
 
     str_ptr = (char*)malloc(length + 1 + sizeof(size_t));
 
@@ -24,7 +24,7 @@ str str_new(const char* string)
 
     *(size_t*)str_ptr = length;
 
-    memcpy(GET_STR_PTR(str_ptr), string, length + 1);
+    memcpy(GET_STR_PTR(str_ptr), data, length + 1);
 
     return GET_STR_PTR(str_ptr);
 }
@@ -34,21 +34,21 @@ str str_new_fmt(const char* format, ...)
     return NULL;
 }
 
-void str_free(str string)
+void str_free(str data)
 {
-    if(string != NULL)
+    if(data != NULL)
     {
-        free(GET_RAW_PTR(string));
-        string = NULL;
+        free(GET_RAW_PTR(data));
+        data = NULL;
     }
 }
 
-size_t str_length(str string)
+size_t str_length(str data)
 {
-    return (size_t)*GET_RAW_PTR(string);
+    return (size_t)*GET_RAW_PTR(data);
 }
 
-str* str_split(char* string, const char* separator, uint32_t* count)
+str* str_split(char* data, const char* separator, uint32_t* count)
 {
     size_t i;
     str* result;
@@ -56,15 +56,15 @@ str* str_split(char* string, const char* separator, uint32_t* count)
     
     *count = 0;
 
-    for(i = 0; i < strlen(string); i++)
+    for(i = 0; i < strlen(data); i++)
     {
-        if(string[i] == (char)separator[0]) (*count)++;
+        if(data[i] == (char)separator[0]) (*count)++;
     }
 
     (*count)++;
 
     result = malloc(*count * sizeof(str));
-    token = strtok(string, separator);
+    token = strtok(data, separator);
 
     i = 0;
 
