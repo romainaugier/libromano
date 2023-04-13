@@ -16,7 +16,7 @@ ROMANO_CPP_ENTER
 #include <WinSock2.h>
 #pragma warning(default:4820)
 typedef SOCKET socket_t;
-#elif definded(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX)
 typedef int socket_t;
 #endif /* defined(ROMANO_WIN) */
 
