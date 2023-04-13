@@ -55,7 +55,7 @@ ROMANO_API void vector_shrink_to_fit(vector* vector);
 /* Frees the given vector and releases it */
 ROMANO_API void vector_free(vector vector);
 
-#if defined(__LIBROMANO_VECTOR_IMPL)
+#if !defined(__LIBROMANO_VECTOR_IMPL)
 #undef GET_VEC_PTR
 #undef GET_RAW_PTR
 
