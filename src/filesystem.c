@@ -55,7 +55,7 @@ void fs_parent_dir(const char* path,
     assert(out_path != NULL);
 
 #if defined(ROMANO_WIN)
-    MultiByteToWideChar(CP_UTF8, 0, path, strlen(path), w_path, MAX_PATH);
+    MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), w_path, MAX_PATH);
     w_path[MAX_PATH - 1] = L'\0';
 
     PathCchRemoveFileSpec(w_path, MAX_PATH);

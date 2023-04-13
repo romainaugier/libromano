@@ -40,7 +40,7 @@ void logger_init(void)
     _logger_initialized = 1;
 }
 
-void logger_set_level(log_level level)
+void logger_set_level(const log_level level)
 {
     _log_level = level;
 }
@@ -68,7 +68,7 @@ void logger_disable_file(void)
     _log_mode &= LogMode_File;
 }
 
-void logger_log(log_level level, const char* format, ...)
+void logger_log(const log_level level, const char* format, ...)
 {
     assert(_logger_initialized);
 

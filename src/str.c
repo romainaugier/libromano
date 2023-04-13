@@ -43,7 +43,7 @@ void str_free(str data)
     }
 }
 
-size_t str_length(str data)
+size_t str_length(const str data)
 {
     return (size_t)*GET_RAW_PTR(data);
 }

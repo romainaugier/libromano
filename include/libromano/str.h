@@ -21,7 +21,7 @@ ROMANO_API str str_new_fmt(const char* format, ...);
 ROMANO_API void str_free(str data);
 
 /* Returns the length of the data */
-ROMANO_API size_t str_length(str data);
+ROMANO_API size_t str_length(const str data);
 
 /* Splits a data into multiple ones and returns a pointer to the list of datas */
 ROMANO_API str* str_split(char* data, const char* separator, uint32_t* count);

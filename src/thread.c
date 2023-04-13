@@ -234,7 +234,7 @@ void thread_start(thread* thread)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void thread_sleep(int sleep_duration_ms)
+void thread_sleep(const int sleep_duration_ms)
 {
 #if defined(ROMANO_WIN)
     Sleep((DWORD)sleep_duration_ms);

@@ -76,7 +76,7 @@ ROMANO_API thread* thread_create(thread_func func, void* arg);
 ROMANO_API void thread_start(thread* thread);
 
 /* Sleeps for x milliseconds */
-ROMANO_API void thread_sleep(int sleep_duration_ms);
+ROMANO_API void thread_sleep(const int sleep_duration_ms);
 
 /* Returns the current thread id */
 ROMANO_API size_t thread_get_id(void);

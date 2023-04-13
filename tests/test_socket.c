@@ -6,23 +6,24 @@
 #include "libromano/logger.h"
 #include "libromano/hash.h"
 #include "libromano/str.h"
+#include "libromano/thread.h"
 
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
 #define PASSWORD_HASH 1785690117
 #define ROMANO_TEST_SOCKET_SERVER 0
+#define PORT 45667
 
-int main(int argc, char** argv)
+void socket_loop(void)
 {
-#if ROMANO_TEST_SOCKET_SERVER
-    socket_init();
+    socket_init_ctx();
     
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    socket_t sock = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(sock == INVALID_SOCKET)
     {
         logger_log(LogLevel_Fatal, "Cannot create socket (%d)", GetLastError());
-        socket_release();
+        socket_release_ctx();
         return 1;
     }
 
@@ -35,7 +36,7 @@ int main(int argc, char** argv)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", GetLastError());
         closesocket(sock);
-        socket_release();
+        socket_release_ctx();
         return 1;
     }
 
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     {
         logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", GetLastError());
         closesocket(sock);
-        socket_release();
+        socket_release_ctx();
         return 1;
     }
 
@@ -97,8 +98,6 @@ int main(int argc, char** argv)
                         logger_log(LogLevel_Info, "Command returned : %d", return_code);
                     }
 
-                    size_t i;
-                    
                     for(i = 0; i < count; i++)
                     {
                         str_free(buffer_split[i]);
@@ -123,6 +122,15 @@ int main(int argc, char** argv)
     }
 
     closesocket(sock);
+}
+
+int main(int argc, char** argv)
+{
+#if ROMANO_TEST_SOCKET_SERVER
+    thread t = thread_create(socket_loop, NULL);
+    thread_start(&t);
+
+    thread_join(&t);
 #endif //defined(ROMANO_TEST_SOCKET_SERVER)
     return 0;
 }

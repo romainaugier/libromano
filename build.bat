@@ -38,7 +38,7 @@ if %errorlevel% neq 0 (
 )
 
 cd build
-cmake --build . --config %BUILDTYPE%
+cmake --build . --config %BUILDTYPE% -j %NUMBER_OF_PROCESSORS%
 
 if %errorlevel% neq 0 (
     echo Error catched during compilation

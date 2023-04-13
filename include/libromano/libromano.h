@@ -9,6 +9,7 @@
 
 #if defined(_MSC_VER)
 #define ROMANO_MSVC
+#pragma warning(disable:4711) /* function selected for automatic inline expansion */
 #elif defined(__GNUC__)
 #define ROMANO_GCC
 #elif defined(__clang__)

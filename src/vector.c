@@ -2,24 +2,18 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#define __LIBROMANO_VECTOR_IMPL
+
 #include "libromano/vector.h"
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <math.h>
 #include <string.h>
 
 #define GOLDEN_RATIO 1.61f
 
-#define GET_VEC_PTR(ptr) ((char*)(ptr) + 3 * sizeof(size_t))
-#define GET_RAW_PTR(ptr) ((char*)(ptr) - 3 * sizeof(size_t))
-
-#define GET_SIZE(ptr) ((size_t*)GET_RAW_PTR(ptr))[0]
-#define GET_CAPACITY(ptr) ((size_t*)GET_RAW_PTR(ptr))[1]
-#define GET_ELEMENT_SIZE(ptr) ((size_t*)GET_RAW_PTR(ptr))[2]
-
-vector vector_new(size_t initial_capacity, size_t element_size)
+vector vector_new(size_t initial_capacity, const size_t element_size)
 {
     vector new_vector;
 
@@ -34,28 +28,7 @@ vector vector_new(size_t initial_capacity, size_t element_size)
     return GET_VEC_PTR(new_vector);
 }
 
-size_t vector_size(vector vector)
-{
-    assert(vector != NULL);
-
-    return GET_SIZE(vector);
-}
-
-size_t vector_capacity(vector vector)
-{
-    assert(vector != NULL);
-
-    return GET_CAPACITY(vector);
-}
-
-size_t vector_element_size(vector vector)
-{
-    assert(vector != NULL);
-
-    return GET_ELEMENT_SIZE(vector);
-}
-
-void vector_resize(vector* vector, size_t new_capacity)
+void vector_resize(vector* vector, const size_t new_capacity)
 {
     size_t old_capacity;
     size_t element_size;
@@ -116,7 +89,7 @@ void vector_push_back(vector* vector, void* element)
     GET_SIZE(*vector) = vec_size + 1;
 }
 
-void vector_insert(vector* vector, void* element, size_t position)
+void vector_insert(vector* vector, void* element, const size_t position)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -143,7 +116,7 @@ void vector_insert(vector* vector, void* element, size_t position)
     GET_SIZE(*vector) = vec_size + 1;
 }
 
-void vector_remove(vector* vector, size_t position)
+void vector_remove(vector* vector, const size_t position)
 {
     size_t vec_size;
     size_t elem_size;
@@ -160,7 +133,7 @@ void vector_remove(vector* vector, size_t position)
     GET_SIZE(*vector) = vec_size - 1;
 }
 
-void* vector_at(vector vector, size_t index)
+void* vector_at(vector vector, const size_t index)
 {
     size_t element_size;
     

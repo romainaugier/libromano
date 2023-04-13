@@ -11,11 +11,29 @@
 
 ROMANO_CPP_ENTER
 
+#if defined(ROMANO_WIN)
+#pragma warning(disable:4820)
+#include <WinSock2.h>
+#pragma warning(default:4820)
+typedef SOCKET socket_t;
+#elif definded(ROMANO_LINUX)
+typedef int socket_t;
+#endif /* defined(ROMANO_WIN) */
+
 /* Initialize the socket context */
-ROMANO_API void socket_init(void);
+ROMANO_API void socket_init_ctx(void);
+
+/* Creates a new socket */
+ROMANO_API socket_t socket_create(int af, int type, int protocol);
+
+/* Sets the timeout in milliseconds on the given socket */
+ROMANO_API void socket_set_timeout(socket_t socket, unsigned int timeout);
+
+/* Deletes the given socket */
+ROMANO_API void socket_destroy(socket_t socket);
 
 /* Release the socket context */
-ROMANO_API void socket_release(void);
+ROMANO_API void socket_release_ctx(void);
 
 ROMANO_CPP_END
 

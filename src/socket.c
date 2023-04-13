@@ -5,8 +5,9 @@
 #include "libromano/socket.h"
 #include "libromano/logger.h"
 
+#include <stdlib.h>
+
 #if defined(ROMANO_WIN)
-#include <WinSock2.h>
 #elif defined(ROMANO_LINUX)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -27,7 +28,7 @@ typedef struct in_addr IN_ADDR;
 #warning Sockets not defined on this platform
 #endif /* defined(ROMANO_WIN) */
 
-void socket_init(void)
+void socket_init_ctx(void)
 {
 #if defined(ROMANO_WIN)
     /* Used to call WS2_32.dll */
@@ -46,7 +47,26 @@ void socket_init(void)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void socket_release(void)
+socket_t socket_create(int af, int type, int protocol)
+{
+    return socket(af, type, protocol);
+}
+
+void socket_set_timeout(socket_t socket, unsigned int timeout)
+{
+    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+}
+
+void socket_destroy(socket_t socket)
+{
+#if defined(ROMANO_WIN)
+    closesocket(socket);
+#elif defined(ROMANO_LINUX)
+    close(socket);
+#endif /* defined(ROMANO_WIN) */
+}
+
+void socket_release_ctx(void)
 {
 #if defined(ROMANO_WIN)
     int result = WSACleanup();
