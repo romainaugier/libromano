@@ -64,7 +64,7 @@
 #if defined(ROMANO_WIN)
 #define ROMANO_FORCE_INLINE __forceinline
 #elif defined(ROMANO_GCC)
-#define ROMANO_FORCE_INLINE __attribute__((always_inline)) 
+#define ROMANO_FORCE_INLINE inline __attribute__((always_inline)) 
 #elif defined(ROMANO_CLANG)
 #define ROMANO_FORCE_INLINE __attribute__((always_inline))
 #endif /* defined(ROMANO_WIN) */
