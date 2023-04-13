@@ -8,6 +8,8 @@
 #include "libromano/str.h"
 #include "libromano/thread.h"
 
+#include <stdlib.h>
+
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
 #define PASSWORD_HASH 1785690117
@@ -24,7 +26,7 @@ void socket_loop(void)
     {
         logger_log(LogLevel_Fatal, "Cannot create socket (%d)", GetLastError());
         socket_release_ctx();
-        return 1;
+        return;
     }
 
     SOCKADDR_IN server = { 0 };
@@ -37,7 +39,7 @@ void socket_loop(void)
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", GetLastError());
         closesocket(sock);
         socket_release_ctx();
-        return 1;
+        return;
     }
 
     if(listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
@@ -45,7 +47,7 @@ void socket_loop(void)
         logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", GetLastError());
         closesocket(sock);
         socket_release_ctx();
-        return 1;
+        return;
     }
 
     uint32_t end_server = 0;
