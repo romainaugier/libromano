@@ -16,8 +16,25 @@ ROMANO_CPP_ENTER
 #include <WinSock2.h>
 #pragma warning(default:4820)
 typedef SOCKET socket_t;
+typedef SOCKADDR_IN sockaddr_in_t;
+typedef SOCKADDR sockaddr_t;
+typedef IN_ADDR inaddr_t;
 #elif defined(ROMANO_LINUX)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h> /* close */
+#include <netdb.h>  /* gethostbyname */
+
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket(s) close(s)
+
 typedef int socket_t;
+typedef struct sockaddr_in sockaddr_in_t;
+typedef struct sockaddr sockaddr_t;
+typedef struct in_addr inaddr_t;
 #endif /* defined(ROMANO_WIN) */
 
 /* Initialize the socket context */
