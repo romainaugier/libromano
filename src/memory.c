@@ -36,7 +36,7 @@ void debug_free_override(void* ptr,
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
-void memswap(void *m1, void *m2, size_t n)
+void memswap(void *m1, void *m2, const size_t n)
 {
     char*  p     = m1;
     char*  p_end = p + n;
