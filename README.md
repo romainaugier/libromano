@@ -41,3 +41,21 @@ Roadmap (C++ Bindings) :
 - :x: memory
 - :x: finance
 - :x: optimization
+
+Roadmap (Python Bindings) :
+- :x: string
+- :x: stringview
+- :x: thread
+- :x: vector
+- :x: command line arguments parser
+- :x: json
+- :x: hashmap
+- :x: logger
+- :x: socket
+- :x: maths
+- :x: linear algebra
+- :x: filesystem
+- :x: hash
+- :x: memory
+- :x: finance
+- :x: optimization
