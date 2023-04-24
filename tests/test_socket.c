@@ -10,6 +10,7 @@
 #include "libromano/error.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_CONNECTIONS 5
 #define RECEPTION_BUFFER_SIZE 1024
@@ -30,12 +31,12 @@ void socket_loop(void)
         return;
     }
 
-    SOCKADDR_IN server = { 0 };
+    sockaddr_in_t server = { 0 };
     server.sin_family = AF_INET;
     server.sin_port = htons(45666);
     server.sin_addr.s_addr = INADDR_ANY;
 
-    if(bind(sock, (SOCKADDR*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(bind(sock, (sockaddr_t*)&server, sizeof(server)) == SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", get_last_error());
         closesocket(sock);
