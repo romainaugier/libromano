@@ -54,7 +54,7 @@ void socket_loop(void)
 
     while(end_server == 0)
     {
-        SOCKET new_connection = accept(sock, NULL, NULL);
+        socket_t new_connection = accept(sock, NULL, NULL);
 
         if(new_connection == INVALID_SOCKET)
         {
