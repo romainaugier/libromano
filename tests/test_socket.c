@@ -7,6 +7,7 @@
 #include "libromano/hash.h"
 #include "libromano/str.h"
 #include "libromano/thread.h"
+#include "libromano/error.h"
 
 #include <stdlib.h>
 
@@ -24,7 +25,7 @@ void socket_loop(void)
 
     if(sock == INVALID_SOCKET)
     {
-        logger_log(LogLevel_Fatal, "Cannot create socket (%d)", GetLastError());
+        logger_log(LogLevel_Fatal, "Cannot create socket (%d)", get_last_error());
         socket_release_ctx();
         return;
     }
@@ -36,7 +37,7 @@ void socket_loop(void)
 
     if(bind(sock, (SOCKADDR*)&server, sizeof(server)) == SOCKET_ERROR)
     {
-        logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", GetLastError());
+        logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", get_last_error());
         closesocket(sock);
         socket_release_ctx();
         return;
@@ -44,7 +45,7 @@ void socket_loop(void)
 
     if(listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
     {
-        logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", GetLastError());
+        logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", get_last_error());
         closesocket(sock);
         socket_release_ctx();
         return;
@@ -58,7 +59,7 @@ void socket_loop(void)
 
         if(new_connection == INVALID_SOCKET)
         {
-            logger_log(LogLevel_Error, "Cannot accept socket (%d)", GetLastError());
+            logger_log(LogLevel_Error, "Cannot accept socket (%d)", get_last_error());
             continue;
         }
 
@@ -115,7 +116,7 @@ void socket_loop(void)
             }
             else
             {
-                logger_log(LogLevel_Error, "Failed to receive data (%d)", GetLastError());
+                logger_log(LogLevel_Error, "Failed to receive data (%d)", get_last_error());
                 break;
             }
         }
