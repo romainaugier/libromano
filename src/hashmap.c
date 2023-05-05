@@ -58,6 +58,13 @@ void hashmap_insert(hashmap* hashmap,
 {
 }
 
+void hashmap_update(hashmap *hashmap,
+                    const char *key,
+                    void *value,
+                    size_t value_size)
+{
+}
+
 void* hashmap_get(hashmap* hashmap,
                   const char* key)
 {

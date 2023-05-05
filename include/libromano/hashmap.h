@@ -21,6 +21,11 @@ ROMANO_API void hashmap_insert(hashmap* hashmap,
                                void* value, 
                                size_t value_size);
 
+ROMANO_API void hashmap_update(hashmap* hashmap,
+                               const char* key,
+                               void* value,
+                               size_t value_size);
+
 ROMANO_API void* hashmap_get(hashmap* hashmap, 
                              const char* key);
 
