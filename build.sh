@@ -17,6 +17,8 @@ parse_args()
     [ "$1" == "--tests" ] && RUNTESTS=1
 
     [ "$1" == "--clean" ] && REMOVEOLDDIR=1
+
+    [ "$1" == "--export-compile-commands" ] && EXPORTCOMPILECOMMANDS=1
 }
 
 for arg in "$@"
@@ -30,11 +32,7 @@ if [[ -d "build" && $REMOVEOLDDIR -eq 1 ]]; then
     rm -rf static
 fi
 
-if [[ $RUNTESTS -eq 1 ]]; then
-    cmake -S . -B build -DRUN_TESTS=1 
-else
-    cmake -S . -B build
-fi
+cmake -S . -B build -DRUN_TESTS=$RUNTESTS -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPORTCOMPILECOMMANDS -DCMAKE_BUILD_TYPE=$BUILDTYPE
 
 if [[ $? -ne 0 ]]; then
     echo Error during CMake configuration
@@ -43,7 +41,7 @@ fi
 
 cd build
 
-cmake --build . --config "$BUILDTYPE" 
+cmake --build . -- -j $(nproc)
 
 if [[ $? -ne 0 ]]; then
     echo Error during compilation
@@ -62,3 +60,8 @@ if [[ $RUNTESTS -eq 1 ]]; then
 fi
 
 cd ..
+
+if [[ $EXPORTCOMPILECOMMANDS -eq 1 ]]
+then
+    cp ./build/compile_commands.json ./compile_commands.json
+fi
