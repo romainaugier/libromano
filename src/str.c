@@ -51,14 +51,15 @@ size_t str_length(const str data)
 str* str_split(char* data, const char* separator, uint32_t* count)
 {
     size_t i;
+    char* data_char;
     str* result;
     char* token;
     
     *count = 0;
 
-    for(i = 0; i < strlen(data); i++)
+    for(data_char = data; *data_char != (char)'\0'; data_char++)
     {
-        if(data[i] == (char)separator[0]) (*count)++;
+        if(data_char == (char)separator[0]) (*count)++;
     }
 
     (*count)++;

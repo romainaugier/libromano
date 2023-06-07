@@ -8,8 +8,12 @@ add_definitions(-DROMANO_BUILD_SHARED)
 
 add_library(${PROJECT_NAME} SHARED ${src_files})
 set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 90)
-set_target_properties(${PROJECT_NAME} PROPERTIES CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/static)
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 if(UNIX)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")

@@ -9,6 +9,7 @@ echo Building libromano
 BUILDTYPE="Release"
 RUNTESTS=0
 REMOVEOLDDIR=0
+EXPORTCOMPILECOMMANDS=0
 
 parse_args()
 {

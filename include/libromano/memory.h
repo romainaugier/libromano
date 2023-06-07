@@ -7,8 +7,6 @@
 #if !defined(__LIBROMANO_MEMORY)
 #define __LIBROMANO_MEMORY
 
-#include <stdlib.h>
-
 #include "libromano/libromano.h"
 
 ROMANO_CPP_ENTER

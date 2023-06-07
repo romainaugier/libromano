@@ -4,6 +4,7 @@
 
 #include "libromano/thread.h"
 #include "libromano/logger.h"
+#include "libromano/profiling.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +43,7 @@ void* tpool_func(void* data)
 
     logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), work_id);
 
-    thread_sleep(2000);
+    thread_sleep(1);
     
     return NULL;
 }
@@ -77,7 +78,7 @@ int main(int argc, char** argv)
     {
         work_data[i] = (int)i;
 
-        threadpool_work_add(tp, tpool_func, (void*)&work_data[i]);
+        PROFILE(threadpool_work_add(tp, tpool_func, (void*)&work_data[i]););
     }
 
     logger_log(LogLevel_Info, "Waiting for threadpool to complete work");

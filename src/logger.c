@@ -23,12 +23,12 @@ typedef enum
 } log_mode;
 
 static int _logger_initialized = 0;
-static int _log_level = LogLevel_Info;
+static int _loglevel = LogLevel_Info;
 static int _log_mode = LogMode_Console;
 static const char* _log_file_path = NULL;
 static FILE* _log_file = NULL;
 
-static const char* _levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
+static const char* const levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
 
 void logger_init(void)
 {
@@ -42,7 +42,8 @@ void logger_init(void)
 
 void logger_set_level(const log_level level)
 {
-    _log_level = level;
+    _loglevel = level < 5 ? level : 4;
+
 }
 
 void logger_enable_console(void)
@@ -68,11 +69,13 @@ void logger_disable_file(void)
     _log_mode &= LogMode_File;
 }
 
-void logger_log(const log_level level, const char* format, ...)
+void logger_log(log_level level, const char* format, ...)
 {
     assert(_logger_initialized);
 
-    if(level <= _log_level)
+    level = level < 5 ? level : 4;
+
+    if(level <= _loglevel)
     {
         time_t raw_time;
         struct timeval current_time;
@@ -101,7 +104,7 @@ void logger_log(const log_level level, const char* format, ...)
 
             fprintf(output_stream,
                     "[%s] %02d:%02d:%02d:%03ld : %s\n", 
-                    _levels_as_str[level],
+                    levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
                     local_time->tm_sec,
@@ -117,7 +120,7 @@ void logger_log(const log_level level, const char* format, ...)
 
             fprintf(_log_file,
                     "[%s] %02d:%02d:%02d:%03ld : %s\n",
-                    _levels_as_str[level],
+                    levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
                     local_time->tm_sec,

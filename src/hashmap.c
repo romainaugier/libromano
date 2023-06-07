@@ -68,6 +68,7 @@ void hashmap_update(hashmap *hashmap,
 void* hashmap_get(hashmap* hashmap,
                   const char* key)
 {
+    return NULL;
 }
 
 void hashmap_free(hashmap* hashmap)

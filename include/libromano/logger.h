@@ -42,7 +42,7 @@ ROMANO_API void logger_enable_file(const char* file_path);
 ROMANO_API void logger_disable_file(void);
 
 /* Logs a message */
-ROMANO_API void logger_log(const log_level level, const char* format, ...);
+ROMANO_API void logger_log(log_level level, const char* format, ...);
 
 /* Releases the logger */
 ROMANO_API void logger_release(void);

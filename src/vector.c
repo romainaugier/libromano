@@ -40,7 +40,7 @@ void vector_resize(vector* vector, const size_t new_capacity)
     old_capacity = vector_capacity(*vector);
     element_size = vector_element_size(*vector);
     
-    if(new_capacity <= old_capacity)
+    if(new_capacity == 0 || new_capacity <= old_capacity)
     {
         return;
     }

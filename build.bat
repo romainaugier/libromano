@@ -6,7 +6,7 @@ rem All rights reserved.
 
 rem Little utility batch script to build the library
 
-echo Building libromano
+call :LogInfo "Building libromano"
 
 set BUILDTYPE=Release
 set RUNTESTS=0
@@ -19,7 +19,7 @@ for %%x in (%*) do (
 
 if %REMOVEOLDDIR% equ 1 (
     if EXIST build (
-        echo Removing old build directory
+        call :LogInfo "Removing old build directory"
         rmdir /s /q build
         rmdir /s /q bin
         rmdir /s /q static
@@ -28,12 +28,12 @@ if %REMOVEOLDDIR% equ 1 (
 
 if not EXIST bin mkdir bin
 
-echo Build type : %BUILDTYPE%
+call :LogInfo "Build type : %BUILDTYPE%"
 
-cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%"
+cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" 
 
 if %errorlevel% neq 0 (
-    echo Error catched during CMake configuration
+    call :LogError "Error catched during CMake configuration"
     exit /B 1
 )
 
@@ -41,7 +41,7 @@ cd build
 cmake --build . --config %BUILDTYPE% -j %NUMBER_OF_PROCESSORS%
 
 if %errorlevel% neq 0 (
-    echo Error catched during compilation
+    call :LogError "Error catched during compilation"
     cd ..
     exit /B 1
 )
@@ -50,7 +50,7 @@ if %RUNTESTS% equ 1 (
     ctest --output-on-failure
 
     if %errorlevel% neq 0 (
-        echo Error catched during testing
+        call :LogError "Error catched during testing"
         type build\Testing\Temporary\LastTest.log
 
         cd ..
@@ -72,6 +72,10 @@ if "%~1" equ "--tests" set RUNTESTS=1
 
 if "%~1" equ "--clean" set REMOVEOLDDIR=1
 
+if "%~1" equ "--export-compile-commands" (
+    call :LogWarning "Exporting compile commands is not supported on Windows for now"
+)
+
 exit /B 0
 
 rem //////////////////////////////////
@@ -84,6 +88,33 @@ if %errorlevel% neq 0 (
     echo %~1
     exit /B 1
 )
+
+exit /B 0
+rem //////////////////////////////////
+
+rem //////////////////////////////////
+rem Little function to log errors
+:LogError
+
+echo [ERROR] : %~1
+
+exit /B 0
+rem //////////////////////////////////
+
+rem //////////////////////////////////
+rem Little function to log warnings 
+:LogWarning
+
+echo [WARNING] : %~1
+
+exit /B 0
+rem //////////////////////////////////
+
+rem //////////////////////////////////
+rem Little function to log infos 
+:LogInfo
+
+echo [INFO] : %~1
 
 exit /B 0
 rem //////////////////////////////////
