@@ -59,7 +59,7 @@ str* str_split(char* data, const char* separator, uint32_t* count)
 
     for(data_char = data; *data_char != (char)'\0'; data_char++)
     {
-        if(data_char == (char)separator[0]) (*count)++;
+        if(*data_char == (char)separator[0]) (*count)++;
     }
 
     (*count)++;
