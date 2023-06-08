@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #if !defined(ROMANO_SOCKET_SERVER_LOG_BUFFER_SIZE)
 #define ROMANO_SOCKET_SERVER_LOG_BUFFER_SIZE 1024
@@ -90,7 +91,7 @@ void socket_server_log(socket_server_t* socket_server,
     }
 }
 
-void socket_server_main_loop(socket_server_t* socket_server)
+void socket_server_main_loop(void* _socket_server)
 {
     socket_t sock;
     sockaddr_in_t server;
@@ -111,6 +112,8 @@ void socket_server_main_loop(socket_server_t* socket_server)
     int32_t sent_data_size;
 
     size_t i;
+
+    socket_server_t* socket_server = (socket_server_t*)_socket_server;
     
     assert(socket_server != NULL);
     
