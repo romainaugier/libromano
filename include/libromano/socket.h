@@ -32,6 +32,7 @@ typedef FD_SET fd_set_t;
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
 #define closesocket(s) close(s)
+#define FD_SEND SHUT_WR
 
 typedef int socket_t;
 typedef struct sockaddr_in sockaddr_in_t;

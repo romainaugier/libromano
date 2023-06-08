@@ -8,6 +8,7 @@
 #include "libromano/socket.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define CLIENT_MSG_SIZE 512
 #define CLIENT_BUFFER_SIZE 32
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
         client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
         client_addr.sin_port = htons(50111);
 
-        client_result = connect(client_socket, (sockaddr_in_t*)&client_addr, sizeof(client_addr));
+        client_result = connect(client_socket, (sockaddr_t*)&client_addr, sizeof(client_addr));
 
         if(client_result == SOCKET_ERROR)
         {
