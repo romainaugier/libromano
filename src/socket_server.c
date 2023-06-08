@@ -278,7 +278,7 @@ ROMANO_API void socket_server_start(socket_server_t* socket_server)
     socket_server->m_mutex = mutex_new();
     mutex_init(socket_server->m_mutex);
 
-    socket_server->m_thread = thread_create(socket_server_main_loop, socket_server);
+    socket_server->m_thread = thread_create(socket_server_main_loop, (void*)socket_server);
 
     socket_server_log(socket_server, 0, "Starting socket server");
 
