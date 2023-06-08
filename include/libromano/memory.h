@@ -43,4 +43,3 @@ ROMANO_API void memswap(void *m1, void *m2, const size_t n);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_MEMORY) */
-

@@ -50,4 +50,3 @@ ROMANO_API void logger_release(void);
 ROMANO_CPP_END
 
 #endif /* __LIBROMANO_LOGGER */
-

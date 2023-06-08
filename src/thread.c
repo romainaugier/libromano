@@ -29,9 +29,9 @@ size_t get_num_procs(void)
 #endif
 }
 
-mutex* mutex_new(void)
+mutex_t* mutex_new(void)
 {
-    mutex* new_mutex = malloc(sizeof(mutex));
+    mutex_t* new_mutex = malloc(sizeof(mutex_t));
 
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(new_mutex);
@@ -42,7 +42,7 @@ mutex* mutex_new(void)
     return new_mutex;
 }
 
-void mutex_init(mutex* mutex)
+void mutex_init(mutex_t* mutex)
 {
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(mutex);
@@ -52,7 +52,7 @@ void mutex_init(mutex* mutex)
 }
 
 
-void mutex_lock(mutex* mutex)
+void mutex_lock(mutex_t* mutex)
 {
     assert(mutex != NULL);
 
@@ -63,7 +63,7 @@ void mutex_lock(mutex* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_unlock(mutex* mutex)
+void mutex_unlock(mutex_t* mutex)
 {
     assert(mutex != NULL);
 
@@ -74,7 +74,7 @@ void mutex_unlock(mutex* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_release(mutex* mutex)
+void mutex_release(mutex_t* mutex)
 {
     assert(mutex != NULL);
 
@@ -85,7 +85,7 @@ void mutex_release(mutex* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_free(mutex* mutex)
+void mutex_free(mutex_t* mutex)
 {
     assert(mutex != NULL);
 
@@ -122,7 +122,7 @@ void conditional_variable_init(conditional_variable* cond_var)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void conditional_variable_wait(conditional_variable* cond_var, mutex* mtx, uint32_t wait_duration_ms)
+void conditional_variable_wait(conditional_variable* cond_var, mutex_t* mtx, uint32_t wait_duration_ms)
 {
     assert(cond_var != NULL && mtx != NULL);
 
@@ -190,7 +190,7 @@ void conditional_variable_free(conditional_variable* cond_var)
     free(cond_var);
 }
 
-struct _thread {
+struct thread {
     thread_handle _thread_handle;
     thread_id _id;
 #if defined(ROMANO_LINUX)
@@ -199,11 +199,11 @@ struct _thread {
 #endif /* defined(ROMANO_LINUX) */
 };
 
-thread* thread_create(thread_func func, void* arg)
+thread_t* thread_create(thread_func func, void* arg)
 {
-    thread* new_thread = (thread*)malloc(sizeof(thread));
+    thread_t* new_thread = (thread_t*)malloc(sizeof(thread_t));
 
-    memset(new_thread, 0, sizeof(thread));
+    memset(new_thread, 0, sizeof(thread_t));
 
 #if defined(ROMANO_WIN)
     new_thread->_thread_handle = CreateThread(NULL,
@@ -220,7 +220,7 @@ thread* thread_create(thread_func func, void* arg)
     return new_thread;
 }
 
-void thread_start(thread* thread)
+void thread_start(thread_t* thread)
 {
     assert(thread != NULL);
 
@@ -256,7 +256,7 @@ size_t thread_get_id(void)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void thread_detach(thread* thread)
+void thread_detach(thread_t* thread)
 {
     assert(thread != NULL);
 
@@ -269,7 +269,7 @@ void thread_detach(thread* thread)
     free(thread);
 }
 
-void thread_join(thread* thread)
+void thread_join(thread_t* thread)
 {
     if(thread == NULL)
     {
@@ -295,12 +295,12 @@ struct _work
 
 typedef struct _work work;
 
-struct _threadpool
+struct threadpool
 {
     work* first;
     work* last;
     
-    mutex work_mutex;
+    mutex_t work_mutex;
     
     conditional_variable work_cond_var;
     conditional_variable working_cond_var;
@@ -333,7 +333,7 @@ void threadpool_work_free(work* work)
     free(work);
 }
 
-work* threadpool_work_get(threadpool* threadpool)
+work* threadpool_work_get(threadpool_t* threadpool)
 {
     work* work;
     
@@ -361,7 +361,7 @@ work* threadpool_work_get(threadpool* threadpool)
 
 void* threadpool_worker_func(void* arg)
 {
-    threadpool* threadpool = arg;
+    threadpool_t* threadpool = arg;
     work* work = NULL;
 
     while(1)
@@ -410,14 +410,14 @@ void* threadpool_worker_func(void* arg)
     return NULL;
 }
 
-threadpool* threadpool_init(size_t workers_count)
+threadpool_t* threadpool_init(size_t workers_count)
 {
-    threadpool* threadpool;
+    threadpool_t* threadpool;
     size_t i;
     
     workers_count = workers_count == 0 ? get_num_procs() : workers_count;
     
-    threadpool = malloc(sizeof(struct _threadpool));
+    threadpool = malloc(sizeof(struct threadpool));
 
     threadpool->workers_count = workers_count;
     threadpool->working_count = 0;
@@ -433,7 +433,7 @@ threadpool* threadpool_init(size_t workers_count)
 
     for(i = 0; i < workers_count; i++)
     {
-        thread* new_thread;
+        thread_t* new_thread;
         
         new_thread = thread_create(threadpool_worker_func, (void*)threadpool);
         
@@ -444,7 +444,7 @@ threadpool* threadpool_init(size_t workers_count)
     return threadpool;
 }
 
-int threadpool_work_add(threadpool* threadpool, thread_func func, void* arg)
+int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 {
     work* work;
 
@@ -476,7 +476,7 @@ int threadpool_work_add(threadpool* threadpool, thread_func func, void* arg)
     return 1;
 }
 
-void threadpool_wait(threadpool* threadpool)
+void threadpool_wait(threadpool_t* threadpool)
 {
     assert(threadpool != NULL);
 
@@ -497,7 +497,7 @@ void threadpool_wait(threadpool* threadpool)
     mutex_unlock(&(threadpool->work_mutex));
 }
 
-void threadpool_release(threadpool* threadpool)
+void threadpool_release(threadpool_t* threadpool)
 {
     work* work1;
     work* work2;

@@ -33,7 +33,7 @@ call :LogInfo "Build type : %BUILDTYPE%"
 cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" 
 
 if %errorlevel% neq 0 (
-    call :LogError "Error catched during CMake configuration"
+    call :LogError "Error caught during CMake configuration"
     exit /B 1
 )
 
@@ -41,7 +41,7 @@ cd build
 cmake --build . --config %BUILDTYPE% -j %NUMBER_OF_PROCESSORS%
 
 if %errorlevel% neq 0 (
-    call :LogError "Error catched during compilation"
+    call :LogError "Error caught during compilation"
     cd ..
     exit /B 1
 )
@@ -50,7 +50,7 @@ if %RUNTESTS% equ 1 (
     ctest --output-on-failure
 
     if %errorlevel% neq 0 (
-        call :LogError "Error catched during testing"
+        call :LogError "Error caught during testing"
         type build\Testing\Temporary\LastTest.log
 
         cd ..

@@ -10,7 +10,7 @@
 typedef uint32_t flag32;
 typedef uint64_t flag64;
 
-#define FLAG_BIT(bit) 1 << bit
+#define BIT_FLAG(bit) 1 << bit
 
 #define HAS_FLAG(flag, bit) flag & bit
 
@@ -19,4 +19,3 @@ typedef uint64_t flag64;
 #define UNSET_FLAG(flag, bit) flag &= ~bit
 
 #endif  /* !defined(__LIBROMANOFLAG) */
-

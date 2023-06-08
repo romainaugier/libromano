@@ -98,4 +98,3 @@
 #define ROMANO_NOT_IMPLEMENTED "Function "ROMANO_FUNCTION" not implemented" 
 
 #endif /* !defined(__LIBROMANO) */
-

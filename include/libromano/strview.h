@@ -27,4 +27,3 @@ ROMANO_API strview strview_trim(const char* data);
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_STRVIEW) */
-

@@ -55,8 +55,8 @@ int main(int argc, char** argv)
     logger_init();
 
     logger_log(LogLevel_Info, "Creating threads");
-    thread* t1 = thread_create(t1_func, NULL);
-    thread* t2 = thread_create(t2_func, NULL);
+    thread_t* t1 = thread_create(t1_func, NULL);
+    thread_t* t2 = thread_create(t2_func, NULL);
 
     logger_log(LogLevel_Info, "Starting threads");
     thread_start(t1);
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
     logger_log(LogLevel_Info, "Initializing threadpool");
     
-    threadpool* tp = threadpool_init(0);
+    threadpool_t* tp = threadpool_init(0);
 
     int* work_data = malloc(sizeof(int) * WORK_COUNT);
 

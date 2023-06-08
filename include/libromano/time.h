@@ -19,15 +19,33 @@ struct timezone {
     int tz_dsttime;
 };   
 
+typedef struct timezone timezone_t;
+
+#if !defined(ROMANO_HAS_WINSOCK)
+
 struct timeval {
     time_t tv_sec;
     long tv_usec;
 };
 
-ROMANO_API void gettimeofday(struct timeval* tv, struct timezone *tz);
+typedef struct timeval timeval_t;
+
+#else
+
+typedef TIMEVAL timeval_t;
+
+#endif /* defined(TIMEVAL) */
+
+ROMANO_API void gettimeofday(timeval_t* tv, timezone_t* tz);
+
+#elif defined(ROMANO_LINUX)
+#include <sys/time.h>
+
+typedef struct timezone timezone_t;
+typedef struct timeval timeval_t;
+
 #endif /* defined(ROMANO_WIN) */
 
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_TIME) */
-

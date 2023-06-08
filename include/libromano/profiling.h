@@ -2,6 +2,9 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#if !defined(__LIBROMANO_PROFILING)
+#define __LIBROMANO_PROFILING
+
 #include "libromano/libromano.h"
 
 #if defined(ROMANO_MSVC)
@@ -25,5 +28,6 @@ ROMANO_CPP_ENTER
 
 #endif /* defined(ROMANO_ENABLE_PROFILING) */
 
-
 ROMANO_CPP_END
+
+#endif /* __LIBROMANO_PROFILING */
