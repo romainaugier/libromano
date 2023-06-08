@@ -15,6 +15,7 @@ Roadmap (C library) :
 - :clock3: hashmap
 - :heavy_check_mark: logger
 - :clock3: socket (sockets and websockets)
+- :heavy_check_mark: socket server
 - :x: maths (float optimized maths library)
 - :x: linear algebra (float optimized linear algebra library)
 - :x: stats (float optimized statistics maths library)
@@ -34,6 +35,7 @@ Roadmap (C++ Bindings) :
 - :x: hashmap
 - :x: logger
 - :x: socket
+- :x: socket server
 - :x: maths
 - :x: linear algebra
 - :x: filesystem
@@ -52,6 +54,7 @@ Roadmap (Python Bindings) :
 - :x: hashmap
 - :x: logger
 - :x: socket
+- :x: socket server
 - :x: maths
 - :x: linear algebra
 - :x: filesystem
