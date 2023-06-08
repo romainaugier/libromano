@@ -318,9 +318,11 @@ ROMANO_API void socket_server_push_callback(socket_server_t* socket_server,
 
 ROMANO_API int32_t socket_server_get_last_error(socket_server_t* socket_server)
 {
+    int32_t error;
+
     assert(socket_server != NULL);
 
-    int32_t error = socket_server->m_error;
+    error = socket_server->m_error;
     socket_server->m_error = 0;
     return error;
 }
