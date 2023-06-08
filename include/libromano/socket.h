@@ -49,7 +49,7 @@ ROMANO_API socket_t socket_create(int af, int type, int protocol);
 /* Sets the timeout in milliseconds on the given socket */
 ROMANO_API void socket_set_timeout(socket_t socket, unsigned int timeout);
 
-ROMANO_FORCE_INLINE int32_t socket_get_error(void) 
+ROMANO_FORCE_INLINE static int32_t socket_get_error(void) 
 {  
 #if defined(ROMANO_WIN)
     return WSAGetLastError();

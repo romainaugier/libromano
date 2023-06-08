@@ -122,7 +122,7 @@ void* socket_server_main_loop(void* _socket_server)
     if(sock == INVALID_SOCKET)
     {
         socket_server_log(socket_server, socket_get_error(), "Error during socket creation");
-        return;
+        return NULL;
     }
 
     socket_server_log(socket_server, 0, "Server socket created");
@@ -140,7 +140,7 @@ void* socket_server_main_loop(void* _socket_server)
     {
         socket_destroy(sock);
         socket_server_log(socket_server, socket_get_error(), "Error during socket binding");
-        return;
+        return NULL;
     }
 
     socket_server_log(socket_server, 0, "Server socket bound to port");
@@ -149,7 +149,7 @@ void* socket_server_main_loop(void* _socket_server)
     {
         socket_destroy(sock);
         socket_server_log(socket_server, socket_get_error(), "Error during socket listening");
-        return;
+        return NULL;
     }
 
     socket_server_log(socket_server, 0, "Socket started listening");
