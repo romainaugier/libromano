@@ -91,7 +91,7 @@ void socket_server_log(socket_server_t* socket_server,
     }
 }
 
-void socket_server_main_loop(void* _socket_server)
+void* socket_server_main_loop(void* _socket_server)
 {
     socket_t sock;
     sockaddr_in_t server;
@@ -266,6 +266,8 @@ void socket_server_main_loop(void* _socket_server)
     mutex_lock(socket_server->m_mutex);
     UNSET_FLAG(socket_server->m_flags, SocketServer_IsRunning);
     mutex_unlock(socket_server->m_mutex);
+
+    return NULL;
 }
 
 ROMANO_API void socket_server_start(socket_server_t* socket_server)
