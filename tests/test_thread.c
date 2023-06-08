@@ -11,7 +11,7 @@
 
 #define WORK_COUNT 100
 
-void* t1_func(void* data)
+void t1_func(void* data)
 {
     logger_log(LogLevel_Info, "Hello from thread 1");
 
@@ -20,11 +20,9 @@ void* t1_func(void* data)
     thread_sleep(2000);
 
     logger_log(LogLevel_Info, "Thread 1 joining");
-
-    return NULL;
 }
 
-void* t2_func(void* data)
+void t2_func(void* data)
 {
     logger_log(LogLevel_Info, "Hello from thread 2");
 
@@ -33,19 +31,15 @@ void* t2_func(void* data)
     thread_sleep(2000);
 
     logger_log(LogLevel_Info, "Thread 2 joining");
-    
-    return NULL;
 }
 
-void* tpool_func(void* data)
+void tpool_func(void* data)
 {
     int work_id = *(int*)data;
 
     logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), work_id);
 
     thread_sleep(1);
-    
-    return NULL;
 }
 
 int main(int argc, char** argv)

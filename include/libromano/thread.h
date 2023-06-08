@@ -66,7 +66,7 @@ ROMANO_API void conditional_variable_free(conditional_variable* cond_var);
 
 struct thread;
 typedef struct thread thread_t;
-typedef void* (*thread_func)(void* arg);
+typedef void (*thread_func)(void* arg);
 
 /* Creates a new thread and launches it. The func is the function the thread will execute,  */
 /* and the arg can be a pointer to anything that will be passed to the function */
