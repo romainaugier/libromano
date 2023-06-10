@@ -10,11 +10,18 @@
 
 int main(int argc, char** argv)
 {
-    const char* test = "This is a test string which can be quite long because "
-                       "we need to make sure the function is robust enough";
+    const char* test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin malesuada eget"
+                       "libero quis viverra. Interdum et malesuada fames ac ante ipsum primis in faucibus. "
+                       "Curabitur eget ultrices nisl, eu interdum nisi. Morbi ultrices vulputate enim sit "
+                       "amet facilisis. Nullam et ultrices ipsum, eget lobortis metus. Duis eleifend quis "
+                       "metus ultrices lacinia. Morbi quis imperdiet augue. Vestibulum ornare laoreet "
+                       "vulputate. Maecenas sollicitudin orci nec purus euismod, ut ultricies felis dapibus. "
+                       "Mauris diam massa, elementum quis sodales in, pulvinar eu neque. Vivamus feugiat magna "
+                       "nunc, at aliquet arcu feugiat sed. Nullam sagittis posuere sapien sed efficitur. "
+                       "Donec maximus massa ut rhoncus dapibus.";
     size_t count;
 
-    strview* views = strview_split(test, " ", &count);
+    strview_t* views = strview_split(test, " ", &count);
 
     size_t i;
 
@@ -27,10 +34,16 @@ int main(int argc, char** argv)
 
     free(views);
 
+    strview_t sp = STRVIEW_NULL;
+
+    while(strview_split_yield(test, " ", &sp))
+    {
+        printf("Split yield : \""STRVIEW_FMT"\"\n", STRVIEW_ARG(sp));
+    }
 
     const char* test_trim = "    trim this string  ";
 
-    strview trim = strview_trim(test_trim);
+    strview_t trim = strview_trim(test_trim);
 
     printf("Trimmed string : \""STRVIEW_FMT"\"\n", STRVIEW_ARG(trim));
 }
