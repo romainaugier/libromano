@@ -34,7 +34,7 @@ elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
     set(ROMANO_INTEL 1)
 elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     set(ROMANO_MSVC 1)
-    set(MSVC_FLAGS "/Wall")
+    set(MSVC_FLAGS "/Wall /wd4710")  # 4710 is function not inlined, we don't care it pollutes more than tells useful information about the code
 
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
         set(CMAKE_C_FLAGS "${MSVC_FLAGS} /O0 /fsanitize=address /fsanitize=leak")

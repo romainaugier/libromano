@@ -19,7 +19,7 @@ strview_t strview_new(const char* data, size_t count)
    return sv;
 }
 
-ROMANO_API int strview_cmp(const strview_t lhs, const strview_t rhs)
+int strview_cmp(const strview_t lhs, const strview_t rhs)
 {
     return lhs.size != rhs.size && memcmp(lhs.data, rhs.data, lhs.size) == 0;    
 }

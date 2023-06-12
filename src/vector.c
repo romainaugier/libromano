@@ -89,6 +89,30 @@ void vector_push_back(vector* vector, void* element)
     GET_SIZE(*vector) = vec_size + 1;
 }
 
+void vector_emplace_back(vector* vector, void* element)
+{
+    size_t vec_size;
+    size_t vec_capacity;
+    size_t elem_size;
+    void* element_address;
+
+    assert(*vector != NULL);
+
+    vec_size = vector_size(*vector);
+    vec_capacity = vector_capacity(*vector);
+    elem_size = vector_element_size(*vector);
+
+    if(vec_capacity == vec_size)
+    {
+        _vector_grow(vector);
+    }
+
+    element_address = vector_at(*vector, vec_size);
+    memmove(element_address, element, elem_size);
+
+    GET_SIZE(*vector) = vec_size + 1;
+}
+
 void vector_insert(vector* vector, void* element, const size_t position)
 {
     size_t vec_size;

@@ -21,7 +21,15 @@ int main(int argc, char** argv)
     for(i = 0; i < 1000000; i++)
     {
         float f = (float)i;
-        vector_push_back(&float_vec, &f);
+        
+        if(i < (float)500000)
+        {
+            vector_push_back(&float_vec, &f);
+        }
+        else
+        {
+            vector_emplace_back(&float_vec, &f);
+        }
     }
 
     logger_log(LogLevel_Info, "Vector size : %d", vector_size(float_vec));

@@ -40,6 +40,9 @@ ROMANO_API void vector_resize(vector* vector, const size_t new_capacity);
 /* Adds a new element at the end of the given vector */
 ROMANO_API void vector_push_back(vector* vector, void* element);
 
+/* Similar to push back but moves instead of copying */
+ROMANO_API void vector_emplace_back(vector* vector, void* element);
+
 /* Adds a new element at the beginning of the given vector */
 ROMANO_API void vector_insert(vector* vector, void* element, const size_t position);
 

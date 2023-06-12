@@ -42,7 +42,7 @@ struct socket_server
     uint16_t m_max_connections;
 };
 
-ROMANO_API socket_server_t* socket_server_init(const uint16_t port,
+socket_server_t* socket_server_init(const uint16_t port,
                                                const uint16_t max_connections,
                                                const socket_server_flags ip_mode)
 {
@@ -60,7 +60,7 @@ ROMANO_API socket_server_t* socket_server_init(const uint16_t port,
     return socket_server;
 }
 
-ROMANO_API void socket_server_set_log_callback(socket_server_t* socket_server,
+void socket_server_set_log_callback(socket_server_t* socket_server,
                                                socket_server_log_callback callback)
 {
     assert(socket_server != NULL);
@@ -270,7 +270,7 @@ void* socket_server_main_loop(void* _socket_server)
     return NULL;
 }
 
-ROMANO_API void socket_server_start(socket_server_t* socket_server)
+void socket_server_start(socket_server_t* socket_server)
 {
     assert(socket_server != NULL);
 
@@ -290,7 +290,7 @@ ROMANO_API void socket_server_start(socket_server_t* socket_server)
     thread_start(socket_server->m_thread);
 }
 
-ROMANO_API void socket_server_push_callback(socket_server_t* socket_server,
+void socket_server_push_callback(socket_server_t* socket_server,
                                             socket_server_callback_func callback)
 {
     size_t callbacks_count;
@@ -321,7 +321,7 @@ ROMANO_API void socket_server_push_callback(socket_server_t* socket_server,
     socket_server_log(socket_server, 0, "Added a new callback to the socket server");
 }
 
-ROMANO_API int32_t socket_server_get_last_error(socket_server_t* socket_server)
+int32_t socket_server_get_last_error(socket_server_t* socket_server)
 {
     int32_t error;
 
@@ -332,14 +332,14 @@ ROMANO_API int32_t socket_server_get_last_error(socket_server_t* socket_server)
     return error;
 }
 
-ROMANO_API int32_t socket_server_is_running(socket_server_t* socket_server)
+int32_t socket_server_is_running(socket_server_t* socket_server)
 { 
     assert(socket_server != NULL);
     
     return HAS_FLAG(socket_server->m_flags, SocketServer_IsRunning);
 }
 
-ROMANO_API void socket_server_stop(socket_server_t* socket_server)
+void socket_server_stop(socket_server_t* socket_server)
 {
     assert(socket_server != NULL);
 
@@ -358,7 +358,7 @@ ROMANO_API void socket_server_stop(socket_server_t* socket_server)
     mutex_free(socket_server->m_mutex);
 }
 
-ROMANO_API void socket_server_release(socket_server_t* socket_server)
+void socket_server_release(socket_server_t* socket_server)
 {
     assert(socket_server != NULL);
 
