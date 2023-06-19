@@ -1578,28 +1578,28 @@ static stbsp__uint64 const stbsp__powten[20] = {
 #define stbsp__tento19th ((stbsp__uint64)1000000000000000000)
 #else
 static stbsp__uint64 const stbsp__powten[20] = {
-   1,
-   10,
-   100,
-   1000,
-   10000,
-   100000,
-   1000000,
-   10000000,
-   100000000,
-   1000000000,
-   10000000000ULL,
-   100000000000ULL,
-   1000000000000ULL,
-   10000000000000ULL,
-   100000000000000ULL,
-   1000000000000000ULL,
-   10000000000000000ULL,
-   100000000000000000ULL,
-   1000000000000000000ULL,
-   10000000000000000000ULL
+   (stbsp__uint64)1,
+   (stbsp__uint64)10,
+   (stbsp__uint64)100,
+   (stbsp__uint64)1000,
+   (stbsp__uint64)10000,
+   (stbsp__uint64)100000,
+   (stbsp__uint64)1000000,
+   (stbsp__uint64)10000000,
+   (stbsp__uint64)100000000,
+   (stbsp__uint64)1000000000,
+   (stbsp__uint64)10000000000,
+   (stbsp__uint64)100000000000,
+   (stbsp__uint64)1000000000000,
+   (stbsp__uint64)10000000000000,
+   (stbsp__uint64)100000000000000,
+   (stbsp__uint64)1000000000000000,
+   (stbsp__uint64)10000000000000000,
+   (stbsp__uint64)100000000000000000,
+   (stbsp__uint64)1000000000000000000,
+   (stbsp__uint64)10000000000000000000
 };
-#define stbsp__tento19th (1000000000000000000ULL)
+#define stbsp__tento19th ((stbsp__uint64)1000000000000000000)
 #endif
 
 #define stbsp__ddmulthi(oh, ol, xh, yh)                            \
