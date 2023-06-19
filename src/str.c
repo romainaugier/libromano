@@ -8,6 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef LIBROMANO_STR_MAX_FMT_SIZE
+#define LIBROMANO_STR_MAX_FMT_SIZE 8192
+#endif /* LIBROMANO_STR_MAX_FMT_SIZE */
+
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb_sprintf.h"
+
 #define GET_STR_PTR(ptr) ((char*)ptr + sizeof(size_t))
 #define GET_RAW_PTR(ptr) ((char*)ptr - sizeof(size_t))
 
@@ -31,7 +38,14 @@ str str_new(const char* data)
 
 str str_new_fmt(const char* format, ...)
 {
-    return NULL;
+    va_list args;
+    char* buffer[8192];
+
+    va_start(args, format);
+    stbsp_vsnprintf(buffer, LIBROMANO_STR_MAX_FMT_SIZE, format, args);
+    va_end(args);
+
+    return str_new(buffer);
 }
 
 void str_free(str data)

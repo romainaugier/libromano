@@ -48,7 +48,7 @@ void* tpool_func(void* data)
     return NULL;
 }
 
-int main(int argc, char** argv)
+int main(void)
 {
     size_t i = 0;
 

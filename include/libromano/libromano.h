@@ -93,7 +93,17 @@
 #define ROMANO_FUNCTION __PRETTY_FUNCTION__
 #endif /* ROMANO_WIN */
 
-#define STATIC_ASSERT(CONDITION, MSG) typedef char static_assert_##MSG[(CONDITION) ? 1 : -1]
+#define CONCAT_(prefix, suffix)     prefix##suffix
+#define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
+
+#define STATIC_ASSERT(expr)                             \
+    struct CONCAT(__outscope_assert_, __COUNTER__)      \
+    {                                                   \
+        char                                            \
+        outscope_assert                                 \
+        [2*(expr)-1];                                   \
+                                                        \
+    } CONCAT(__outscope_assert_, __COUNTER__)
 
 #define ROMANO_NOT_IMPLEMENTED "Function "ROMANO_FUNCTION" not implemented" 
 

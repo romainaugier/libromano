@@ -286,19 +286,19 @@ void thread_join(thread_t* thread)
     free(thread);
 }
 
-struct _work
+struct work
 {
     thread_func func;
     void* arg;
-    struct _work* next;
+    struct work* next;
 };
 
-typedef struct _work work;
+typedef struct work work_t;
 
 struct threadpool
 {
-    work* first;
-    work* last;
+    work_t* first;
+    work_t* last;
     
     mutex_t work_mutex;
     
@@ -311,13 +311,13 @@ struct threadpool
     size_t stop;
 };
 
-work* threadpool_work_new(thread_func func, void* arg)
+work_t* threadpool_work_new(thread_func func, void* arg)
 {
-    work* new_work;
+    work_t* new_work;
     
     assert(func != NULL);
 
-    new_work = malloc(sizeof(work));
+    new_work = malloc(sizeof(work_t));
     
     new_work->func = func;
     new_work->arg = arg;
@@ -326,16 +326,16 @@ work* threadpool_work_new(thread_func func, void* arg)
     return new_work;
 }
 
-void threadpool_work_free(work* work)
+void threadpool_work_free(work_t* work)
 {
     assert(work != NULL);
 
     free(work);
 }
 
-work* threadpool_work_get(threadpool_t* threadpool)
+work_t* threadpool_work_get(threadpool_t* threadpool)
 {
-    work* work;
+    work_t* work;
     
     assert(threadpool != NULL);
     
@@ -362,7 +362,7 @@ work* threadpool_work_get(threadpool_t* threadpool)
 void* threadpool_worker_func(void* arg)
 {
     threadpool_t* threadpool = arg;
-    work* work = NULL;
+    work_t* work = NULL;
 
     while(1)
     {
@@ -446,7 +446,7 @@ threadpool_t* threadpool_init(size_t workers_count)
 
 int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 {
-    work* work;
+    work_t* work;
 
     assert(threadpool != NULL);
     
@@ -499,8 +499,8 @@ void threadpool_wait(threadpool_t* threadpool)
 
 void threadpool_release(threadpool_t* threadpool)
 {
-    work* work1;
-    work* work2;
+    work_t* work1;
+    work_t* work2;
     
     assert(threadpool != NULL);
 

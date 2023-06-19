@@ -46,8 +46,8 @@ endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-if(DEFINED RUN_TESTS)
-    message(STATUS "RUN_TESTS defined, building and running tests")
+if(RUN_TESTS EQUAL 1)
+    message(STATUS "RUN_TESTS enabled, building and running tests")
     enable_testing()
 endif()
 
@@ -56,10 +56,12 @@ find_library(MATH_LIBRARY m)
 
 file(MAKE_DIRECTORY bin)
 
+include_directories(stb)
+
 include_directories(include)
 
 add_subdirectory(src)
 
-if(DEFINED RUN_TESTS)
+if(RUN_TESTS EQUAL 1)
     add_subdirectory(tests)
 endif()

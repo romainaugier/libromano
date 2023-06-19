@@ -4,7 +4,7 @@
 
 #include "libromano/logger.h"
 
-int main(int argc, char** argv)
+int main(void)
 {
     logger_init();
 

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int main(int argc, char** argv)
+int main(void)
 {
     const char t[] = "test string";
     
@@ -17,9 +17,16 @@ int main(int argc, char** argv)
 
     size_t len_t = strlen(t);
     size_t len_s = str_length(s);
-    printf("Len t : %llu, len s : %llu\n", len_t, len_s);
+    printf("Len t : %zu, len s : %zu\n", len_t, len_s);
 
     str_free(s);
+
+    str s_fmt = str_new_fmt("Int : %d, Float: %f, Size_t: %zd, char*: %s\n",
+                            81930, 18.0f, (size_t)192, "This is a char");
+
+    printf(s_fmt);
+
+    str_free(s_fmt);
     
     char t2[] = "test split string";
 

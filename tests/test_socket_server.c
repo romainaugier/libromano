@@ -25,7 +25,7 @@ void log_callback(int32_t code, char* msg)
     logger_log(level, "%s (%i)", msg, code);
 }
 
-int main(int argc, char** argv)
+int main(void)
 {
     socket_server_t* socket_server;
 

@@ -30,8 +30,8 @@ ROMANO_API void fs_chmod(const char* path,
 ROMANO_API void fs_get_cwd(char* out_path);
 
 ROMANO_API void fs_list_dir(const char* dir_path,
-                           char** out_paths,
-                           uint32_t* count);
+                            char** out_paths,
+                            uint32_t* count);
 
 ROMANO_API void fs_remove(const char* path);
 

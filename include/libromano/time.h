@@ -24,8 +24,8 @@ typedef struct timezone timezone_t;
 #if !defined(ROMANO_HAS_WINSOCK)
 
 struct timeval {
-    time_t tv_sec;
-    long tv_usec;
+    int32_t tv_sec;
+    int32_t tv_usec;
 };
 
 typedef struct timeval timeval_t;

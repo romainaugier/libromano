@@ -128,7 +128,7 @@ void socket_loop(void)
     closesocket(sock);
 }
 
-int main(int argc, char** argv)
+int main(void)
 {
 #if ROMANO_TEST_SOCKET_SERVER
     thread t = thread_create(socket_loop, NULL);
