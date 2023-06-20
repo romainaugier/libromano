@@ -8,8 +8,8 @@
 #include "Windows.h"
 #endif /* defined(ROMANO_WIN) */
 
-typedef long atomic32_t;
-typedef long long atomic64_t;
+typedef int32_t atomic32_t;
+typedef int64_t atomic64_t;
 
 ROMANO_FORCE_INLINE void atomic_add32(atomic32_t* volatile dest, atomic32_t value)
 {
