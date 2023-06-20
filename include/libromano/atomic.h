@@ -11,7 +11,7 @@
 typedef int32_t atomic32_t;
 typedef int64_t atomic64_t;
 
-ROMANO_FORCE_INLINE void atomic_add32(atomic32_t* volatile dest, atomic32_t value)
+static ROMANO_FORCE_INLINE void atomic_add32(atomic32_t* volatile dest, atomic32_t value)
 {
 #if defined(ROMANO_WIN)
     InterlockedAdd(dest, value);
@@ -20,7 +20,7 @@ ROMANO_FORCE_INLINE void atomic_add32(atomic32_t* volatile dest, atomic32_t valu
 #endif /* defined(ROMANO_WIN) */
 }
 
-ROMANO_FORCE_INLINE void atomic_add64(atomic64_t* volatile dest, atomic64_t value)
+static ROMANO_FORCE_INLINE void atomic_add64(atomic64_t* volatile dest, atomic64_t value)
 {
 #if defined(ROMANO_WIN)
     InterlockedAdd64(dest, value);
@@ -29,7 +29,7 @@ ROMANO_FORCE_INLINE void atomic_add64(atomic64_t* volatile dest, atomic64_t valu
 #endif /* defined(ROMANO_WIN) */
 }
 
-ROMANO_FORCE_INLINE atomic32_t atomic_compare_exchange32(atomic32_t* volatile dest, atomic32_t exchange, atomic32_t compare)
+static ROMANO_FORCE_INLINE atomic32_t atomic_compare_exchange32(atomic32_t* volatile dest, atomic32_t exchange, atomic32_t compare)
 {
 #if defined(ROMANO_WIN)
     return InterlockedCompareExchange(dest, exchange, compare);
@@ -38,7 +38,7 @@ ROMANO_FORCE_INLINE atomic32_t atomic_compare_exchange32(atomic32_t* volatile de
 #endif /* defined(ROMANO_WIN) */
 }
 
-ROMANO_FORCE_INLINE atomic64_t atomic_compare_exchange64(atomic64_t* volatile dest, atomic64_t exchange, atomic64_t compare)
+static ROMANO_FORCE_INLINE atomic64_t atomic_compare_exchange64(atomic64_t* volatile dest, atomic64_t exchange, atomic64_t compare)
 {
 #if defined(ROMANO_WIN)
     return InterlockedCompareExchange64(dest, exchange, compare);
