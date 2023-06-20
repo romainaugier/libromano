@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/thread.h"
+#include "libromano/atomic.h"
 
 #include <stdlib.h>
 #include <stdio.h>
