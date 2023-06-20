@@ -12,7 +12,7 @@ void* func(void* data)
 
     for(i = 0; i < 10000; i++)
     {
-        atomic_add32((atomic32_t*)data, 1);
+        atomic_add_32((atomic32_t*)data, 1);
     }
 
     return NULL;
@@ -20,7 +20,7 @@ void* func(void* data)
 
 void* cmpxchg_func1(void* data)
 {
-    while(!atomic_compare_exchange32((atomic32_t*)data, 2, 1))
+    while(!atomic_compare_exchange_32((atomic32_t*)data, 2, 1))
     {
         logger_log(LogLevel_Info, "Sleeping 10ms");
         thread_sleep(10);
@@ -35,7 +35,7 @@ void* cmpxchg_func2(void* data)
 {
     thread_sleep(250);
 
-    atomic_compare_exchange32((atomic32_t*)data, 1, 0);
+    atomic_compare_exchange_32((atomic32_t*)data, 1, 0);
 
     logger_log(LogLevel_Info, "Atomic set to 1");
 

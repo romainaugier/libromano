@@ -312,7 +312,7 @@ struct threadpool
     size_t stop;
 };
 
-work_t* threadpool_work_new(thread_func func, void* arg)
+work_t* work_new(thread_func func, void* arg)
 {
     work_t* new_work;
     
@@ -327,7 +327,7 @@ work_t* threadpool_work_new(thread_func func, void* arg)
     return new_work;
 }
 
-void threadpool_work_free(work_t* work)
+void work_free(work_t* work)
 {
     assert(work != NULL);
 
@@ -362,7 +362,7 @@ work_t* threadpool_work_get(threadpool_t* threadpool)
 
 void* threadpool_worker_func(void* arg)
 {
-    threadpool_t* threadpool = arg;
+    threadpool_t* threadpool = (threadpool_t*)arg;
     work_t* work = NULL;
 
     while(1)
@@ -388,7 +388,7 @@ void* threadpool_worker_func(void* arg)
         if(work != NULL)
         {
             work->func(work->arg);
-            threadpool_work_free(work);
+            work_free(work);
         }
 
         mutex_lock(&(threadpool->work_mutex));
@@ -451,7 +451,7 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 
     assert(threadpool != NULL);
     
-    work = threadpool_work_new(func, arg);
+    work = work_new(func, arg);
 
     if(work == NULL)
     {
@@ -512,7 +512,7 @@ void threadpool_release(threadpool_t* threadpool)
     while(work1 != NULL)
     {
         work2 = work1->next;
-        threadpool_work_free(work1);
+        work_free(work1);
         work1 = work2;
     }
 
