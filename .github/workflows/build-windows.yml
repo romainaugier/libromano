@@ -17,4 +17,4 @@ jobs:
         uses: lukka/get-cmake@v3.21.1
 
       - name: build and test
-        run: ./build.bat --tests 
+        run: ./build.bat --tests --version:0.0.0
