@@ -25,8 +25,8 @@ typedef enum
 static volatile int _logger_initialized = 0;
 static volatile int _loglevel = LogLevel_Info;
 static volatile int _log_mode = LogMode_Console;
-static volatile const char* _log_file_path = NULL;
-static volatile FILE* _log_file = NULL;
+static const char* _log_file_path = NULL;
+static FILE* _log_file = NULL;
 
 static const char* const levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
 
