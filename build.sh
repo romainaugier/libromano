@@ -79,7 +79,7 @@ if [[ -d "install" && $REMOVEOLDDIR -eq 1 ]]; then
     rm -rf install
 fi
 
-cmake -S . -B build -DRUN_TESTS=$RUNTESTS -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPORTCOMPILECOMMANDS -DCMAKE_BUILD_TYPE=$BUILDTYPE
+cmake -S . -B build -DRUN_TESTS=$RUNTESTS -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPORTCOMPILECOMMANDS -DCMAKE_BUILD_TYPE=$BUILDTYPE -DVERSION=$VERSION
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
