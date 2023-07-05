@@ -4,8 +4,6 @@
 # Copyright (c) 2023 - Present Romain Augier 
 # All rights reserved. 
 
-log_info "Building libromano"
-
 BUILDTYPE="Release"
 RUNTESTS=0
 REMOVEOLDDIR=0
@@ -32,15 +30,15 @@ parse_args()
 # Little function to parse the version from a command line argument
 parse_version()
 {
-    arr=(${$1//:/ })
-
-    [ ${#arr[@]} == 2 ] && VERSION=${arr[1]}
+    VERSION="$( cut -d ':' -f 2- <<< "$s" )"
+    log_info "Version specified by user: $VERSION"
 }
 
 # Little function to parse the installation dir from a command line argument
 parse_install_dir()
 {
     INSTALLDIR="$( cut -d ':' -f 2- <<< "$s" )"
+    log_info "Install directory specified by user: $INSTALLDIR"
 }
 
 # Little function to log an information message to the console
@@ -60,6 +58,8 @@ log_error()
 {
     echo "[ERROR] : $1"
 }
+
+log_info "Building libromano"
 
 for arg in "$@"
 do
