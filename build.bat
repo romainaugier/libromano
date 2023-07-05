@@ -12,7 +12,7 @@ set BUILDTYPE=Release
 set RUNTESTS=0
 set REMOVEOLDDIR=0
 set ARCH=x64
-set VERSION=dev
+set VERSION="0.0.0"
 set INSTALLDIR=%CD%\install
 
 for %%x in (%*) do (

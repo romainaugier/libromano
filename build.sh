@@ -8,7 +8,7 @@ BUILDTYPE="Release"
 RUNTESTS=0
 REMOVEOLDDIR=0
 EXPORTCOMPILECOMMANDS=0
-VERSION="dev"
+VERSION="0.0.0"
 INSTALLDIR="$PWD/install"
 
 # Little function to parse command line arguments
