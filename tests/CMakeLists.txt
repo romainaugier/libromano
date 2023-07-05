@@ -14,7 +14,7 @@ foreach(test_file ${TEST_FILES})
     add_test(${TESTNAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
 endforeach()
 
-# Copy all binaries from the bin in the runtime directory to link dynamic libraries to test executables
+# Copy libromano shared lib to the tests bin directory
 add_custom_command(
     TARGET ${TESTNAME}
     POST_BUILD

@@ -59,3 +59,8 @@ bin
 .cache
 compile_flags.txt
 compile_commands.json
+install
+
+# CMake generated files
+cmake/libromano*
+libromanoConfigVersion.cmake

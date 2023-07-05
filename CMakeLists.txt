@@ -4,13 +4,11 @@
 
 include(CMakePrintHelpers)
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.21)
 
-project(libromano)
+project(libromano VERSION ${VERSION})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-message(STATUS ${CMAKE_MODULE_PATH})
 
 if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
     set(ROMANO_CLANG 1)
@@ -53,12 +51,6 @@ endif()
 
 # Maths library
 find_library(MATH_LIBRARY m)
-
-file(MAKE_DIRECTORY bin)
-
-include_directories(stb)
-
-include_directories(include)
 
 add_subdirectory(src)
 
