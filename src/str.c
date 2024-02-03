@@ -39,7 +39,7 @@ str str_new(const char* data)
 str str_new_fmt(const char* format, ...)
 {
     va_list args;
-    char buffer[8192];
+    char buffer[LIBROMANO_STR_MAX_FMT_SIZE];
 
     va_start(args, format);
     stbsp_vsnprintf(buffer, LIBROMANO_STR_MAX_FMT_SIZE, format, args);

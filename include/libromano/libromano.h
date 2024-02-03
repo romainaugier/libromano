@@ -63,10 +63,13 @@
 
 #if defined(ROMANO_WIN)
 #define ROMANO_FORCE_INLINE __forceinline
+#define ROMANO_DLL_ENTRY
 #elif defined(ROMANO_GCC)
 #define ROMANO_FORCE_INLINE inline __attribute__((always_inline)) 
+#define ROMANO_DLL_ENTRY __attribute__((constructor))
 #elif defined(ROMANO_CLANG)
 #define ROMANO_FORCE_INLINE __attribute__((always_inline))
+#define ROMANO_DLL_ENTRY __attribute__((constructor))
 #endif /* defined(ROMANO_WIN) */
 
 #if defined(ROMANO_BUILD_SHARED)
