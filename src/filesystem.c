@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #if defined(ROMANO_WIN)
 #include <Shlwapi.h>
@@ -82,11 +83,14 @@ void fs_parent_dir(const char* path,
 
 fs_walk_item_t* fs_walk_item_new(const char* path)
 {
-    fs_walk_item_t* item = (fs_walk_item_t*)malloc(sizeof(fs_walk_item_t));
+    size_t path_length;
+    fs_walk_item_t* item;
+    
+    item = (fs_walk_item_t*)malloc(sizeof(fs_walk_item_t));
 
     if(path != NULL)
     {
-        const size_t path_length = (uint16_t)strlen(path);
+        path_length = strlen(path);
 
         item->path = (char*)malloc(path_length * sizeof(char));
         memcpy(item->path, path, path_length * sizeof(char));
@@ -118,7 +122,7 @@ typedef struct fs_walk_data {
     WIN32_FIND_DATAA find_data;
     HANDLE h_find;
 #elif defined(ROMANO_LINUX)
-#endif
+#endif /* defined(ROMANO_WIN) */
     vector dir_queue;
 } fs_walk_data;
 
@@ -126,8 +130,12 @@ static volatile fs_walk_data* search_data = NULL;
 
 fs_walk_data* fs_walk_data_new(void)
 {
-    fs_walk_data* tmp_search_data = (fs_walk_data*)malloc(sizeof(fs_walk_data));
+    fs_walk_data* tmp_search_data;
+    
+    tmp_search_data = (fs_walk_data*)malloc(sizeof(fs_walk_data));
+#if defined(ROMANO_WIN)
     tmp_search_data->h_find = INVALID_HANDLE_VALUE;
+#endif /* defined(ROMANO_WIN) */
     tmp_search_data->dir_queue = vector_new(128, sizeof(char*));
 
     return tmp_search_data;
@@ -135,7 +143,9 @@ fs_walk_data* fs_walk_data_new(void)
 
 void fs_walk_data_free(fs_walk_data* walk_data)
 {
-    for(uint32_t i = 0; i < vector_size(walk_data->dir_queue); i++) 
+    size_t i;
+
+    for(i = 0; i < vector_size(walk_data->dir_queue); i++) 
     { 
         free(*(void**)vector_at(walk_data->dir_queue, i)); 
     };
@@ -147,11 +157,17 @@ void fs_walk_data_free(fs_walk_data* walk_data)
 
 void fs_walk_push_parent_dir(fs_walk_data* data)
 {
-    const char* parent_dir_path = *(char**)vector_at(data->dir_queue, 0);
-    const int parent_dir_path_length = strlen(parent_dir_path) - 3;
+#if defined(ROMANO_WIN)
+    char* parent_dir_path;
+    int parent_dir_path_length;
+    size_t n;
+    char* dir_path;
+    
+    parent_dir_path = *(char**)vector_at(data->dir_queue, 0);
+    parent_dir_path_length = strlen(parent_dir_path) - 3;
 
-    const size_t n = strlen(data->find_data.cFileName);
-    char* dir_path = (char*)malloc((parent_dir_path_length + n + 5) * sizeof(char));
+    n = strlen(data->find_data.cFileName);
+    dir_path = (char*)malloc((parent_dir_path_length + n + 5) * sizeof(char));
     memcpy(dir_path, parent_dir_path, parent_dir_path_length);
     dir_path[parent_dir_path_length] = '\\';
     memcpy(dir_path + parent_dir_path_length + 1, data->find_data.cFileName, n);
@@ -162,7 +178,30 @@ void fs_walk_push_parent_dir(fs_walk_data* data)
     dir_path[n + parent_dir_path_length + 4] = '\0';
     
     vector_push_back(&data->dir_queue, &dir_path);
+#endif /* defined(ROMANO_WIN) */
+}
 
+void fs_walk_push_file(fs_walk_data* data, fs_walk_item_t* item)
+{
+#if defined(ROMANO_WIN)
+    char* parent_dir_path;
+    int parent_dir_path_length;
+    size_t n;
+    char* file_path;
+
+    parent_dir_path = *(char**)vector_at(data->dir_queue, 0);
+    parent_dir_path_length = strlen(parent_dir_path) - 3;
+
+    n = strlen(data->find_data.cFileName);
+    file_path = (char*)malloc((parent_dir_path_length + n + 2) * sizeof(char));
+    memcpy(file_path, parent_dir_path, parent_dir_path_length);
+    file_path[parent_dir_path_length] = '\\';
+    memcpy(file_path + parent_dir_path_length + 1, data->find_data.cFileName, n);
+    file_path[parent_dir_path_length + n + 1] = '\0';
+
+    item->path = file_path;
+    item->path_length = parent_dir_path_length + 2; 
+#endif /* defined(ROMANO_WIN) */
 }
 
 int fs_walk(const char* path,
@@ -209,8 +248,7 @@ int fs_walk(const char* path,
         }
         else
         {
-            walk_item->path = search_data->find_data.cFileName;
-            walk_item->path_length = strlen(walk_item->path);
+            fs_walk_push_file(search_data, walk_item);
             return 1;
         }
     }
@@ -228,8 +266,7 @@ int fs_walk(const char* path,
             }
             else
             {
-                walk_item->path = search_data->find_data.cFileName;
-                walk_item->path_length = strlen(walk_item->path);
+                fs_walk_push_file(search_data, walk_item);
                 return 1;
             }
         }
@@ -272,8 +309,7 @@ int fs_walk(const char* path,
             }
             else
             {
-                walk_item->path = search_data->find_data.cFileName;
-                walk_item->path_length = strlen(walk_item->path);
+                fs_walk_push_file(search_data, walk_item);
                 return 1;
             }
         }

@@ -26,12 +26,15 @@ int main(void)
     char walk_dir_path[MAX_PATH];
     fs_parent_dir(dir_path, walk_dir_path);
 
-    fs_walk_item_t walk_item;
+    fs_walk_item_t* walk_item = fs_walk_item_new(NULL);
 
-    while(fs_walk(walk_dir_path, &walk_item, 0) != 0)
+    while(fs_walk(walk_dir_path, walk_item, 0) != 0)
     {
-        logger_log(LogLevel_Info, "%s", walk_item.path);
+        char parent[MAX_PATH];
+        fs_parent_dir(walk_item->path, parent);
     }
+
+    fs_walk_item_free(walk_item);
 
     logger_log(LogLevel_Info, "Finished filesystem walk");
 
