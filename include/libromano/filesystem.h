@@ -19,10 +19,10 @@ ROMANO_CPP_ENTER
 
 ROMANO_API int fs_path_exists(const char* path);
 
+ROMANO_API void fs_makedirs(const char* path);
+
 ROMANO_API void fs_parent_dir(const char* path,
                               char* out_path);
-
-ROMANO_API void fs_makedirs(const char* path);
 
 ROMANO_API void fs_chmod(const char* path, 
                          const uint32_t mode);
@@ -44,14 +44,28 @@ ROMANO_API uint32_t fs_is_dir(const char* path);
 
 ROMANO_API uint32_t fs_is_file(const char* path);
 
+/* File system walk yields all files in a directory and its subdirectory if in recursive mode */
 typedef enum 
 {
-    FsWalkMode_YieldDirs = 0,
-    FsWalkMode_YieldFiles = 1 << 0
+    FsWalkMode_YieldDirs = 0x1,
+    FsWalkMode_YieldFiles = 0x2,
+    FsWalkMode_Recursive = 0x4
 } fs_walk_mode; 
 
-ROMANO_API void fs_walk(const char* path,
-                        const fs_walk_mode mode);
+struct fs_walk_item {
+    char* path;
+    size_t path_length;
+};
+
+typedef struct fs_walk_item fs_walk_item_t;
+
+ROMANO_API fs_walk_item_t* fs_walk_item_new(const char* path);
+
+ROMANO_API void fs_walk_item_free(fs_walk_item_t* walk_item);
+
+ROMANO_API int fs_walk(const char* path,
+                       fs_walk_item_t* walk_item,
+                       const fs_walk_mode mode);
 
 ROMANO_CPP_END
 

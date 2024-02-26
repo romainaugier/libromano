@@ -21,6 +21,20 @@ int main(void)
 
     logger_log(LogLevel_Info, "Directory of "__FILE__" is %s", dir_path);
 
+    logger_log(LogLevel_Info, "Starting filesystem walk");
+
+    char walk_dir_path[MAX_PATH];
+    fs_parent_dir(dir_path, walk_dir_path);
+
+    fs_walk_item_t walk_item;
+
+    while(fs_walk(walk_dir_path, &walk_item, 0) != 0)
+    {
+        logger_log(LogLevel_Info, "%s", walk_item.path);
+    }
+
+    logger_log(LogLevel_Info, "Finished filesystem walk");
+
     logger_release();
 
     return 0;
