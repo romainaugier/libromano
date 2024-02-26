@@ -96,6 +96,8 @@
 #define ROMANO_FUNCTION __PRETTY_FUNCTION__
 #endif /* ROMANO_WIN */
 
+#define ROMANO_STATIC_FUNCTION static
+
 #define CONCAT_(prefix, suffix)     prefix##suffix
 #define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
 

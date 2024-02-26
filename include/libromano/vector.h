@@ -26,13 +26,13 @@ typedef void* vector;
 ROMANO_API vector vector_new(size_t initial_capacity, const size_t element_size);
 
 /* Returns the size of the given vector */
-ROMANO_FORCE_INLINE size_t vector_size(const vector vector) { assert(vector != NULL); return GET_SIZE(vector); }
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_size(const vector vector) { assert(vector != NULL); return GET_SIZE(vector); }
 
 /* Returns the capacity of the given vector */
-ROMANO_FORCE_INLINE size_t vector_capacity(const vector vector) { assert(vector != NULL); return GET_CAPACITY(vector); }
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_capacity(const vector vector) { assert(vector != NULL); return GET_CAPACITY(vector); }
 
 /* Returns the element size of the given vector */
-ROMANO_FORCE_INLINE size_t vector_element_size(const vector vector) { assert(vector != NULL); return GET_ELEMENT_SIZE(vector); }
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_element_size(const vector vector) { assert(vector != NULL); return GET_ELEMENT_SIZE(vector); }
 
 /* Resizes the vector to the given capacity */
 ROMANO_API void vector_resize(vector* vector, const size_t new_capacity);
