@@ -13,7 +13,9 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_API uint32_t hash_fnv1a(const char* str);
+ROMANO_API uint32_t hash_fnv1a(const char* str, size_t n);
+
+ROMANO_API uint32_t hash_fnv1a_pippip(const char* str, size_t n);
 
 ROMANO_CPP_END
 

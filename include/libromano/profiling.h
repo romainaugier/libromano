@@ -19,7 +19,7 @@ ROMANO_CPP_ENTER
 
 /* It's not really cpu cycles but well.. */
 #define PROFILE(func) uint64_t s = __rdtsc();                                                                           \
-                      do { func } while (0);                                                                            \
+                      do { func; } while (0);                                                                            \
                       printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); \
 
 #else

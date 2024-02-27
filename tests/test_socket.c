@@ -92,7 +92,7 @@ void socket_loop(void)
                     }
 
                     if((count > 0) &&
-                       (hash_fnv1a(buffer_split[0]) == PASSWORD_HASH))
+                       (hash_fnv1a(buffer_split[0], str_length(buffer_split[0])) == PASSWORD_HASH))
                     {
                         logger_log(LogLevel_Info, "Password is verified");
                         logger_log(LogLevel_Info, "Executing command");
