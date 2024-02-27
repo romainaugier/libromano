@@ -4,6 +4,7 @@
 
 #include "libromano/thread.h"
 #include "libromano/atomic.h"
+#include "libromano/vector.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -291,25 +292,21 @@ struct work
 {
     thread_func func;
     void* arg;
-    struct work* next;
 };
 
 typedef struct work work_t;
 
 struct threadpool
 {
-    work_t* first;
-    work_t* last;
+    vector work_vector;
     
-    mutex_t work_mutex;
-    
-    conditional_variable work_cond_var;
-    conditional_variable working_cond_var;
-    
-    size_t working_count;
-    size_t workers_count;
+    mutex_t* work_mutex;
 
-    size_t stop;
+    atomic32_t work_count;
+    atomic32_t working_threads_count;
+    atomic32_t workers_count;
+
+    atomic32_t stop;
 };
 
 work_t* work_new(thread_func func, void* arg)
@@ -322,7 +319,6 @@ work_t* work_new(thread_func func, void* arg)
     
     new_work->func = func;
     new_work->arg = arg;
-    new_work->next = NULL;
 
     return new_work;
 }
@@ -334,56 +330,35 @@ void work_free(work_t* work)
     free(work);
 }
 
-work_t* threadpool_work_get(threadpool_t* threadpool)
-{
-    work_t* work;
-    
-    assert(threadpool != NULL);
-    
-    work = threadpool->first;
-
-    if(work == NULL)
-    {
-        return NULL;
-    }
-
-    if(work->next == NULL)
-    {
-        threadpool->first = NULL;
-        threadpool->last = NULL;
-    }
-    else
-    {
-        threadpool->first = work->next;
-    }
-
-    return work;
-}
-
 void* threadpool_worker_func(void* arg)
 {
     threadpool_t* threadpool = (threadpool_t*)arg;
     work_t* work = NULL;
+    uint32_t work_id;
 
     while(1)
     {
-        mutex_lock(&(threadpool->work_mutex));
-    
-        while(threadpool->first == NULL && !threadpool->stop)
+        while(1)
         {
-            conditional_variable_wait(&(threadpool->work_cond_var), 
-                                      &(threadpool->work_mutex), 
-                                      0);
+            if(atomic_load_32(&(threadpool->work_count)) > 0)
+            {
+                break;
+            }
+            else if(atomic_load_32(&(threadpool->stop)) == 1)
+            {
+                goto exit;
+            }
         }
 
-        if(threadpool->stop)
-        {
-            break;
-        }
+        mutex_lock(threadpool->work_mutex);
 
-        work = threadpool_work_get(threadpool);
-        threadpool->working_count++;
-        mutex_unlock(&(threadpool->work_mutex));
+        work = (work_t*)*(void**)vector_at(threadpool->work_vector, vector_size(threadpool->work_vector) - 1);
+
+        vector_pop(&(threadpool->work_vector));
+        atomic_sub_32(&(threadpool->work_count), 1);
+        atomic_add_32(&(threadpool->working_threads_count), 1);
+
+        mutex_unlock(threadpool->work_mutex);
 
         if(work != NULL)
         {
@@ -391,22 +366,11 @@ void* threadpool_worker_func(void* arg)
             work_free(work);
         }
 
-        mutex_lock(&(threadpool->work_mutex));
-        threadpool->working_count--;
-
-        if(!threadpool->stop && threadpool->working_count == 0 && threadpool->first == NULL)
-        {
-            conditional_variable_signal(&(threadpool->working_cond_var));
-        }
-
-
-        mutex_unlock(&(threadpool->work_mutex));
+        atomic_sub_32(&(threadpool->working_threads_count), 1);
     }
+exit:
 
-    threadpool->workers_count--;
-    conditional_variable_signal(&(threadpool->working_cond_var));
-    
-    mutex_unlock(&(threadpool->work_mutex));
+    atomic_sub_32(&(threadpool->workers_count), 1);
 
     return NULL;
 }
@@ -421,16 +385,12 @@ threadpool_t* threadpool_init(size_t workers_count)
     threadpool = malloc(sizeof(struct threadpool));
 
     threadpool->workers_count = workers_count;
-    threadpool->working_count = 0;
+    threadpool->working_threads_count = 0;
+    threadpool->work_count = 0;
 
-    mutex_init(&threadpool->work_mutex);
+    threadpool->work_vector = vector_new(256, sizeof(work_t*));
 
-    conditional_variable_init(&threadpool->work_cond_var);
-    conditional_variable_init(&threadpool->working_cond_var);
-
-    threadpool->first = NULL;
-    threadpool->last = NULL;
-
+    threadpool->work_mutex = mutex_new();
 
     for(i = 0; i < workers_count; i++)
     {
@@ -458,21 +418,12 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
         return 0;
     }
 
-    mutex_lock(&(threadpool->work_mutex));
-    
-    if(threadpool->first == NULL)
-    {
-        threadpool->first = work;
-        threadpool->last = threadpool->first;
-    }
-    else
-    {
-        threadpool->last->next = work;
-        threadpool->last = work;
-    }
-    
-    conditional_variable_broadcast(&(threadpool->work_cond_var));
-    mutex_unlock(&(threadpool->work_mutex));
+    mutex_lock(threadpool->work_mutex);
+
+    vector_push_back(&(threadpool->work_vector), &work);
+    atomic_add_32(&(threadpool->work_count), 1);
+
+    mutex_unlock(threadpool->work_mutex);
 
     return 1;
 }
@@ -481,51 +432,41 @@ void threadpool_wait(threadpool_t* threadpool)
 {
     assert(threadpool != NULL);
 
-    mutex_lock(&(threadpool->work_mutex));
-
     while(1)
     {
-        if((!threadpool->stop && threadpool->working_count != 0) || (threadpool->stop && threadpool->workers_count != 0))
-        {
-            conditional_variable_wait(&(threadpool->working_cond_var), &(threadpool->work_mutex), 0);
-        }
-        else
+        if(atomic_load_32(&(threadpool->working_threads_count)) == 0)
         {
             break;
         }
     }
-
-    mutex_unlock(&(threadpool->work_mutex));
 }
 
 void threadpool_release(threadpool_t* threadpool)
 {
-    work_t* work1;
-    work_t* work2;
+    work_t* work;
+    size_t i;
     
     assert(threadpool != NULL);
 
-    mutex_lock(&(threadpool->work_mutex));
+    mutex_lock(threadpool->work_mutex);
 
-    work1 = threadpool->first;
-
-    while(work1 != NULL)
+    for(i = 0; i < vector_size(threadpool->work_vector); i++)
     {
-        work2 = work1->next;
-        work_free(work1);
-        work1 = work2;
+        work = *(work_t**)vector_at(threadpool->work_vector, i);
+        work_free(work);
+        vector_pop(&(threadpool->work_vector));
+        atomic_sub_32(&(threadpool->work_count), 1);
     }
 
-    threadpool->stop = 1;
+    atomic_store_32(&(threadpool->stop), 1);
 
-    conditional_variable_broadcast(&(threadpool->work_cond_var));
-    mutex_unlock(&(threadpool->work_mutex));
+    mutex_unlock(threadpool->work_mutex);
 
     threadpool_wait(threadpool);
 
-    mutex_release(&(threadpool->work_mutex));
-    conditional_variable_release(&(threadpool->work_cond_var));
-    conditional_variable_release(&(threadpool->working_cond_var));
+    mutex_release(threadpool->work_mutex);
+
+    vector_free(threadpool->work_vector);
 
     free(threadpool);
 }

@@ -49,6 +49,9 @@ ROMANO_API void vector_insert(vector* vector, void* element, const size_t positi
 /* Removes the element of the given vector at the given index */
 ROMANO_API void vector_remove(vector* vector, const size_t position);
 
+/* Removes the element at the end of the vector */
+ROMANO_API void vector_pop(vector* vector);
+
 /* Returns the address to the element at the given index */
 ROMANO_API void* vector_at(const vector vector, const size_t index);
 

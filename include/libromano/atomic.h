@@ -65,7 +65,7 @@ static ROMANO_FORCE_INLINE void atomic_add_64(atomic64_t* volatile dest, atomic6
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_sub_32(atomic64_t* volatile dest, atomic32_t value)
+static ROMANO_FORCE_INLINE void atomic_sub_32(atomic32_t* volatile dest, atomic32_t value)
 {
 #if defined(ROMANO_MSVC)
     InterlockedAdd(dest, -value);

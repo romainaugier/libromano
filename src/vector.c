@@ -157,6 +157,13 @@ void vector_remove(vector* vector, const size_t position)
     GET_SIZE(*vector) = vec_size - 1;
 }
 
+void vector_pop(vector* vector)
+{
+    assert(*vector != NULL);
+
+    GET_SIZE(*vector) = GET_SIZE(*vector) - 1;
+}
+
 void* vector_at(vector vector, const size_t index)
 {
     size_t element_size;
