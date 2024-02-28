@@ -10,38 +10,6 @@ project(libromano VERSION ${VERSION})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    set(ROMANO_CLANG 1)
-    set(CLANG_FLAGS "-Wall -pedantic-errors")
-
-    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-        set(CMAKE_C_FLAGS "${CLANG_FLAGS} -O0 -fsanitize=leak -fsanitize=address")
-    else()    
-        set(CMAKE_C_FLAGS "${CLANG_FLAGS} -O3 -march=native")
-    endif()
-elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    set(ROMANO_GCC 1)
-    set(GCC_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
-
-    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-        set(CMAKE_C_FLAGS "${GCC_FLAGS} -O0 -fsanitize=leak -fsanitize=address")
-    else()
-        set(CMAKE_C_FLAGS "${GCC_FLAGS} -O3 -ffast-math -march=native -ftree-vectorizer-verbose=2")
-    endif()
-elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
-    set(ROMANO_INTEL 1)
-elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-    set(ROMANO_MSVC 1)
-    set(MSVC_FLAGS "/Wall /wd4710")  # 4710 is function not inlined, we don't care it pollutes more than tells useful information about the code
-
-    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-        set(CMAKE_C_FLAGS "${MSVC_FLAGS} /O0 /fsanitize=address /fsanitize=leak")
-    else()
-        include(find_avx)
-        set(CMAKE_C_FLAGS "${MSVC_FLAGS} /O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar")
-    endif()
-endif()
-
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if(RUN_TESTS EQUAL 1)

@@ -14,6 +14,7 @@ set REMOVEOLDDIR=0
 set ARCH=x64
 set VERSION="0.0.0"
 set INSTALLDIR=%CD%\install
+set SANITIZE=0
 
 for %%x in (%*) do (
     call :ParseArg %%~x

@@ -12,7 +12,7 @@ int main(void)
     logger_init();
 
     logger_log(LogLevel_Info, "Creating a new vector");
-    vector float_vec = vector_new(0, sizeof(float));
+    vector_t* float_vec = vector_new(0, sizeof(float));
     
     logger_log(LogLevel_Info, "Pushing new elements in the vector");
 
@@ -24,11 +24,11 @@ int main(void)
         
         if(i < (float)500000)
         {
-            vector_push_back(&float_vec, &f);
+            vector_push_back(float_vec, &f);
         }
         else
         {
-            vector_emplace_back(&float_vec, &f);
+            vector_emplace_back(float_vec, &f);
         }
     }
 
@@ -40,7 +40,7 @@ int main(void)
 
     logger_log(LogLevel_Info, "Inserting at position 3500");
     float f = 12.0f;
-    vector_insert(&float_vec, &f, 3500);
+    vector_insert(float_vec, &f, 3500);
     
     logger_log(LogLevel_Info, "Vector size : %d", vector_size(float_vec));
     logger_log(LogLevel_Info, "Vector capacity : %d", vector_capacity(float_vec));
@@ -50,7 +50,7 @@ int main(void)
     
     for(i = 0; i < 1000; i++)
     {
-        vector_remove(&float_vec, 78392);
+        vector_remove(float_vec, 78392);
     }
 
     logger_log(LogLevel_Info, "Element at position %d : %f", 78392, *(float*)vector_at(float_vec, 78392));

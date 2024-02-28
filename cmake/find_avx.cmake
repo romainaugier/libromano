@@ -7,7 +7,7 @@ set(CMAKE_REQUIRED_FLAGS)
 
 # Check AVX
 if(MSVC AND NOT MSVC_VERSION LESS 1600)
-  set(CMAKE_REQUIRED_FLAGS "/arch:AVX")
+    set(CMAKE_REQUIRED_FLAGS "/arch:AVX")
 endif()
 
 check_cxx_source_runs("
@@ -28,11 +28,11 @@ if( ( src[i] + src[i] ) != dst[i] ){
   }
   return 0;
   }"
-  HAVE_AVX_EXTENSIONS)
+    HAVE_AVX_EXTENSIONS)
 
 # Check AVX2
 if(MSVC AND NOT MSVC_VERSION LESS 1800)
-  set(CMAKE_REQUIRED_FLAGS "/arch:AVX2")
+    set(CMAKE_REQUIRED_FLAGS "/arch:AVX2")
 endif()
 
 check_cxx_source_runs("
@@ -53,13 +53,13 @@ if( ( src[i] + src[i] ) != dst[i] ){
   }
   return 0;
   }"
-  HAVE_AVX2_EXTENSIONS)
+    HAVE_AVX2_EXTENSIONS)
 
 # Set Flags
 if(MSVC)
-  if(HAVE_AVX2_EXTENSIONS AND NOT MSVC_VERSION LESS 1800)
-    set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX2")
-  elseif(HAVE_AVX_EXTENSIONS  AND NOT MSVC_VERSION LESS 1600)
-    set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX")
-  endif()
+    if(HAVE_AVX2_EXTENSIONS AND NOT MSVC_VERSION LESS 1800)
+        set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX2")
+    elseif(HAVE_AVX_EXTENSIONS  AND NOT MSVC_VERSION LESS 1600)
+        set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX")
+    endif()
 endif()

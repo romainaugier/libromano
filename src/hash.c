@@ -11,7 +11,10 @@ uint32_t hash_fnv1a(const char* str, size_t n)
     uint8_t* s = (uint8_t*)str;
     size_t i;
 
+#if defined(ROMANO_CLANG) || defined(ROMANO_GCC)
 #pragma nounroll
+#endif /* defined(ROMANO_CLANG) || defined(ROMANO_GCC) */
+
     for(i = 0; i < n; i++)
     {
         result ^= (uint32_t)tolower(s[i]);
@@ -34,7 +37,11 @@ uint32_t hash_fnv1a_pippip(const char *str, size_t n)
     {
         cycles = ((n - 1) >> 4) + 1; 
         nd_head = n - (cycles << 3);
+
+#if defined(ROMANO_CLANG) || defined(ROMANO_GCC)
 #pragma nounroll
+#endif /* defined(ROMANO_CLANG) || defined(ROMANO_GCC) */
+
         for(; cycles--; str += 8) 
         {
             hash64 = (hash64 ^ (*(uint64_t *)(str)) ) * PRIME;        

@@ -123,10 +123,10 @@ typedef struct fs_walk_data {
     HANDLE h_find;
 #elif defined(ROMANO_LINUX)
 #endif /* defined(ROMANO_WIN) */
-    vector dir_queue;
+    vector_t* dir_queue;
 } fs_walk_data;
 
-static volatile fs_walk_data* search_data = NULL;
+static fs_walk_data* search_data = NULL;
 
 fs_walk_data* fs_walk_data_new(void)
 {
@@ -177,7 +177,7 @@ void fs_walk_push_parent_dir(fs_walk_data* data)
     dir_path[n + parent_dir_path_length + 3] = '*';
     dir_path[n + parent_dir_path_length + 4] = '\0';
     
-    vector_push_back(&data->dir_queue, &dir_path);
+    vector_push_back(data->dir_queue, &dir_path);
 #endif /* defined(ROMANO_WIN) */
 }
 
@@ -224,7 +224,7 @@ int fs_walk(const char* path,
 
         search_data = fs_walk_data_new();
         
-        vector_push_back(&search_data->dir_queue, &dir_path);
+        vector_push_back(search_data->dir_queue, &dir_path);
         
         search_data->h_find = FindFirstFileA(*(char**)vector_at(search_data->dir_queue, 0), &search_data->find_data);
 
@@ -283,7 +283,7 @@ int fs_walk(const char* path,
                 return 0;
             }
 
-            vector_remove(&search_data->dir_queue, 0);
+            vector_remove(search_data->dir_queue, 0);
 
             if(vector_size(search_data->dir_queue) == 0) return 0;
 
