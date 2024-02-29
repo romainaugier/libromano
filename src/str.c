@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 #ifndef LIBROMANO_STR_MAX_FMT_SIZE
 #define LIBROMANO_STR_MAX_FMT_SIZE 8192
@@ -40,7 +39,7 @@ str str_new_fmt(const char* format, ...)
     char buffer[LIBROMANO_STR_MAX_FMT_SIZE];
 
     va_start(args, format);
-    vsprintf_s(buffer, LIBROMANO_STR_MAX_FMT_SIZE, format, args);
+    vsprintf(buffer, format, args);
     va_end(args);
 
     return str_new(buffer);
