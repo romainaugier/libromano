@@ -152,10 +152,12 @@ void fs_walk_data_free(fs_walk_data* walk_data, uint32_t close_find)
 
     vector_free(walk_data->dir_queue);
 
+#if defined(ROMANO_WIN)
     if(close_find == 1)
     {
         FindClose(walk_data->h_find);
     }
+#endif /* defined(ROMANO_WIN) */
 
     free(walk_data);
 }
