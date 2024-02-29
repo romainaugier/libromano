@@ -141,7 +141,7 @@ fs_walk_data* fs_walk_data_new(void)
     return tmp_search_data;
 }
 
-void fs_walk_data_free(fs_walk_data* walk_data)
+void fs_walk_data_free(fs_walk_data* walk_data, uint32_t close_find)
 {
     size_t i;
 
@@ -151,6 +151,11 @@ void fs_walk_data_free(fs_walk_data* walk_data)
     };
 
     vector_free(walk_data->dir_queue);
+
+    if(close_find == 1)
+    {
+        FindClose(walk_data->h_find);
+    }
 
     free(walk_data);
 }
@@ -234,7 +239,7 @@ int fs_walk(const char* path,
 
             printf("Error during fs_walk. Error code : %d\n", err);
             
-            fs_walk_data_free(search_data);
+            fs_walk_data_free(search_data, 0);
             search_data = NULL;
             return 0;
         }
@@ -278,7 +283,7 @@ int fs_walk(const char* path,
             {
                 printf("Error code : %d\n", err);
 
-                fs_walk_data_free(search_data);
+                fs_walk_data_free(search_data, 1);
                 search_data = NULL;
                 return 0;
             }
@@ -295,7 +300,7 @@ int fs_walk(const char* path,
 
                 printf("Error during fs walk. Error code : %d\n", err);
             
-                fs_walk_data_free(search_data);
+                fs_walk_data_free(search_data, 1);
                 search_data = NULL;
                 return 0;
             }
