@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #ifndef LIBROMANO_STR_MAX_FMT_SIZE
 #define LIBROMANO_STR_MAX_FMT_SIZE 8192
