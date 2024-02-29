@@ -30,8 +30,7 @@ int main(void)
 
     while(fs_walk(walk_dir_path, walk_item, 0) != 0)
     {
-        char parent[MAX_PATH];
-        fs_parent_dir(walk_item->path, parent);
+        logger_log(LogLevel_Info, "%s", walk_item->path);
     }
 
     fs_walk_item_free(walk_item);

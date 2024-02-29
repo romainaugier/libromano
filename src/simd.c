@@ -49,7 +49,6 @@ void ROMANO_DLL_ENTRY check_vectorization()
 }
 
 
-
 int simd_has_sse(void)
 {
     return _vectorization_mode >= 1;

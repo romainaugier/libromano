@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause 
+# Copyright (c) 2023 - Present Romain Augier 
+# All rights reserved. 
 
 function(set_target_options target_name)
     if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
