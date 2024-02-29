@@ -7,6 +7,8 @@
 
 int main(void)
 {
+    fs_walk_item_t* walk_item;
+
     logger_init();
 
     logger_log(LogLevel_Info, "Verifying the existence of this file : "__FILE__);
@@ -26,7 +28,18 @@ int main(void)
     char walk_dir_path[MAX_PATH];
     fs_parent_dir(dir_path, walk_dir_path);
 
-    fs_walk_item_t* walk_item = fs_walk_item_new(NULL);
+    walk_item = fs_walk_item_new(NULL);
+
+    while(fs_walk(walk_dir_path, walk_item, 0) != 0)
+    {
+        logger_log(LogLevel_Info, "%s", walk_item->path);
+    }
+
+    fs_walk_item_free(walk_item);
+
+    logger_log(LogLevel_Info, "Finished first filesystem walk");
+
+    walk_item = fs_walk_item_new(NULL);
 
     while(fs_walk(walk_dir_path, walk_item, 0) != 0)
     {

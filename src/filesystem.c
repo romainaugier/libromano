@@ -292,7 +292,12 @@ int fs_walk(const char* path,
 
             vector_remove(search_data->dir_queue, 0);
 
-            if(vector_size(search_data->dir_queue) == 0) return 0;
+            if(vector_size(search_data->dir_queue) == 0) 
+            {
+                fs_walk_data_free(search_data, 1);
+                search_data = NULL;
+                return 0;
+            }
 
             search_data->h_find = FindFirstFileA(*(char**)vector_at(search_data->dir_queue, 0), &search_data->find_data);
 
