@@ -83,7 +83,7 @@ int strview_split_yield(const char* data, const char* separator, strview_t* stri
     actual_ptr = string_view->data != NULL ?
                  string_view->data + string_view->size : (char*)data;
 
-    if(*(actual_ptr + 1) == '\0')
+    if(*(actual_ptr) == '\0')
     {
         return 0;
     }

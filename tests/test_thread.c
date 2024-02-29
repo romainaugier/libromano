@@ -85,6 +85,8 @@ int main(void)
 
     threadpool_wait(tp);
 
+    logger_log(LogLevel_Info, "Threadpool work done");
+
     free(work_data);
 
     logger_log(LogLevel_Info, "Releasing threadpool");
