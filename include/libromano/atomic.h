@@ -100,3 +100,21 @@ static ROMANO_FORCE_INLINE atomic64_t atomic_compare_exchange_64(atomic64_t* vol
     return __sync_val_compare_and_swap(dest, compare, exchange);
 #endif /* defined(ROMANO_MSVC) */
 }
+
+static ROMANO_FORCE_INLINE atomic32_t atomic_exchange_32(atomic32_t* volatile dest, atomic32_t exchange)
+{
+#if defined(ROMANO_MSVC)
+    return InterlockedExchange((LONG*)dest, exchange);
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+    return __sync_lock_test_and_set(dest, exchange);
+#endif /* defined(ROMANO_MSVC) */
+}
+
+static ROMANO_FORCE_INLINE atomic64_t atomic_exchange_64(atomic64_t* volatile dest, atomic64_t exchange)
+{
+#if defined(ROMANO_MSVC)
+    return InterlockedExchange(dest, exchange);
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+    return __sync_lock_test_and_set(dest, exchange);
+#endif /* defined(ROMANO_MSVC) */
+}

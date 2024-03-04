@@ -42,12 +42,29 @@ void* cmpxchg_func2(void* data)
     return NULL;
 }
 
+void* xchg_func(void* data)
+{
+    size_t i;
+
+    thread_sleep(10);
+
+    for(i = 0; i < 1000; i++)
+    {
+        atomic_exchange_32((atomic32_t*)data, i);
+    }
+
+    return NULL;
+}
+
 int main(void)
 {
     atomic32_t counter = 0;
     atomic32_t cmpxchg = 0;
+    atomic32_t xchg = 0;
 
     logger_init();
+
+    logger_log(LogLevel_Info, "Starting atomics tests");
 
     thread_t* t1 = thread_create(func, (void*)&counter);
     thread_t* t2 = thread_create(func, (void*)&counter);
@@ -68,6 +85,19 @@ int main(void)
 
     thread_join(t3);
     thread_join(t4);
+
+    logger_log(LogLevel_Info, "Testing exchange atomics");
+
+    thread_t* t5 = thread_create(xchg_func, (void*)&xchg);
+    thread_t* t6 = thread_create(xchg_func, (void*)&xchg);
+
+    thread_start(t5);
+    thread_start(t6);
+
+    thread_join(t5);
+    thread_join(t6);
+
+    logger_log(LogLevel_Info, "Finished atomics test");
 
     logger_release();
 
