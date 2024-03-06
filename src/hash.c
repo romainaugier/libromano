@@ -53,7 +53,7 @@ uint32_t hash_fnv1a_pippip(const char *str, size_t n)
         hash64 = (hash64 ^ _PADr_KAZE(*(uint64_t *)(str + 0), (8 - n) << 3)) * PRIME;        
     }
 
-    hash32 = (uint32_t)(hash64 ^ (hash64>>32));
+    hash32 = (uint32_t)(hash64 ^ (hash64 >> 32));
     return hash32 ^ (hash32 >> 16);
 }
 

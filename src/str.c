@@ -91,3 +91,14 @@ str* str_split(char* data, const char* separator, uint32_t* count)
     return result;
 }
 
+int str_eq(str a, str b)
+{
+    size_t i;
+
+    if(str_length(a) != str_length(b))
+    {
+        return 0;
+    }
+
+    return memcmp(a, b, str_length(a) * sizeof(char)) == 0 ? 1 : 0;
+}

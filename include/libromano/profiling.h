@@ -22,9 +22,15 @@ ROMANO_CPP_ENTER
                       do { func; } while (0);                                                                             \
                       printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); } \
 
+#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); \
+
+#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_name, (uint64_t)(__rdtsc() - ___scp_start)); } \
+
 #else
 
 #define PROFILE(func) func
+#define SCOPED_PROFILE_START(name)
+#define SCOPED_PROFILE_END
 
 #endif /* defined(ROMANO_ENABLE_PROFILING) */
 

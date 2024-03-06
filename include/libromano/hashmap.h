@@ -12,24 +12,28 @@
 ROMANO_CPP_ENTER
 
 struct _hashmap;
-typedef struct _hashmap hashmap;
+typedef struct _hashmap hashmap_t;
 
-ROMANO_API hashmap* hashmap_new(void);
+ROMANO_API hashmap_t* hashmap_new(void);
 
-ROMANO_API void hashmap_insert(hashmap* hashmap, 
+ROMANO_API void hashmap_insert(hashmap_t* hashmap, 
                                const char* key, 
                                void* value, 
                                size_t value_size);
 
-ROMANO_API void hashmap_update(hashmap* hashmap,
+ROMANO_API void hashmap_update(hashmap_t* hashmap,
                                const char* key,
                                void* value,
                                size_t value_size);
 
-ROMANO_API void* hashmap_get(hashmap* hashmap, 
-                             const char* key);
+ROMANO_API void* hashmap_get(hashmap_t* hashmap, 
+                             const char* key,
+                             size_t* value_size);
 
-ROMANO_API void hashmap_free(hashmap* hashmap);
+ROMANO_API void hashmap_remove(hashmap_t* hashmap,
+                               const char* key);
+
+ROMANO_API void hashmap_free(hashmap_t* hashmap);
 
 ROMANO_CPP_END
 

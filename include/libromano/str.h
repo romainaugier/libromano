@@ -26,6 +26,9 @@ ROMANO_API size_t str_length(const str data);
 /* Splits a data into multiple ones and returns a pointer to the list of datas */
 ROMANO_API str* str_split(char* data, const char* separator, uint32_t* count);
 
+/* Returns one if the two strings are equals, 0 otherwise */
+ROMANO_API int str_eq(str a, str b);
+
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_STR) */
