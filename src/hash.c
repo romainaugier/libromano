@@ -24,7 +24,7 @@ uint32_t hash_fnv1a(const char* str, size_t n)
     return result;
 }
 
-#define _PADr_KAZE(x, n) ( ((x) << (n))>>(n) )
+#define _PADr_KAZE(x, n) (((x) << (n)) >> (n))
 
 uint32_t hash_fnv1a_pippip(const char *str, size_t n) 
 {

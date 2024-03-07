@@ -17,22 +17,17 @@ struct _entry {
 
 typedef struct _entry entry_t;
 
-static entry_t* entry_new(const char* key, 
-                          void* value,
-                          size_t value_size)
+static void entry_new(entry_t* entry,
+                      const char* key, 
+                      void* value,
+                      size_t value_size)
 {
-    entry_t* new_entry;
+    entry->key = str_new(key);
+    entry->value = malloc(value_size);
 
-    new_entry = malloc(sizeof(entry_t));
+    memcpy(entry->value, value, value_size);
 
-    new_entry->key = str_new(key);
-    new_entry->value = malloc(value_size);
-
-    memcpy(value, new_entry->value, value_size);
-
-    new_entry->value_size = value_size;
-
-    return new_entry;
+    entry->value_size = value_size;
 }
 
 static void entry_free(entry_t* entry)
@@ -44,6 +39,7 @@ static void entry_free(entry_t* entry)
 #define HASHMAP_MAX_LOAD 0.75
 #define TOMBSTONE 0xFFFFFFFFFFFFFFFF
 #define GOLDEN_RATIO 1.61f
+#define HASHMAP_INITIAL_CAPACITY 1024
 
 struct _hashmap {
    entry_t* entries;
@@ -51,12 +47,16 @@ struct _hashmap {
    size_t capacity;
 };
 
+void hashmap_grow(hashmap_t* hashmap, size_t capacity);
+
 hashmap_t* hashmap_new(void)
 {
     hashmap_t* hm = (hashmap_t*)malloc(sizeof(hashmap_t));
     hm->entries = NULL;
     hm->size = 0;
     hm->capacity = 0;
+
+    hashmap_grow(hm, HASHMAP_INITIAL_CAPACITY);
 
     return hm;
 }
@@ -67,18 +67,16 @@ entry_t* hashmap_find(hashmap_t* hashmap, const char* key)
     entry_t* tombstone;
     uint32_t index;
     size_t key_len;
-    size_t cmp_len;
 
+    index = 0;
     entry = NULL;
     tombstone = NULL;
     key_len = strlen(key);
-    index = hash_fnv1a_pippip(key, key_len) % hashmap->capacity;
+    index = hash_fnv1a(key, key_len) % hashmap->capacity;
 
     for(;;)
     {
         entry = &hashmap->entries[index];
-
-        cmp_len = key_len > str_length(entry->key) ? str_length(entry->key) : key_len;
 
         if(entry->key == NULL)
         {
@@ -91,7 +89,7 @@ entry_t* hashmap_find(hashmap_t* hashmap, const char* key)
                 if(tombstone == NULL) tombstone = entry;
             }
         }
-        else if(strncmp(key, entry->key, cmp_len))
+        else if(strncmp(key, entry->key, key_len > str_length(entry->key) ? str_length(entry->key) : key_len) == 0)
         {
             return entry;
         }
@@ -122,7 +120,7 @@ void hashmap_grow(hashmap_t* hashmap, size_t capacity)
 
     if(hashmap->entries != NULL)
     {
-        for(i = 0; i < capacity; i++)
+        for(i = 0; i < hashmap->capacity; i++)
         {
             entry = &hashmap->entries[i];
 
@@ -171,7 +169,7 @@ void hashmap_insert(hashmap_t* hashmap,
         entry_free(entry);
     }
 
-    entry = entry_new(key, value, value_size);
+    entry_new(entry, key, value, value_size);
 }
 
 void hashmap_update(hashmap_t* hashmap,
@@ -192,7 +190,7 @@ void hashmap_update(hashmap_t* hashmap,
         entry_free(entry);
     }
 
-    entry = entry_new(key, value, value_size);
+    entry_new(entry, key, value, value_size);
 }
 
 void* hashmap_get(hashmap_t* hashmap,

@@ -7,6 +7,8 @@
 
 #include "libromano/libromano.h"
 
+#include <stdio.h>
+
 #if defined(ROMANO_MSVC)
 #include <intrin.h>
 #else
