@@ -207,28 +207,33 @@ static hashmap_t* hashmap_new(void)
     return hm;
 }
 
-static entry_t* hashmap_find(hashmap_t* hashmap,
-                             const char* key)
+static entry_t* entry_find(entry_t* entries,
+                           size_t capacity,
+                           const char* key)
 {
     entry_t* entry;
     entry_t* tombstone;
     uint32_t index;
     size_t key_len;
 
-    assert(hashmap != NULL);
+    assert(entries != NULL);
     assert(key != NULL);
 
     index = 0;
     entry = NULL;
     tombstone = NULL;
     key_len = strlen(key);
-    index = hash_fnv1a(key, key_len) % hashmap->capacity;
+    index = hash_fnv1a(key, key_len) % capacity;
 
     for(;;)
     {
-        entry = &hashmap->entries[index];
+        entry = &entries[index];
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
         if(entry_get_key_size(entry) == 0)
+#else
+        if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
         {
             if(entry_get_value_size(entry) != TOMBSTONE)
             {
@@ -239,15 +244,21 @@ static entry_t* hashmap_find(hashmap_t* hashmap,
                 if(tombstone == NULL) tombstone = entry;
             }
         }
-        else if(strncmp(key, entry_get_key(entry), key_len > entry_get_key_size(entry) ? entry_get_key_size(entry) : key_len) == 0)
+        else if(entry_get_key_size(entry) == key_len && strncmp(key, entry_get_key(entry), key_len) == 0)
         {
             return entry;
         }
 
-        index = (index + 1) % hashmap->capacity;
+        index = (index + 1) % capacity;
     }
 
     return NULL;
+}
+
+static entry_t* hashmap_find(hashmap_t* hashmap,
+                             const char* key)
+{
+    return entry_find(hashmap->entries, hashmap->capacity, key);
 }
 
 static void hashmap_grow(hashmap_t* hashmap,
@@ -278,13 +289,18 @@ static void hashmap_grow(hashmap_t* hashmap,
         {
             entry = &hashmap->entries[i];
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
             if(entry_get_key_size(entry) == 0)
+#else
+            if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
             {
                 continue;
             }
 
-            new_entry = hashmap_find(hashmap, entry_get_key(entry));
-            memmove(new_entry, entry, sizeof(entry));
+            new_entry = entry_find(entries, capacity, entry_get_key(entry));
+
+            memmove(new_entry, entry, sizeof(entry_t));
 
             hashmap->size++;
         }
@@ -316,7 +332,11 @@ static void hashmap_insert(hashmap_t* hashmap,
 
     entry = hashmap_find(hashmap, key);
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
+#else
+    if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     {
         hashmap->size++;
     }
@@ -341,7 +361,11 @@ static void hashmap_update(hashmap_t* hashmap,
 
     entry = hashmap_find(hashmap, key);
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
+#else
+    if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     {
         hashmap->size++;
     }
@@ -370,7 +394,11 @@ static void* hashmap_get(hashmap_t* hashmap,
 
     entry = hashmap_find(hashmap, key);
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
+#else
+    if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     {
         return NULL;
     }
@@ -395,7 +423,11 @@ static void hashmap_remove(hashmap_t* hashmap,
 
     entry = hashmap_find(hashmap, key);
 
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
+#else
+    if(entry->key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     {
         return;
     }
@@ -405,6 +437,8 @@ static void hashmap_remove(hashmap_t* hashmap,
     entry->key = NULL;
     entry->value = NULL;
     entry->value_size = TOMBSTONE;
+
+    hashmap->size--;
 }
 
 static void hashmap_free(hashmap_t* hashmap)
@@ -415,7 +449,11 @@ static void hashmap_free(hashmap_t* hashmap)
 
     for(i = 0; i < hashmap->size; i++)
     {
-        if(entry_get_key_size(&hashmap->entries[i]) > 0)
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+        if(entry_get_key_size(&hashmap->entries[i]) == 0)
+#else
+        if(hashmap->entries[i].key == NULL)
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
         {
             entry_free(&hashmap->entries[i]);
         }
