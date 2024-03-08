@@ -2,6 +2,7 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#define ROMANO_HASHMAP_INTERN_SMALL_VALUES
 #include "libromano/hashmap.h"
 
 #define ROMANO_ENABLE_PROFILING
@@ -41,6 +42,10 @@ int main(void)
         else if(*num_ptr != num)
         {
             logger_log(LogLevel_Error, "Num_ptr does not correspond to num: %d != %d", num, *num_ptr);
+        }
+        else if(i % 100000 == 0)
+        {
+            logger_log(LogLevel_Info, "Value for key \"%s\": %d", key, *num_ptr);
         }
 
         str_free(key);

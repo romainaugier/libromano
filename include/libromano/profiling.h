@@ -18,22 +18,44 @@
 ROMANO_CPP_ENTER
 
 #if defined(ROMANO_ENABLE_PROFILING)
+#if defined(ROMANO_PROFILING_MICROSECONDS)
+#define PROFILE(func) { uint64_t s = __rdtsc();                                                                                             \
+                      do { func; } while (0);                                                                                               \
+                      printf("%s at %s:%d -> %3f microseconds\n", #func, __FILE__, __LINE__, (float)((uint64_t)__rdtsc() - s) / 1000.0f); } \
 
+#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); 
+
+#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %3f microseconds\n", ___scp_name, (float)((uint64_t)__rdtsc() - ___scp_start) / 1000.0f); } 
+#elif defined(ROMANO_PROFILING_MILLISECONDS)
+#define PROFILE(func) { uint64_t s = __rdtsc();                                                                                                \
+                      do { func; } while (0);                                                                                                  \
+                      printf("%s at %s:%d -> %3f milliseconds\n", #func, __FILE__, __LINE__, (float)((uint64_t)__rdtsc() - s) / 1000000.0f); } \
+
+#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); 
+
+#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %3f milliseconds\n", ___scp_name, (float)((uint64_t)__rdtsc() - ___scp_start) / 1000000.0f); } 
+#elif defined(ROMANO_PROFILING_SECONDS)
+#define PROFILE(func) { uint64_t s = __rdtsc();                                                                                                   \
+                      do { func; } while (0);                                                                                                     \
+                      printf("%s at %s:%d -> %3f microseconds\n", #func, __FILE__, __LINE__, (float)((uint64_t)__rdtsc() - s) / 1000000000.0f); } \
+
+#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); 
+
+#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %3f microseconds\n", ___scp_name, (float)((uint64_t)__rdtsc() - ___scp_start) / 1000000000.0f); } 
+#else
 /* It's not really cpu cycles but well.. */
 #define PROFILE(func) { uint64_t s = __rdtsc();                                                                           \
                       do { func; } while (0);                                                                             \
                       printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); } \
 
-#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); \
+#define SCOPED_PROFILE_START(name) { const char* ___scp_name = name; uint64_t ___scp_start = __rdtsc(); 
 
-#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_name, (uint64_t)(__rdtsc() - ___scp_start)); } \
-
+#define SCOPED_PROFILE_END printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_name, (uint64_t)(__rdtsc() - ___scp_start)); } 
+#endif /* defined(ROMANO_PROFILING_MICROSECONDS) */
 #else
-
 #define PROFILE(func) func
 #define SCOPED_PROFILE_START(name)
 #define SCOPED_PROFILE_END
-
 #endif /* defined(ROMANO_ENABLE_PROFILING) */
 
 ROMANO_CPP_END

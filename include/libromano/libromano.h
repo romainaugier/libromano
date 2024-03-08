@@ -25,8 +25,10 @@
 
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
 #define ROMANO_X64
+#define ROMANO_SIZEOF_PTR 8
 #elif INTPTR_MAX == INT32_MAX
 #define ROMANO_X86
+#define ROMANO_SIZEOF_PTR 4
 #endif /* INTPTR_MAX == INT64_MAX || defined(__x86_64__) */
 
 #if defined(_WIN32)
@@ -111,5 +113,13 @@
     } CONCAT(__outscope_assert_, __COUNTER__)
 
 #define ROMANO_NOT_IMPLEMENTED "Function "ROMANO_FUNCTION" not implemented" 
+
+#if defined(ROMANO_MSVC)
+#define ROMANO_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+#define ROMANO_PACKED_STRUCT(__struct__) __struct__ __attribute__((__packed__))
+#else
+#define ROMANO_PACKED_STRUCT(__struct__) __struct__
+#endif /* defined(ROMANO_MSVC) */
 
 #endif /* !defined(__LIBROMANO) */
