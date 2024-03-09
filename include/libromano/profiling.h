@@ -20,9 +20,9 @@ ROMANO_CPP_ENTER
 #if defined(ROMANO_ENABLE_PROFILING)
 /* Profiling measured in cpu cycles */
 /* It's not 100% precise because we'd need the cpu frequency while measuring */
-#define PROFILE(func) { uint64_t s = __rdtsc();                                                                           \
-                      do { func; } while (0);                                                                             \
-                      printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); } \
+#define PROFILE(func) { uint64_t s = __rdtsc();                                                                             \
+                        do { func; } while (0);                                                                             \
+                        printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); } \
 
 #define SCOPED_PROFILE_START(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = __rdtsc(); 
 #define SCOPED_PROFILE_END(name) printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_##name, (uint64_t)(__rdtsc() - ___scp_##name##_start)); 

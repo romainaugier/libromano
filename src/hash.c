@@ -3,8 +3,10 @@
 /* All rights reserved. */
 
 #include "libromano/hash.h"
+
 #include <ctype.h>
 
+/* fnv1a hash */
 uint32_t hash_fnv1a(const char* str, size_t n)
 {
     uint32_t result = EMPTY_HASH;
@@ -18,19 +20,20 @@ uint32_t hash_fnv1a(const char* str, size_t n)
     for(i = 0; i < n; i++)
     {
         result ^= (uint32_t)tolower(s[i]);
-        result *= (uint32_t)0x01000193;
+        result *= (uint32_t)0x01000193u;
     }
 
     return result;
 }
 
+/* fnv1a_pippip hash */
 #define _PADr_KAZE(x, n) (((x) << (n)) >> (n))
 
 uint32_t hash_fnv1a_pippip(const char *str, size_t n) 
 {
-	const uint32_t PRIME = 591798841; 
+	const uint32_t PRIME = 591798841u; 
     uint32_t hash32; 
-    uint64_t hash64 = 14695981039346656037;
+    uint64_t hash64 = 14695981039346656037u;
 	size_t cycles, nd_head;
 
     if (n > 8)

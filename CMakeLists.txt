@@ -20,6 +20,9 @@ endif()
 # Maths library
 find_library(MATH_LIBRARY m)
 
+# xxHash
+include_directories("${CMAKE_SOURCE_DIR}/xxHash")
+
 add_subdirectory(src)
 
 if(RUN_TESTS EQUAL 1)

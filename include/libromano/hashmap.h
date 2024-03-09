@@ -8,6 +8,7 @@
 #define __LIBROMANO_HASHMAP
 
 #include "libromano/libromano.h"
+#include "libromano/hash.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,13 +48,12 @@ ROMANO_PACKED_STRUCT(struct _entry {
 
 typedef struct _entry entry_t;
 
-static entry_new(entry_t* entry,
-                 const char* key, 
-                 void* value,
-                 size_t value_size)
+static void entry_new(entry_t* entry,
+                      const char* key, 
+                      void* value,
+                      size_t value_size)
 {
     size_t key_size;
-    char* entry_cast;
 
     assert(entry != NULL);
 
@@ -62,10 +62,9 @@ static entry_new(entry_t* entry,
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES 
     if(ENTRY_KEY_CAN_BE_INTERNED(key_size))
     {
-        entry_cast = (char*)&(*entry);
-        memcpy(&entry_cast[0], key, key_size * sizeof(char));
-        entry_cast[key_size] = '\0';
-        entry_cast[INTERNED_SIZE] = (key_size & 0xFF);
+        memcpy(entry, key, key_size * sizeof(char));
+        ((char*)entry)[key_size] = '\0';
+        ((char*)entry)[INTERNED_SIZE] = (key_size & 0xFF);
     }
     else
     {
@@ -77,9 +76,8 @@ static entry_new(entry_t* entry,
 
     if(ENTRY_VALUE_CAN_BE_INTERNED(value_size))
     {
-        entry_cast = (char*)&(*entry);
-        memcpy(&entry_cast[INTERNED_SIZE + 1], value, value_size);
-        entry_cast[INTERNED_SIZE * 2] = (value_size & 0xFF);
+        memcpy(&((char*)entry)[INTERNED_SIZE + 1], value, value_size);
+        ((char*)entry)[INTERNED_SIZE * 2] = (value_size & 0xFF);
     }
     else
     {
@@ -100,7 +98,7 @@ static entry_new(entry_t* entry,
 #endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
 }
 
-static size_t entry_get_value_size(entry_t* entry)
+ROMANO_FORCE_INLINE static size_t entry_get_value_size(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     size_t value_size;
@@ -115,7 +113,7 @@ static size_t entry_get_value_size(entry_t* entry)
     return entry->value_size;
 }
 
-static void* entry_get_value(entry_t* entry)
+ROMANO_FORCE_INLINE static void* entry_get_value(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_value_size(entry) <= INTERNED_SIZE)
@@ -126,22 +124,17 @@ static void* entry_get_value(entry_t* entry)
     return entry->value;
 }
 
-static size_t entry_get_key_size(entry_t* entry)
+ROMANO_FORCE_INLINE static size_t entry_get_key_size(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-    size_t entry_size;
+    size_t key_size = (size_t)(((char*)entry)[INTERNED_SIZE]);
 
-    entry_size = (size_t)(((char*)entry)[INTERNED_SIZE]);
-
-    if(entry_size <= INTERNED_SIZE)
-    {
-        return entry_size;
-    }
+    return key_size <= INTERNED_SIZE ? key_size : entry->key_size;
 #endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     return entry->key_size;
 }
 
-static char* entry_get_key(entry_t* entry)
+ROMANO_FORCE_INLINE static char* entry_get_key(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) <= INTERNED_SIZE)
@@ -207,14 +200,15 @@ static hashmap_t* hashmap_new(void)
     return hm;
 }
 
-static entry_t* entry_find(entry_t* entries,
-                           size_t capacity,
-                           const char* key)
+ROMANO_FORCE_INLINE static entry_t* entry_find(entry_t* entries,
+                                               size_t capacity,
+                                               const char* key)
 {
     entry_t* entry;
     entry_t* tombstone;
     uint32_t index;
     size_t key_len;
+    size_t entry_key_len;
 
     assert(entries != NULL);
     assert(key != NULL);
@@ -229,8 +223,10 @@ static entry_t* entry_find(entry_t* entries,
     {
         entry = &entries[index];
 
+        entry_key_len = entry_get_key_size(entry);
+
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-        if(entry_get_key_size(entry) == 0)
+        if(entry_key_len == 0)
 #else
         if(entry->key == NULL)
 #endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
@@ -244,7 +240,7 @@ static entry_t* entry_find(entry_t* entries,
                 if(tombstone == NULL) tombstone = entry;
             }
         }
-        else if(entry_get_key_size(entry) == key_len && strncmp(key, entry_get_key(entry), key_len) == 0)
+        else if(entry_key_len == key_len && memcmp(key, entry_get_key(entry), key_len) == 0)
         {
             return entry;
         }

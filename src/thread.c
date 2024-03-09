@@ -477,7 +477,7 @@ void threadpool_release(threadpool_t* threadpool)
         thread_sleep(100);
     }
 
-    mutex_release(threadpool->work_mutex);
+    mutex_free(threadpool->work_mutex);
     threadpool->work_mutex = NULL;
 
     vector_free(threadpool->work_vector);

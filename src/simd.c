@@ -8,7 +8,7 @@
 
 static int _vectorization_mode = 0;
 
-void ROMANO_DLL_ENTRY check_vectorization() 
+void ROMANO_DLL_ENTRY check_vectorization(void) 
 {
     int regs[4];
 
@@ -47,7 +47,6 @@ void ROMANO_DLL_ENTRY check_vectorization()
         }
     }
 }
-
 
 int simd_has_sse(void)
 {

@@ -9,7 +9,7 @@
 
 #include "libromano/libromano.h"
 
-#define EMPTY_HASH ((uint32_t)0x811c9dc5)
+#define EMPTY_HASH ((uint32_t)0x811c9dc5u)
 
 ROMANO_CPP_ENTER
 

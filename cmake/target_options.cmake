@@ -9,12 +9,16 @@ function(set_target_options target_name)
 
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-O0 -fsanitize=leak -fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -march=native>)
+
+        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_GCC 1)
         set(CMAKE_C_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
 
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-O0 -fsanitize=leak -fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ffast-math -march=native -ftree-vectorizer-verbose=2>)
+
+        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
         set(ROMANO_INTEL 1)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")

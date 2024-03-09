@@ -6,6 +6,7 @@
 #define __LIBROMANO_SIMD
 
 #include "libromano/libromano.h"
+
 #include <stdlib.h>
 
 ROMANO_CPP_ENTER
@@ -24,6 +25,9 @@ typedef enum
     VectorizationMode_AVX = 2
 } vectorization_mode;
 
+#if defined(ROMANO_WIN)
+void check_vectorization(void);
+#endif /* defined(ROMANO_WIN) */
 
 ROMANO_API int simd_has_sse(void);
 
