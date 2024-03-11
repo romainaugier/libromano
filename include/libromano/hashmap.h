@@ -200,14 +200,14 @@ static hashmap_t* hashmap_new(void)
     return hm;
 }
 
-ROMANO_FORCE_INLINE static entry_t* entry_find(entry_t* entries,
-                                               size_t capacity,
-                                               const char* key)
+static entry_t* entry_find(entry_t* entries,
+                           size_t capacity,
+                           const char* key,
+                           size_t key_len)
 {
     entry_t* entry;
     entry_t* tombstone;
     uint32_t index;
-    size_t key_len;
     size_t entry_key_len;
 
     assert(entries != NULL);
@@ -216,7 +216,6 @@ ROMANO_FORCE_INLINE static entry_t* entry_find(entry_t* entries,
     index = 0;
     entry = NULL;
     tombstone = NULL;
-    key_len = strlen(key);
     index = hash_fnv1a(key, key_len) % capacity;
 
     for(;;)
@@ -252,9 +251,10 @@ ROMANO_FORCE_INLINE static entry_t* entry_find(entry_t* entries,
 }
 
 static entry_t* hashmap_find(hashmap_t* hashmap,
-                             const char* key)
+                             const char* key,
+                             size_t key_len)
 {
-    return entry_find(hashmap->entries, hashmap->capacity, key);
+    return entry_find(hashmap->entries, hashmap->capacity, key, key_len);
 }
 
 static void hashmap_grow(hashmap_t* hashmap,
@@ -294,7 +294,7 @@ static void hashmap_grow(hashmap_t* hashmap,
                 continue;
             }
 
-            new_entry = entry_find(entries, capacity, entry_get_key(entry));
+            new_entry = entry_find(entries, capacity, entry_get_key(entry), entry_get_key_size(entry));
 
             memmove(new_entry, entry, sizeof(entry_t));
 
@@ -310,6 +310,7 @@ static void hashmap_grow(hashmap_t* hashmap,
 
 static void hashmap_insert(hashmap_t* hashmap, 
                            const char* key, 
+                           size_t key_len,
                            void* value, 
                            size_t value_size)
 {
@@ -326,7 +327,7 @@ static void hashmap_insert(hashmap_t* hashmap,
         hashmap_grow(hashmap, new_capacity);
     }
 
-    entry = hashmap_find(hashmap, key);
+    entry = hashmap_find(hashmap, key, key_len);
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
@@ -346,6 +347,7 @@ static void hashmap_insert(hashmap_t* hashmap,
 
 static void hashmap_update(hashmap_t* hashmap,
                            const char* key,
+                           size_t key_len,
                            void* value,
                            size_t value_size)
 {
@@ -355,7 +357,7 @@ static void hashmap_update(hashmap_t* hashmap,
     assert(key != NULL);
     assert(value != NULL);
 
-    entry = hashmap_find(hashmap, key);
+    entry = hashmap_find(hashmap, key, key_len);
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
@@ -375,6 +377,7 @@ static void hashmap_update(hashmap_t* hashmap,
 
 static void* hashmap_get(hashmap_t* hashmap,
                          const char* key,
+                         size_t key_len,
                          size_t* value_size)
 {
     entry_t* entry;
@@ -388,7 +391,7 @@ static void* hashmap_get(hashmap_t* hashmap,
         return NULL;
     }
 
-    entry = hashmap_find(hashmap, key);
+    entry = hashmap_find(hashmap, key, key_len);
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)
@@ -405,7 +408,8 @@ static void* hashmap_get(hashmap_t* hashmap,
 }
 
 static void hashmap_remove(hashmap_t* hashmap,
-                           const char* key)
+                           const char* key,
+                           size_t key_len)
 {
     entry_t* entry;
 
@@ -417,7 +421,7 @@ static void hashmap_remove(hashmap_t* hashmap,
         return;
     }
 
-    entry = hashmap_find(hashmap, key);
+    entry = hashmap_find(hashmap, key, key_len);
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(entry_get_key_size(entry) == 0)

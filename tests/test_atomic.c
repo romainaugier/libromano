@@ -20,13 +20,14 @@ void* func(void* data)
 
 void* cmpxchg_func1(void* data)
 {
+    size_t id;
+
     while(!atomic_compare_exchange_32((atomic32_t*)data, 2, 1))
     {
-        logger_log(LogLevel_Info, "Sleeping 10ms");
-        thread_sleep(10);
+        id = thread_get_id();
     }
 
-    logger_log(LogLevel_Info, "Atomic set to 2");
+    logger_log(LogLevel_Info, "Atomic set to 2 from tid: %zu", id);
 
     return NULL;
 }
@@ -76,6 +77,8 @@ int main(void)
     thread_join(t2);
 
     logger_log(LogLevel_Info, "Counter: %d", counter);
+
+    logger_log(LogLevel_Info, "Testing compare exchange atomics");
 
     thread_t* t3 = thread_create(cmpxchg_func1, (void*)&cmpxchg);
     thread_t* t4 = thread_create(cmpxchg_func2, (void*)&cmpxchg);

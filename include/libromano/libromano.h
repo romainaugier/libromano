@@ -122,4 +122,18 @@
 #define ROMANO_PACKED_STRUCT(__struct__) __struct__
 #endif /* defined(ROMANO_MSVC) */
 
+#if defined(ROMANO_MSVC)
+#define dump_struct(s) 
+#elif defined(ROMANO_CLANG)
+#define dump_struct(s) __builtin_dump_struct(s, printf)
+#elif defined(ROMANO_GCC)
+#define dump_struct(s) 
+#endif /* defined(ROMANO_MSVC) */
+
+#if defined(DEBUG_BUILD)
+#define ROMANO_DEBUG 1
+#else
+#define ROMANO_DEBUG 0
+#endif /* defined(DEBUG_BUILD) */
+
 #endif /* !defined(__LIBROMANO) */

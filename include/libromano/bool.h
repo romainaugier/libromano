@@ -9,10 +9,7 @@
 
 ROMANO_CPP_ENTER
 
-typedef struct _bool 
-{
-    char data;
-} bool;
+typedef int bool;
 
 ROMANO_CPP_END
 

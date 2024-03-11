@@ -32,4 +32,7 @@ function(set_target_options target_name)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:/fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar>)
     endif()
+
+    # Provides the macro definition DEBUG_BUILD
+    target_compile_definitions(${target_name} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
 endfunction()

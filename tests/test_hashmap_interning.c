@@ -35,7 +35,7 @@ int main(void)
 
         MEAN_PROFILE_START(_hashmap_insert);
 
-        hashmap_insert(hashmap, key, &num, sizeof(int));
+        hashmap_insert(hashmap, key, str_length(key), &num, sizeof(int));
 
         MEAN_PROFILE_STOP(_hashmap_insert);
 
@@ -63,7 +63,7 @@ int main(void)
 
         MEAN_PROFILE_START(_hashmap_get);
 
-        int* num_ptr = (int*)hashmap_get(hashmap, key, &size);
+        int* num_ptr = (int*)hashmap_get(hashmap, key, str_length(key), &size);
 
         MEAN_PROFILE_STOP(_hashmap_get);
 
@@ -96,7 +96,7 @@ int main(void)
 
         MEAN_PROFILE_START(_hashmap_delete);
 
-        hashmap_remove(hashmap, key);
+        hashmap_remove(hashmap, key, str_length(key));
 
         MEAN_PROFILE_STOP(_hashmap_delete);
 

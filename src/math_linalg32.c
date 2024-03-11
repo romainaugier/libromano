@@ -4,37 +4,6 @@
 
 #include "libromano/math/linalg32.h"
 
-/* VEC3 */
-
-struct vec3 {
-    float x, y, z;
-};
-
-vec3_t vec3_add(const vec3_t a, const vec3_t b)
-{
-
-}
-
-vec3_t vec3_sub(const vec3_t a, const vec3_t b)
-{
-
-}
-
-vec3_t vec3_mul(const vec3_t a, const vec3_t b)
-{
-
-}
-
-vec3_t vec3_div(const vec3_t a, const vec3_t b)
-{
-
-}
-
-float vec3_dot(const vec3_t a, const vec3_t b)
-{
-
-}
-
 /* MATRIX */
 
 #define MATRIX_SIZE_N(A) ((int)A.data[0])
@@ -52,6 +21,8 @@ matrix_t matrix_create(const int N, const int M)
     A.data = (float*)calloc(N * M + 2, sizeof(float));
     MATRIX_SET_SIZE_N(A, N);
     MATRIX_SET_SIZE_M(A, M);
+
+    return A;
 }
 
 void matrix_destroy(matrix_t* A)

@@ -5,19 +5,24 @@
 #include "libromano/libromano.h"
 #include "libromano/simd.h"
 
+#if defined(ROMANO_WIN)
+#include <Windows.h>
+#endif /* defined(ROMANO_WIN) */
+
 /* 
    In this source file we execute all functions that need to be executed at runtime to check and
    set some global variables (for simd vectorization, cpu frequency for profiling...) 
 */
 
 #if defined(ROMANO_WIN)
-#include <Windows.h>
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
 {
     switch (ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
             /* Code to run when the DLL is loaded */
+#if ROMANO_DEBUG
+            printf("libromano dll entry\n");
+#endif /* ROMANO_DEBUG */
             check_vectorization();
             break;
         case DLL_THREAD_ATTACH:
@@ -26,6 +31,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
         case DLL_PROCESS_DETACH:
             /* Code to run when the DLL is unloaded */
+#if ROMANO_DEBUG
+            printf("libromano dll exit\n");
+#endif /* ROMANO_DEBUG */
             break;
     }
 
