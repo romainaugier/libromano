@@ -6,6 +6,8 @@
 #define __LIBROMANO_MATH_LINALG32
 
 #include "libromano/libromano.h"
+#include "libromano/math/common.h"
+
 #include <stdlib.h>
 
 ROMANO_CPP_ENTER
@@ -78,7 +80,14 @@ ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
 
 ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
 {
+    float t;
     vec3_t res;
+
+    t = math_rsqrt(vec3_dot(v, v));
+
+    res.x = v.x * t;
+    res.y = v.y * t;
+    res.z = v.z * t;
 
     return res;
 }
