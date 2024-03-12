@@ -21,24 +21,40 @@ void* func(void* data)
 void* cmpxchg_func1(void* data)
 {
     size_t id;
+    id = thread_get_id();
 
-    while(!atomic_compare_exchange_32((atomic32_t*)data, 2, 1))
+    while(1)
     {
-        id = thread_get_id();
+        if(atomic_compare_exchange_32((atomic32_t*)data, 2, 1))
+        {
+            logger_log(LogLevel_Info, "Atomic set to 2 from tid: %zu", id);
+            break;
+        }
     }
 
-    logger_log(LogLevel_Info, "Atomic set to 2 from tid: %zu", id);
+    
 
     return NULL;
 }
 
 void* cmpxchg_func2(void* data)
 {
+    size_t id;
+    id = thread_get_id();
+
     thread_sleep(250);
 
     atomic_compare_exchange_32((atomic32_t*)data, 1, 0);
+    logger_log(LogLevel_Info, "Atomic set to 1 from tid: %zu", id);
 
-    logger_log(LogLevel_Info, "Atomic set to 1");
+    while(1)
+    {
+        if(atomic_compare_exchange_32((atomic32_t*)data, 3, 2))
+        {
+            logger_log(LogLevel_Info, "Atomic set to 3 from tid: %zu", id);
+            break;
+        }
+    }
 
     return NULL;
 }

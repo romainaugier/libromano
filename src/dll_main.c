@@ -13,7 +13,30 @@
 /* 
    In this source file we execute all functions that need to be executed at runtime to check and
    set some global variables (for simd vectorization, cpu frequency for profiling...) 
+
+   lib_entry is executed on dlopen / LoadLibrary
+   lib_exit is executed on dlclose / CloseLibrary
 */
+
+void ROMANO_LIB_ENTRY lib_entry(void)
+{
+#if ROMANO_DEBUG
+    printf("libromano entry\n");
+#endif /* ROMANO_DEBUG */
+    simd_check_vectorization();
+    mem_check_endianness();
+#if ROMANO_DEBUG
+    printf("libromano vectorization mode: %u\n", simd_get_vectorization_mode());
+    printf("libromano detected endianness: %u\n", mem_get_endianness());
+#endif /* ROMANO_DEBUG */
+}
+
+void ROMANO_LIB_EXIT lib_exit(void)
+{
+#if ROMANO_DEBUG
+    printf("libromano exit\n");
+#endif /* ROMANO_DEBUG */
+}
 
 #if defined(ROMANO_WIN)
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
@@ -21,15 +44,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
             /* Code to run when the DLL is loaded */
-#if ROMANO_DEBUG
-            printf("libromano dll entry\n");
-#endif /* ROMANO_DEBUG */
-            simd_check_vectorization();
-            mem_check_endianness();
-#if ROMANO_DEBUG
-            printf("libromano vectorization mode: %u\n", simd_get_vectorization_mode());
-            printf("libromano detected endianness: %u\n", mem_get_endianness());
-#endif /* ROMANO_DEBUG */
+            lib_entry();
             break;
         case DLL_THREAD_ATTACH:
             break;
@@ -37,9 +52,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
         case DLL_PROCESS_DETACH:
             /* Code to run when the DLL is unloaded */
-#if ROMANO_DEBUG
-            printf("libromano dll exit\n");
-#endif /* ROMANO_DEBUG */
+            lib_exit();
             break;
     }
 

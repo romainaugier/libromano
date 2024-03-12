@@ -61,18 +61,21 @@
 #elif defined(ROMANO_LINUX)
 #define ROMANO_EXPORT __attribute__((visibility("default")))
 #define ROMANO_IMPORT
-#endif /* defined(ROMANO_MSVC) */
+#endif /* defined(ROMANO_WIN) */
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 #define ROMANO_FORCE_INLINE __forceinline
-#define ROMANO_DLL_ENTRY
+#define ROMANO_LIB_ENTRY
+#define ROMANO_LIB_EXIT
 #elif defined(ROMANO_GCC)
 #define ROMANO_FORCE_INLINE inline __attribute__((always_inline)) 
-#define ROMANO_DLL_ENTRY __attribute__((constructor))
+#define ROMANO_LIB_ENTRY __attribute__((constructor))
+#define ROMANO_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANO_CLANG)
 #define ROMANO_FORCE_INLINE __attribute__((always_inline))
-#define ROMANO_DLL_ENTRY __attribute__((constructor))
-#endif /* defined(ROMANO_WIN) */
+#define ROMANO_LIB_ENTRY __attribute__((constructor))
+#define ROMANO_LIB_EXIT __attribute__((destructor))
+#endif /* defined(ROMANO_MSVC) */
 
 #if defined(ROMANO_BUILD_SHARED)
 #define ROMANO_API ROMANO_EXPORT

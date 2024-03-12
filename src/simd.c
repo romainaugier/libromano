@@ -8,7 +8,7 @@
 
 static int _vectorization_mode = 0;
 
-void ROMANO_DLL_ENTRY simd_check_vectorization(void) 
+void simd_check_vectorization(void) 
 {
     int regs[4];
 
