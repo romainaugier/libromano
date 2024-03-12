@@ -12,53 +12,38 @@ Roadmap (C library) :
 - :heavy_check_mark: vector
 - :x: command line arguments parser
 - :x: json
-- :clock3: hashmap
+- :heavy_check_mark: hashmap
 - :heavy_check_mark: logger
 - :clock3: socket (sockets and websockets)
 - :heavy_check_mark: socket server
-- :x: maths (float optimized maths library)
-- :x: linear algebra (float optimized linear algebra library)
+- :clock3: maths (float optimized maths library)
+- :clock3: linear algebra (float optimized linear algebra library)
 - :x: stats (float optimized statistics maths library)
 - :clock3: filesystem (python-like functions to interact with the filesystem)
 - :clock3: hash (various hash functions)
 - :clock3: memory (memory_arena, allocators...)
+- :clock3: cpu utilities
+- :clock3: simd utilities
 - :x: finance (maths, technical indicators...)
 - :x: optimization (differential evolution, gradient descent...)
-
-Roadmap (C++ Bindings) :
-- :x: string
-- :x: stringview
-- :x: thread
-- :x: vector
-- :x: command line arguments parser
-- :x: json
-- :x: hashmap
-- :x: logger
-- :x: socket
-- :x: socket server
-- :x: maths
-- :x: linear algebra
-- :x: filesystem
-- :x: hash
-- :x: memory
-- :x: finance
-- :x: optimization
 
 Roadmap (Python Bindings) :
 - :x: string
 - :x: stringview
-- :x: thread
 - :x: vector
 - :x: command line arguments parser
 - :x: json
 - :x: hashmap
 - :x: logger
-- :x: socket
+- :x: socket 
 - :x: socket server
 - :x: maths
-- :x: linear algebra
-- :x: filesystem
-- :x: hash
-- :x: memory
-- :x: finance
-- :x: optimization
+- :x: linear algebra 
+- :x: stats 
+- :x: filesystem 
+- :x: hash 
+- :x: memory 
+- :x: cpu utilities
+- :x: simd utilities
+- :x: finance 
+- :x: optimization 
