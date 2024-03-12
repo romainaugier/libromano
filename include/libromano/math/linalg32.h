@@ -8,7 +8,7 @@
 #define __LIBROMANO_MATH_LINALG32
 
 #include "libromano/libromano.h"
-#include "libromano/math/common.h"
+#include "libromano/math/common32.h"
 
 #include <stdlib.h>
 
@@ -20,7 +20,7 @@ typedef struct vec3 {
     float x, y, z;
 } vec3_t;
 
-ROMANO_FORCE_INLINE vec3_t vec3_add(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3_t vec3_add(const vec3_t a, const vec3_t b)
 {
     vec3_t res;
 
@@ -31,7 +31,7 @@ ROMANO_FORCE_INLINE vec3_t vec3_add(const vec3_t a, const vec3_t b)
     return res;
 }
 
-ROMANO_FORCE_INLINE vec3_t vec3_sub(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3_t vec3_sub(const vec3_t a, const vec3_t b)
 {
     vec3_t res;
 
@@ -42,7 +42,7 @@ ROMANO_FORCE_INLINE vec3_t vec3_sub(const vec3_t a, const vec3_t b)
     return res;
 }
 
-ROMANO_FORCE_INLINE vec3_t vec3_mul(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3_t vec3_mul(const vec3_t a, const vec3_t b)
 {
     vec3_t res;
 
@@ -53,7 +53,7 @@ ROMANO_FORCE_INLINE vec3_t vec3_mul(const vec3_t a, const vec3_t b)
     return res;
 }
 
-ROMANO_FORCE_INLINE vec3_t vec3_div(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3_t vec3_div(const vec3_t a, const vec3_t b)
 {
     vec3_t res;
 
@@ -64,12 +64,12 @@ ROMANO_FORCE_INLINE vec3_t vec3_div(const vec3_t a, const vec3_t b)
     return res;
 }
 
-ROMANO_FORCE_INLINE float vec3_dot(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE float vec3_dot(const vec3_t a, const vec3_t b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
 {
     vec3_t res;
 
@@ -80,7 +80,7 @@ ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
     return res;
 }
 
-ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
+static ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
 {
     float t;
     vec3_t res;
@@ -94,17 +94,17 @@ ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
     return res;
 }
 
-ROMANO_FORCE_INLINE float vec3_length(const vec3_t v)
+static ROMANO_FORCE_INLINE float vec3_length(const vec3_t v)
 {
     return math_sqrt(vec3_dot(v, v));
 }
 
-ROMANO_FORCE_INLINE float vec3_length2(const vec3_t v)
+static ROMANO_FORCE_INLINE float vec3_length2(const vec3_t v)
 {
     return vec3_dot(v, v);
 }
 
-ROMANO_FORCE_INLINE float vec3_dist(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE float vec3_dist(const vec3_t a, const vec3_t b)
 {
     return math_sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
