@@ -13,35 +13,38 @@
 
 #define GOLDEN_RATIO 1.61f
 
-vector_t* vector_new(size_t initial_capacity, size_t element_size)
+vector_t* vector_new(const size_t initial_capacity, const size_t element_size)
 {
     vector_t* new_vector;
+    size_t capacity;
 
     new_vector = (vector_t*)malloc(sizeof(vector_t));
 
-    initial_capacity = initial_capacity == 0 ? 128 : initial_capacity;
+    capacity = initial_capacity == 0 ? 128 : initial_capacity;
     
-    new_vector->data = malloc(3 * sizeof(size_t) + initial_capacity * element_size);
+    new_vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)new_vector->data)[0] = 0;
-    ((size_t*)new_vector->data)[1] = initial_capacity;
+    ((size_t*)new_vector->data)[1] = capacity;
     ((size_t*)new_vector->data)[2] = element_size;
 
     return new_vector;
 }
 
-void vector_init(vector_t* vector, size_t initial_capacity, size_t element_size)
+void vector_init(vector_t* vector, const size_t initial_capacity, const size_t element_size)
 {
-    initial_capacity = initial_capacity == 0 ? 128 : initial_capacity;
+    size_t capacity;
+
+    capacity = initial_capacity == 0 ? 128 : initial_capacity;
     
-    vector->data = malloc(3 * sizeof(size_t) + initial_capacity * element_size);
+    vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)vector->data)[0] = 0;
-    ((size_t*)vector->data)[1] = initial_capacity;
+    ((size_t*)vector->data)[1] = capacity;
     ((size_t*)vector->data)[2] = element_size;
 }
 
-void vector_resize(vector_t* vector, size_t new_capacity)
+void vector_resize(vector_t* vector, const size_t new_capacity)
 {
     size_t old_capacity;
     size_t element_size;
@@ -126,7 +129,7 @@ void vector_emplace_back(vector_t* vector, void* element)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_insert(vector_t* vector, void* element, size_t position)
+void vector_insert(vector_t* vector, void* element, const size_t position)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -153,7 +156,7 @@ void vector_insert(vector_t* vector, void* element, size_t position)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_remove(vector_t* vector, size_t position)
+void vector_remove(vector_t* vector, const size_t position)
 {
     size_t vec_size;
     size_t elem_size;
@@ -183,7 +186,7 @@ void vector_pop(vector_t* vector)
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
 
-void* vector_at(vector_t* vector, size_t index)
+void* vector_at(vector_t* vector, const size_t index)
 {
     size_t element_size;
     

@@ -2,6 +2,8 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#pragma once
+
 #if !defined(__LIBROMANO_MATH_LINALG32)
 #define __LIBROMANO_MATH_LINALG32
 
@@ -100,6 +102,11 @@ ROMANO_FORCE_INLINE float vec3_length(const vec3_t v)
 ROMANO_FORCE_INLINE float vec3_length2(const vec3_t v)
 {
     return vec3_dot(v, v);
+}
+
+ROMANO_FORCE_INLINE float vec3_dist(const vec3_t a, const vec3_t b)
+{
+    return math_sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
 
 /* MATRIX */

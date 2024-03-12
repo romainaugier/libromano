@@ -31,14 +31,6 @@ ROMANO_CPP_ENTER
 
 #define INTERNED_SIZE ((sizeof(size_t) - 1) + ROMANO_SIZEOF_PTR)
 
-#define ENTRY_KEY_CAN_BE_INTERNED(__key_size) (__key_size <= (INTERNED_SIZE - 1))
-#define ENTRY_KEY_INTERNED_SIZE(entry) (((char*)entry)[INTERNED_SIZE] & 0xFF)
-#define ENTRY_KEY_INTERNED(entry) (ENTRY_KEY_INTERNED_SIZE(entry) <= (INTERNED_SIZE - 1))
-
-#define ENTRY_VALUE_CAN_BE_INTERNED(__value_size) (__value_size <= INTERNED_SIZE)
-#define ENTRY_VALUE_INTERNED_SIZE(entry) (((char*)entry)[INTERNED_SIZE * 2] & 0xFF)
-#define ENTRY_VALUE_INTERNED(entry) (ENTRY_VALUE_INTERNED_SIZE(entry) <= INTERNED_SIZE)
-
 ROMANO_PACKED_STRUCT(struct _entry {
     char* key;
     size_t key_size;
@@ -50,17 +42,14 @@ typedef struct _entry entry_t;
 
 static void entry_new(entry_t* entry,
                       const char* key, 
+                      const size_t key_size,
                       void* value,
                       size_t value_size)
 {
-    size_t key_size;
-
     assert(entry != NULL);
 
-    key_size = strlen(key);
-
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES 
-    if(ENTRY_KEY_CAN_BE_INTERNED(key_size))
+    if(key_size <= (INTERNED_SIZE - 1))
     {
         memcpy(entry, key, key_size * sizeof(char));
         ((char*)entry)[key_size] = '\0';
@@ -74,7 +63,7 @@ static void entry_new(entry_t* entry,
         entry->key_size = key_size;
     }
 
-    if(ENTRY_VALUE_CAN_BE_INTERNED(value_size))
+    if(value_size <= INTERNED_SIZE)
     {
         memcpy(&((char*)entry)[INTERNED_SIZE + 1], value, value_size);
         ((char*)entry)[INTERNED_SIZE * 2] = (value_size & 0xFF);
@@ -150,12 +139,12 @@ static void entry_free(entry_t* entry)
     assert(entry != NULL);
     
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-    if(!ENTRY_KEY_INTERNED(entry))
+    if(!(entry_get_key_size(entry) <= INTERNED_SIZE))
     {
         free(entry->key);
     }
 
-    if(!ENTRY_VALUE_INTERNED(entry))
+    if(!(entry_get_value_size(entry) <= INTERNED_SIZE))
     {
         free(entry->value);
     }
@@ -342,7 +331,7 @@ static void hashmap_insert(hashmap_t* hashmap,
         entry_free(entry);
     }
 
-    entry_new(entry, key, value, value_size);
+    entry_new(entry, key, key_len, value, value_size);
 }
 
 static void hashmap_update(hashmap_t* hashmap,
@@ -372,7 +361,7 @@ static void hashmap_update(hashmap_t* hashmap,
         entry_free(entry);
     }
 
-    entry_new(entry, key, value, value_size);
+    entry_new(entry, key, key_len, value, value_size);
 }
 
 static void* hashmap_get(hashmap_t* hashmap,

@@ -2,8 +2,10 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#if !defined(__LIBROMANOFLAG)
-#define __LIBROMANOFLAG
+#pragma once
+
+#if !defined(__LIBROMANO_FLAG)
+#define __LIBROMANO_FLAG
 
 #include "libromano/libromano.h"
 
@@ -18,4 +20,4 @@ typedef uint64_t flag64;
 
 #define UNSET_FLAG(flag, bit) flag &= ~bit
 
-#endif  /* !defined(__LIBROMANOFLAG) */
+#endif  /* !defined(__LIBROMANO_FLAG) */

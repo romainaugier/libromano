@@ -13,6 +13,7 @@
 
 
 #define HASHMAP_LOOP_COUNT 0xFFFFF
+#define KEY_NAME "long_key_"
 
 
 int main(void)
@@ -31,7 +32,7 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt("key%d", i);
+        str key = str_new_fmt(KEY_NAME"%d", i);
 
         MEAN_PROFILE_START(_hashmap_insert);
 
@@ -57,7 +58,7 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt("key%d", i);
+        str key = str_new_fmt(KEY_NAME"%d", i);
 
         size_t size;
 
@@ -92,7 +93,7 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt("key%d", i);
+        str key = str_new_fmt(KEY_NAME"%d", i);
 
         MEAN_PROFILE_START(_hashmap_delete);
 

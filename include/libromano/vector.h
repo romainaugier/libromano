@@ -22,10 +22,10 @@ typedef struct vector vector_t;
 #define GET_VEC_PTR(ptr) ((char*)(ptr) + 3 * sizeof(size_t))
 
 /* Creates a heap allocated vector with a given initial size, and of the given element size */
-ROMANO_API vector_t* vector_new(size_t initial_capacity, size_t element_size);
+ROMANO_API vector_t* vector_new(const size_t initial_capacity, const size_t element_size);
 
 /* Initializes a vector */
-ROMANO_API void vector_init(vector_t* vector, size_t initial_capacity, size_t element_size);
+ROMANO_API void vector_init(vector_t* vector, const size_t initial_capacity, const size_t element_size);
 
 /* Returns the size of the given vector */
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_size(vector_t* vector) { assert(vector != NULL); return ((size_t*)vector->data)[0]; }
@@ -37,7 +37,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_capacity(vector_t* vect
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_element_size(vector_t* vector) { assert(vector != NULL); return ((size_t*)vector->data)[2]; }
 
 /* Resizes the vector to the given capacity */
-ROMANO_API void vector_resize(vector_t* vector, size_t new_capacity);
+ROMANO_API void vector_resize(vector_t* vector, const size_t new_capacity);
 
 /* Adds a new element at the end of the given vector */
 ROMANO_API void vector_push_back(vector_t* vector, void* element);
@@ -46,16 +46,16 @@ ROMANO_API void vector_push_back(vector_t* vector, void* element);
 ROMANO_API void vector_emplace_back(vector_t* vector, void* element);
 
 /* Adds a new element at the beginning of the given vector */
-ROMANO_API void vector_insert(vector_t* vector, void* element, size_t position);
+ROMANO_API void vector_insert(vector_t* vector, void* element, const size_t position);
 
 /* Removes the element of the given vector at the given index */
-ROMANO_API void vector_remove(vector_t* vector, size_t position);
+ROMANO_API void vector_remove(vector_t* vector, const size_t position);
 
 /* Removes the element at the end of the vector */
 ROMANO_API void vector_pop(vector_t* vector);
 
 /* Returns the address to the element at the given index */
-ROMANO_API void* vector_at(vector_t* vector, size_t index);
+ROMANO_API void* vector_at(vector_t* vector, const size_t index);
 
 /* Fit the vector to its size (if the capacity is greater than the size) */
 ROMANO_API void vector_shrink_to_fit(vector_t* vector);
@@ -71,7 +71,6 @@ ROMANO_API void vector_free(vector_t* vector);
 #undef GET_CAPACITY
 #undef GET_ELEMENT_SIZE
 #endif /* defined(__LIBROMANO_VECTOR_IMPL) */
-
 
 ROMANO_CPP_END
 

@@ -2,8 +2,10 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#if !defined(__LIBROMANO_MATH_ALG)
-#define __LIBROMANO_MATH_ALG
+#pragma once
+
+#if !defined(__LIBROMANO_MATH_COMMON)
+#define __LIBROMANO_MATH_COMMON
 
 #include "libromano/libromano.h"
 #include "libromano/bool.h"
@@ -48,35 +50,35 @@ ROMANO_CPP_ENTER
 #define MAX_FLOAT 3.402823466e+38f
 
 #if defined(ROMANO_MSVC)
-ROMANO_FORCE_INLINE bool float_eq(float a, float b) { return _fdpcomp(a, b) == _FP_EQ; }
-ROMANO_FORCE_INLINE bool float_gt(float a, float b) { return _fdpcomp(a, b) == _FP_GT; }
-ROMANO_FORCE_INLINE bool float_lt(float a, float b) { return _fdpcomp(a, b) == _FP_LT; }
+ROMANO_FORCE_INLINE bool float_eq(const float a, const float b) { return _fdpcomp(a, b) == _FP_EQ; }
+ROMANO_FORCE_INLINE bool float_gt(const float a, const float b) { return _fdpcomp(a, b) == _FP_GT; }
+ROMANO_FORCE_INLINE bool float_lt(const float a, const float b) { return _fdpcomp(a, b) == _FP_LT; }
 #elif defined(ROMANO_GCC)
-ROMANO_FORCE_INLINE bool float_eq(float a, float b) { return a == b; }
-ROMANO_FORCE_INLINE bool float_gt(float a, float b) { return __builtin_isgreater(a, b); }
-ROMANO_FORCE_INLINE bool float_lt(float a, float b) { return __builtin_isless(a, b); }
+ROMANO_FORCE_INLINE bool float_eq(const float a, const float b) { return a == b; }
+ROMANO_FORCE_INLINE bool float_gt(const float a, const float b) { return __builtin_isgreater(a, b); }
+ROMANO_FORCE_INLINE bool float_lt(const float a, const float b) { return __builtin_isless(a, b); }
 #else
-ROMANO_FORCE_INLINE bool float_eq(float a, float b) { return a == b; }
-ROMANO_FORCE_INLINE bool float_gt(float a, float b) { return a > b; }
-ROMANO_FORCE_INLINE bool float_lt(float a, float b) { return a < b; }
+ROMANO_FORCE_INLINE bool float_eq(const float a, const float b) { return a == b; }
+ROMANO_FORCE_INLINE bool float_gt(const float a, const float b) { return a > b; }
+ROMANO_FORCE_INLINE bool float_lt(const float a, const float b) { return a < b; }
 #endif /* defined(ROMANO_MSVC) */
 
 
 #if defined(ROMANO_WIN)
-ROMANO_FORCE_INLINE bool math_isinf(float x) { return _finitef(x) == 0; }
-ROMANO_FORCE_INLINE bool math_isnan(float x) { return _isnanf(x) != 0; }
-ROMANO_FORCE_INLINE bool math_isfinite(float x) { return _finitef(x) != 0; }
+ROMANO_FORCE_INLINE bool math_isinf(const float x) { return _finitef(x) == 0; }
+ROMANO_FORCE_INLINE bool math_isnan(const float x) { return _isnanf(x) != 0; }
+ROMANO_FORCE_INLINE bool math_isfinite(const float x) { return _finitef(x) != 0; }
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-ROMANO_FORCE_INLINE bool math_isinf(float x) { return __builtin_isinf(x) == 0; }
-ROMANO_FORCE_INLINE bool math_isnan(float x) { return __builtin_isnan(x) != 0; }
-ROMANO_FORCE_INLINE bool math_isfinite(float x) { return __builtin_isinf(x) != 0; }
+ROMANO_FORCE_INLINE bool math_isinf(const float x) { return __builtin_isinf(x) == 0; }
+ROMANO_FORCE_INLINE bool math_isnan(const float x) { return __builtin_isnan(x) != 0; }
+ROMANO_FORCE_INLINE bool math_isfinite(const float x) { return __builtin_isinf(x) != 0; }
 #endif /* defined(ROMANO_WIN) */
 
-ROMANO_FORCE_INLINE int math_to_int(float a) { return (int)a; }
-ROMANO_FORCE_INLINE float math_to_float(int a) { return (float)a; }
-ROMANO_FORCE_INLINE float math_sqr(float x) { return x * x; }
+ROMANO_FORCE_INLINE int math_to_int(const float a) { return (int)a; }
+ROMANO_FORCE_INLINE float math_to_float(const int a) { return (float)a; }
+ROMANO_FORCE_INLINE float math_sqr(const float x) { return x * x; }
 
-ROMANO_FORCE_INLINE float math_rcp(float x)
+ROMANO_FORCE_INLINE float math_rcp(const float x)
 { 
     __m128 a = _mm_set_ss(x); 
     __m128 r = _mm_rcp_ss(a); 
@@ -88,21 +90,33 @@ ROMANO_FORCE_INLINE float math_rcp(float x)
 #endif
 }
 
-ROMANO_FORCE_INLINE float math_rcp_safe(float a) { return 1.0f / a; }
-ROMANO_FORCE_INLINE float math_min(float a, float b) { return a < b ? a : b; }
-ROMANO_FORCE_INLINE float math_max(float a, float b) { return a > b ? a : b; }
-ROMANO_FORCE_INLINE float math_fit(float s, float a1, float a2, float b1, float b2) { return b1 + ((s - a1) * (b2 - b1)) / (a2 - a1); }
-ROMANO_FORCE_INLINE float math_fit01(float x, float a, float b) { return x * (b - a) + a; }
-ROMANO_FORCE_INLINE float math_lerp(float a, float b, float t) { return (1.0f - t) * a + t * b; }
-ROMANO_FORCE_INLINE float math_clamp(float n, float lower, float upper) { return math_max(lower, math_min(n, upper)); }
-ROMANO_FORCE_INLINE float math_clampz(float n, float upper) { return math_max(ZERO, math_min(n, upper)); }
-ROMANO_FORCE_INLINE float math_deg2rad(float deg) { return deg * PI / 180.0f; }
-ROMANO_FORCE_INLINE float math_rad2deg(float rad) { return rad * 180.0f / PI; }
-ROMANO_FORCE_INLINE float math_abs(float x) { return fabsf(x); }
-ROMANO_FORCE_INLINE float math_exp(float x) { return expf(x); }
-ROMANO_FORCE_INLINE float math_sqrt(float x) { return sqrtf(x); }
+ROMANO_FORCE_INLINE float math_rcp_safe(const float a) { return 1.0f / a; }
 
-ROMANO_FORCE_INLINE float math_rsqrt(float x) 
+#if defined(ROMANO_WIN)
+ROMANO_FORCE_INLINE float math_min(const float a, const float b) { return fminf(a, b); }
+ROMANO_FORCE_INLINE float math_max(const float a, const float b) { fmaxf(a, b); }
+#elif defined(ROMANO_GCC)
+ROMANO_FORCE_INLINE float math_min(const float a, const float b) { return __builtin_fminf(a, b); }
+ROMANO_FORCE_INLINE float math_max(const float a, const float b) { __builtin_fmaxf(a, b); }
+#endif /* defined(ROMANO_WIN) */
+ROMANO_FORCE_INLINE float math_fit(const float s, const float a1, const float a2, const float b1, const float b2) { return b1 + ((s - a1) * (b2 - b1)) / (a2 - a1); }
+ROMANO_FORCE_INLINE float math_fit01(const float x, const float a, const float b) { return x * (b - a) + a; }
+ROMANO_FORCE_INLINE float math_lerp(const float a, const float b, const float t) { return (1.0f - t) * a + t * b; }
+ROMANO_FORCE_INLINE float math_clamp(const float n, const float lower, const float upper) { return math_max(lower, math_min(n, upper)); }
+ROMANO_FORCE_INLINE float math_clampz(const float n, const float upper) { return math_max(ZERO, math_min(n, upper)); }
+ROMANO_FORCE_INLINE float math_deg2rad(const float deg) { return deg * PI / 180.0f; }
+ROMANO_FORCE_INLINE float math_rad2deg(const float rad) { return rad * 180.0f / PI; }
+#if defined(ROMANO_WIN)
+ROMANO_FORCE_INLINE float math_abs(const float x) { return fabsf(x); }
+ROMANO_FORCE_INLINE float math_exp(const float x) { return expf(x); }
+ROMANO_FORCE_INLINE float math_sqrt(const float x) { return sqrtf(x); }
+#elif defined(ROMANO_GCC)
+ROMANO_FORCE_INLINE float math_abs(const float x) { return __builtin_fabsf(x); }
+ROMANO_FORCE_INLINE float math_exp(const float x) { return __builtin_expf(x); }
+ROMANO_FORCE_INLINE float math_sqrt(const float x) { return __builtin_sqrtf(x); }
+#endif /* defined(ROMANO_WIN) */
+
+ROMANO_FORCE_INLINE float math_rsqrt(const float x) 
 {
     __m128 a = _mm_set_ss(x);
     __m128 r = _mm_rsqrt_ss(a);
@@ -110,37 +124,60 @@ ROMANO_FORCE_INLINE float math_rsqrt(float x)
     return _mm_cvtss_f32(r);
 }
 
-ROMANO_FORCE_INLINE float math_fmod(float x, float y) { return fmodf(x, y); }
-ROMANO_FORCE_INLINE float math_log(float x) { return logf(x); }
-ROMANO_FORCE_INLINE float math_log10(float x) { return log10f(x); }
-ROMANO_FORCE_INLINE float math_pow(float x, float y) { return powf(x, y); }
-ROMANO_FORCE_INLINE float math_floor(float x) { return floorf(x); }
-ROMANO_FORCE_INLINE float math_ceil(float x) { return ceilf(x); }
-ROMANO_FORCE_INLINE float math_frac(float x) { return x - floorf(x); }
-ROMANO_FORCE_INLINE float math_acos(float x) { return acosf(x); }
-ROMANO_FORCE_INLINE float math_asin(float x) { return asinf(x); }
-ROMANO_FORCE_INLINE float math_atan(float x) { return atanf(x); }
-ROMANO_FORCE_INLINE float math_atan2(float y, float x) { return atan2f(y, x); }
-ROMANO_FORCE_INLINE float math_cos(float x) { return cosf(x); }
-ROMANO_FORCE_INLINE float math_sin(float x) { return sinf(x); }
-ROMANO_FORCE_INLINE float math_tan(float x) { return tanf(x); }
-ROMANO_FORCE_INLINE float math_cosh(float x) { return coshf(x); }
-ROMANO_FORCE_INLINE float math_sinh(float x) { return sinhf(x); }
-ROMANO_FORCE_INLINE float math_tanh(float x) { return tanhf(x); }
+#if defined(ROMANO_WIN)
+ROMANO_FORCE_INLINE float math_fmod(const float x, const float y) { return fmodf(x, y); }
+ROMANO_FORCE_INLINE float math_log(const float x) { return logf(x); }
+ROMANO_FORCE_INLINE float math_log10(const float x) { return log10f(x); }
+ROMANO_FORCE_INLINE float math_pow(const float x, const float y) { return powf(x, y); }
+ROMANO_FORCE_INLINE float math_floor(const float x) { return floorf(x); }
+ROMANO_FORCE_INLINE float math_ceil(const float x) { return ceilf(x); }
+ROMANO_FORCE_INLINE float math_frac(const float x) { return x - floorf(x); }
+ROMANO_FORCE_INLINE float math_acos(const float x) { return acosf(x); }
+ROMANO_FORCE_INLINE float math_asin(const float x) { return asinf(x); }
+ROMANO_FORCE_INLINE float math_atan(const float x) { return atanf(x); }
+ROMANO_FORCE_INLINE float math_atan2(const float y, float x) { return atan2f(y, x); }
+ROMANO_FORCE_INLINE float math_cos(const float x) { return cosf(x); }
+ROMANO_FORCE_INLINE float math_sin(const float x) { return sinf(x); }
+ROMANO_FORCE_INLINE float math_tan(const float x) { return tanf(x); }
+ROMANO_FORCE_INLINE float math_cosh(const float x) { return coshf(x); }
+ROMANO_FORCE_INLINE float math_sinh(const float x) { return sinhf(x); }
+ROMANO_FORCE_INLINE float math_tanh(const float x) { return tanhf(x); }
+#elif defined(ROMANO_GCC)
+ROMANO_FORCE_INLINE float math_fmod(const float x, const float y) { return __builtin_fmodf(x, y); }
+ROMANO_FORCE_INLINE float math_log(const float x) { return __builtin_logf(x); }
+ROMANO_FORCE_INLINE float math_log10(const float x) { return __builtin_log10f(x); }
+ROMANO_FORCE_INLINE float math_pow(const float x, const float y) { return __builtin_powf(x, y); }
+ROMANO_FORCE_INLINE float math_floor(const float x) { return __builtin_floorf(x); }
+ROMANO_FORCE_INLINE float math_ceil(const float x) { return __builtin_ceilf(x); }
+ROMANO_FORCE_INLINE float math_frac(const float x) { return x - __builtin_floorf(x); }
+ROMANO_FORCE_INLINE float math_acos(const float x) { return __builtin_acosf(x); }
+ROMANO_FORCE_INLINE float math_asin(const float x) { return __builtin_asinf(x); }
+ROMANO_FORCE_INLINE float math_atan(const float x) { return __builtin_atanf(x); }
+ROMANO_FORCE_INLINE float math_atan2(const float y, const float x) { return __builtin_atan2f(y, x); }
+ROMANO_FORCE_INLINE float math_cos(const float x) { return __builtin_cosf(x); }
+ROMANO_FORCE_INLINE float math_sin(const float x) { return __builtin_sinf(x); }
+ROMANO_FORCE_INLINE float math_tan(const float x) { return __builtin_tanf(x); }
+ROMANO_FORCE_INLINE float math_cosh(const float x) { return __builtin_coshf(x); }
+ROMANO_FORCE_INLINE float math_sinh(const float x) { return __builtin_sinhf(x); }
+ROMANO_FORCE_INLINE float math_tanh(const float x) { return __builtin_tanhf(x); }
+#endif /* defined(ROMANO_WIN) */
 
 #if defined(__AVX2__)
-ROMANO_FORCE_INLINE float math_madd(float a, float b, float c) { return _mm_cvtss_f32(_mm_fmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
-ROMANO_FORCE_INLINE float math_msub(float a, float b, float c) { return _mm_cvtss_f32(_mm_fmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
-ROMANO_FORCE_INLINE float math_nmadd(float a, float b, float c) { return _mm_cvtss_f32(_mm_fnmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
-ROMANO_FORCE_INLINE float math_nmsub(float a, float b, float c) { return _mm_cvtss_f32(_mm_fnmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
+ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
+ROMANO_FORCE_INLINE float math_msub(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
+ROMANO_FORCE_INLINE float math_nmadd(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
+ROMANO_FORCE_INLINE float math_nmsub(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
 #else
-ROMANO_FORCE_INLINE float math_madd(float a, float b, float c) { return fmaf(a, b, c); }
-ROMANO_FORCE_INLINE float math_msub(float a, float b, float c) { return a * b - c; } 
-ROMANO_FORCE_INLINE float math_nmadd( float a, float b, float c) { return -a * b + c;}
-ROMANO_FORCE_INLINE float math_nmsub( float a, float b, float c) { return -a * b - c; }
+#if defined(ROMANO_WIN)
+ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return fmaf(a, b, c); }
+#else
+ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return __builtin_fmaf(a, b, c); }
+#endif /* defined(ROMANO_WIN) */
+ROMANO_FORCE_INLINE float math_msub(const float a, const float b, const float c) { return a * b - c; } 
+ROMANO_FORCE_INLINE float math_nmadd(const float a, const float b, const float c) { return -a * b + c;}
+ROMANO_FORCE_INLINE float math_nmsub(const float a, const float b, const float c) { return -a * b - c; }
 #endif
-
 
 ROMANO_CPP_END
 
-#endif /* #define __LIBROMANO_MATH_ALG */
+#endif /* #define __LIBROMANO_MATH_COMMON */

@@ -2,6 +2,8 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#pragma once
+
 #if !defined(__LIBROMANO_STRVIEW)
 #define __LIBROMANO_STRVIEW
 

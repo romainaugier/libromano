@@ -2,6 +2,11 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#pragma once
+
+#if !defined(__LIB_ROMANO_ATOMIC)
+#define __LIB_ROMANO_ATOMIC
+
 #include "libromano/libromano.h"
 #include "libromano/bool.h"
 
@@ -121,3 +126,5 @@ static ROMANO_FORCE_INLINE atomic64_t atomic_exchange_64(atomic64_t* volatile de
     return __sync_lock_test_and_set(dest, exchange);
 #endif /* defined(ROMANO_MSVC) */
 }
+
+#endif /* !defined(__LIB_ROMANO_ATOMIC) */
