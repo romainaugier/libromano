@@ -5,6 +5,7 @@
 #include "libromano/libromano.h"
 #include "libromano/simd.h"
 #include "libromano/memory.h"
+#include "libromano/cpu.h"
 
 #if defined(ROMANO_WIN)
 #include <Windows.h>
@@ -25,9 +26,11 @@ void ROMANO_LIB_ENTRY lib_entry(void)
 #endif /* ROMANO_DEBUG */
     simd_check_vectorization();
     mem_check_endianness();
+    cpu_check();
 #if ROMANO_DEBUG
-    printf("libromano vectorization mode: %u\n", simd_get_vectorization_mode());
-    printf("libromano detected endianness: %u\n", mem_get_endianness());
+    printf("libromano vectorization mode: %s\n", VECTORIZATION_MODE_STR(simd_get_vectorization_mode()));
+    printf("libromano detected endianness: %s\n", ENDIANNESS_STR(mem_get_endianness()));
+    printf("libromano detected cpu frequency: %u MHz\n", cpu_get_frequency());
 #endif /* ROMANO_DEBUG */
 }
 

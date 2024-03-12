@@ -10,6 +10,8 @@
 #include "libromano/libromano.h"
 #include "libromano/bool.h"
 
+#include <immintrin.h>
+
 #if defined(ROMANO_MSVC)
 #include <stdlib.h>
 #endif /* defined(ROMANO_MSVC) */
@@ -33,11 +35,16 @@ ROMANOAPI void debug_free_override(void* ptr,
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
+static ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _mm_malloc(size, alignment); }
+static ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _mm_free(ptr); }
+
 typedef enum
 {
     Endianness_Little = 0,
     Endianness_Big = 1
 } Endianness;
+
+#define ENDIANNESS_STR(en) en == 1 ? "Big" : "Little"
 
 void mem_check_endianness(void);
 

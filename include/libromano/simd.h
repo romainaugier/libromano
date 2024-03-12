@@ -13,19 +13,14 @@
 
 ROMANO_CPP_ENTER
 
-#if defined(ROMANO_MSVC)
-#include <intrin.h>
-#define cpuid(regs, mode) __cpuid(regs, mode)
-#else
-#define cpuid(regs, mode) asm volatile ("cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (mode), "c" (0))
-#endif /* defined(ROMANO_MSVC) */
-
 typedef enum
 {
     VectorizationMode_Scalar = 0,
     VectorizationMode_SSE = 1,
     VectorizationMode_AVX = 2
 } VectorizationMode;
+
+#define VECTORIZATION_MODE_STR(mode) mode == 2 ? "AVX" : mode == 1 ? "SSE" : "Scalar (None)" 
 
 void simd_check_vectorization(void);
 

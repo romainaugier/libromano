@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include <libromano/simd.h>
+#include <libromano/cpu.h>
 
 #include <string.h>
 
