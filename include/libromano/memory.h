@@ -8,6 +8,11 @@
 #define __LIBROMANO_MEMORY
 
 #include "libromano/libromano.h"
+#include "libromano/bool.h"
+
+#if defined(ROMANO_MSVC)
+#include <stdlib.h>
+#endif /* defined(ROMANO_MSVC) */
 
 ROMANO_CPP_ENTER
 
@@ -28,17 +33,27 @@ ROMANOAPI void debug_free_override(void* ptr,
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
-ROMANO_FORCE_INLINE int is_big_endian(void)
+typedef enum
 {
-    union {
-        uint32_t i;
-        char c[4];
-    } e = { 0x01000000 };
+    Endianness_Little = 0,
+    Endianness_Big = 1
+} Endianness;
 
-    return e.c[0];
-}
+void mem_check_endianness(void);
 
-ROMANO_API void memswap(void *m1, void *m2, const size_t n);
+ROMANO_API Endianness mem_get_endianness(void);
+
+#if defined(ROMANO_MSVC)
+ROMANO_FORCE_INLINE uint16_t mem_bswapu16(uint16_t x) { return _byteswap_ushort(x); }
+ROMANO_FORCE_INLINE uint32_t mem_bswapu32(uint32_t x) { return _byteswap_ulong(x); }
+ROMANO_FORCE_INLINE uint64_t mem_bswapu64(uint64_t x) { return _byteswap_uint64(x); }
+#elif defined(ROMANO_GCC)
+ROMANO_FORCE_INLINE uint16_t mem_bswapu16(uint16_t x) { return __builtin_bswap16(x); }
+ROMANO_FORCE_INLINE uint32_t mem_bswapu32(uint32_t x) { return __builtin_bswap32(x); }
+ROMANO_FORCE_INLINE uint64_t mem_bswapu64(uint64_t x) { return __builtin_bswap64(x); }
+#endif
+
+ROMANO_API void mem_swap(void *m1, void *m2, const size_t n);
 
 ROMANO_CPP_END
 

@@ -4,6 +4,7 @@
 
 #include "libromano/libromano.h"
 #include "libromano/simd.h"
+#include "libromano/memory.h"
 
 #if defined(ROMANO_WIN)
 #include <Windows.h>
@@ -23,7 +24,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #if ROMANO_DEBUG
             printf("libromano dll entry\n");
 #endif /* ROMANO_DEBUG */
-            check_vectorization();
+            simd_check_vectorization();
+            mem_check_endianness();
+#if ROMANO_DEBUG
+            printf("libromano vectorization mode: %u\n", simd_get_vectorization_mode());
+            printf("libromano detected endianness: %u\n", mem_get_endianness());
+#endif /* ROMANO_DEBUG */
             break;
         case DLL_THREAD_ATTACH:
             break;

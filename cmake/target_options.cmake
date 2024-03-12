@@ -31,6 +31,9 @@ function(set_target_options target_name)
 
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:/fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar>)
+
+        # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
+        set_target_properties(${target_name} PROPERTIES LINK_FLAGS "/ignore:4300")
     endif()
 
     # Provides the macro definition DEBUG_BUILD

@@ -10,9 +10,12 @@
 #include "libromano/logger.h"
 #include "libromano/str.h"
 
-
+#if ROMANO_DEBUG
+#define HASHMAP_LOOP_COUNT 0xFFFF
+#else
 #define HASHMAP_LOOP_COUNT 0xFFFFF
-#define KEY_NAME "long_key_"
+#endif /* ROMANO_DEBUG */
+#define KEY_NAME "long_key"
 
 
 int main(void)

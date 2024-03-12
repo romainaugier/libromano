@@ -64,7 +64,7 @@ ROMANO_FORCE_INLINE bool float_lt(const float a, const float b) { return a < b; 
 #endif /* defined(ROMANO_MSVC) */
 
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 ROMANO_FORCE_INLINE bool math_isinf(const float x) { return _finitef(x) == 0; }
 ROMANO_FORCE_INLINE bool math_isnan(const float x) { return _isnanf(x) != 0; }
 ROMANO_FORCE_INLINE bool math_isfinite(const float x) { return _finitef(x) != 0; }
@@ -72,7 +72,7 @@ ROMANO_FORCE_INLINE bool math_isfinite(const float x) { return _finitef(x) != 0;
 ROMANO_FORCE_INLINE bool math_isinf(const float x) { return __builtin_isinf(x) == 0; }
 ROMANO_FORCE_INLINE bool math_isnan(const float x) { return __builtin_isnan(x) != 0; }
 ROMANO_FORCE_INLINE bool math_isfinite(const float x) { return __builtin_isinf(x) != 0; }
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_MSVC) */
 
 ROMANO_FORCE_INLINE int math_to_int(const float a) { return (int)a; }
 ROMANO_FORCE_INLINE float math_to_float(const int a) { return (float)a; }
@@ -92,13 +92,13 @@ ROMANO_FORCE_INLINE float math_rcp(const float x)
 
 ROMANO_FORCE_INLINE float math_rcp_safe(const float a) { return 1.0f / a; }
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 ROMANO_FORCE_INLINE float math_min(const float a, const float b) { return fminf(a, b); }
-ROMANO_FORCE_INLINE float math_max(const float a, const float b) { fmaxf(a, b); }
+ROMANO_FORCE_INLINE float math_max(const float a, const float b) { return fmaxf(a, b); }
 #elif defined(ROMANO_GCC)
 ROMANO_FORCE_INLINE float math_min(const float a, const float b) { return __builtin_fminf(a, b); }
-ROMANO_FORCE_INLINE float math_max(const float a, const float b) { __builtin_fmaxf(a, b); }
-#endif /* defined(ROMANO_WIN) */
+ROMANO_FORCE_INLINE float math_max(const float a, const float b) { return __builtin_fmaxf(a, b); }
+#endif /* defined(ROMANO_MSVC) */
 ROMANO_FORCE_INLINE float math_fit(const float s, const float a1, const float a2, const float b1, const float b2) { return b1 + ((s - a1) * (b2 - b1)) / (a2 - a1); }
 ROMANO_FORCE_INLINE float math_fit01(const float x, const float a, const float b) { return x * (b - a) + a; }
 ROMANO_FORCE_INLINE float math_lerp(const float a, const float b, const float t) { return (1.0f - t) * a + t * b; }
@@ -106,7 +106,7 @@ ROMANO_FORCE_INLINE float math_clamp(const float n, const float lower, const flo
 ROMANO_FORCE_INLINE float math_clampz(const float n, const float upper) { return math_max(ZERO, math_min(n, upper)); }
 ROMANO_FORCE_INLINE float math_deg2rad(const float deg) { return deg * PI / 180.0f; }
 ROMANO_FORCE_INLINE float math_rad2deg(const float rad) { return rad * 180.0f / PI; }
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 ROMANO_FORCE_INLINE float math_abs(const float x) { return fabsf(x); }
 ROMANO_FORCE_INLINE float math_exp(const float x) { return expf(x); }
 ROMANO_FORCE_INLINE float math_sqrt(const float x) { return sqrtf(x); }
@@ -114,7 +114,7 @@ ROMANO_FORCE_INLINE float math_sqrt(const float x) { return sqrtf(x); }
 ROMANO_FORCE_INLINE float math_abs(const float x) { return __builtin_fabsf(x); }
 ROMANO_FORCE_INLINE float math_exp(const float x) { return __builtin_expf(x); }
 ROMANO_FORCE_INLINE float math_sqrt(const float x) { return __builtin_sqrtf(x); }
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_MSVC) */
 
 ROMANO_FORCE_INLINE float math_rsqrt(const float x) 
 {
@@ -124,7 +124,7 @@ ROMANO_FORCE_INLINE float math_rsqrt(const float x)
     return _mm_cvtss_f32(r);
 }
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 ROMANO_FORCE_INLINE float math_fmod(const float x, const float y) { return fmodf(x, y); }
 ROMANO_FORCE_INLINE float math_log(const float x) { return logf(x); }
 ROMANO_FORCE_INLINE float math_log10(const float x) { return log10f(x); }
@@ -160,7 +160,7 @@ ROMANO_FORCE_INLINE float math_tan(const float x) { return __builtin_tanf(x); }
 ROMANO_FORCE_INLINE float math_cosh(const float x) { return __builtin_coshf(x); }
 ROMANO_FORCE_INLINE float math_sinh(const float x) { return __builtin_sinhf(x); }
 ROMANO_FORCE_INLINE float math_tanh(const float x) { return __builtin_tanhf(x); }
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_MSVC) */
 
 #if defined(__AVX2__)
 ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
@@ -168,11 +168,11 @@ ROMANO_FORCE_INLINE float math_msub(const float a, const float b, const float c)
 ROMANO_FORCE_INLINE float math_nmadd(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
 ROMANO_FORCE_INLINE float math_nmsub(const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
 #else
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_MSVC)
 ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return fmaf(a, b, c); }
 #else
 ROMANO_FORCE_INLINE float math_madd(const float a, const float b, const float c) { return __builtin_fmaf(a, b, c); }
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_MSVC) */
 ROMANO_FORCE_INLINE float math_msub(const float a, const float b, const float c) { return a * b - c; } 
 ROMANO_FORCE_INLINE float math_nmadd(const float a, const float b, const float c) { return -a * b + c;}
 ROMANO_FORCE_INLINE float math_nmsub(const float a, const float b, const float c) { return -a * b - c; }

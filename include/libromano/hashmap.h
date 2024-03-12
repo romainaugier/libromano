@@ -9,6 +9,7 @@
 
 #include "libromano/libromano.h"
 #include "libromano/hash.h"
+#include "libromano/memory.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +18,8 @@
 /* 
     Flag used to turn on an optimization similar to sso for keys and values of size less than 
     sizeof(size_t) - 1 + sizeof(void*)
-    Interning might cause issues on little endian platforms, it needs to be tested and investigated
-    This is the only file that is header only because we want to be able to turn on/off interning
+    On little endian platforms we need to swap the size when it is not interned as we check the last
+    byte of the size when looking for interning size
 */
 
 #if defined(ROMANO_HASHMAP_INTERN_SMALL_VALUES)
@@ -49,7 +50,7 @@ static void entry_new(entry_t* entry,
     assert(entry != NULL);
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES 
-    if(key_size <= (INTERNED_SIZE - 1))
+    if(key_size < (INTERNED_SIZE))
     {
         memcpy(entry, key, key_size * sizeof(char));
         ((char*)entry)[key_size] = '\0';
@@ -60,7 +61,7 @@ static void entry_new(entry_t* entry,
         entry->key = (char*)malloc((key_size + 1) * sizeof(char));
         memcpy(entry->key, key, key_size * sizeof(char));
         entry->key[key_size] = '\0';
-        entry->key_size = key_size;
+        entry->key_size = mem_get_endianness() == Endianness_Little ? mem_bswapu64(key_size) : key_size;
     }
 
     if(value_size <= INTERNED_SIZE)
@@ -72,7 +73,7 @@ static void entry_new(entry_t* entry,
     {
         entry->value = malloc(value_size);
         memcpy(entry->value, value, value_size);
-        entry->value_size = value_size;
+        entry->value_size = mem_get_endianness() == Endianness_Little ? mem_bswapu64(value_size) : value_size;
     }
 
 #else
@@ -98,6 +99,8 @@ ROMANO_FORCE_INLINE static size_t entry_get_value_size(entry_t* entry)
     {
         return value_size;
     }
+
+    return mem_get_endianness() == Endianness_Little ? mem_bswapu64(entry->value_size) : entry->value_size;
 #endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     return entry->value_size;
 }
@@ -116,9 +119,14 @@ ROMANO_FORCE_INLINE static void* entry_get_value(entry_t* entry)
 ROMANO_FORCE_INLINE static size_t entry_get_key_size(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-    size_t key_size = (size_t)(((char*)entry)[INTERNED_SIZE]);
+    char key_size = (((char*)entry)[INTERNED_SIZE]);
 
-    return key_size <= INTERNED_SIZE ? key_size : entry->key_size;
+    if(key_size < (INTERNED_SIZE))
+    {
+        return (size_t)key_size;
+    }
+
+    return mem_get_endianness() == Endianness_Little ? mem_bswapu64(entry->key_size) : entry->key_size;
 #endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
     return entry->key_size;
 }
@@ -126,7 +134,7 @@ ROMANO_FORCE_INLINE static size_t entry_get_key_size(entry_t* entry)
 ROMANO_FORCE_INLINE static char* entry_get_key(entry_t* entry)
 {
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-    if(entry_get_key_size(entry) <= INTERNED_SIZE)
+    if(entry_get_key_size(entry) < (INTERNED_SIZE))
     {
         return (char*)entry;
     }
@@ -139,7 +147,7 @@ static void entry_free(entry_t* entry)
     assert(entry != NULL);
     
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
-    if(!(entry_get_key_size(entry) <= INTERNED_SIZE))
+    if(!(entry_get_key_size(entry) < INTERNED_SIZE))
     {
         free(entry->key);
     }

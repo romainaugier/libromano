@@ -8,7 +8,7 @@
 
 static int _vectorization_mode = 0;
 
-void ROMANO_DLL_ENTRY check_vectorization(void) 
+void ROMANO_DLL_ENTRY simd_check_vectorization(void) 
 {
     int regs[4];
 
@@ -58,7 +58,7 @@ int simd_has_avx(void)
     return _vectorization_mode >= 2;
 }
 
-vectorization_mode simd_get_vectorization_mode(void)
+VectorizationMode simd_get_vectorization_mode(void)
 {
     return _vectorization_mode;
 }
