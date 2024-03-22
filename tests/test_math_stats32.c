@@ -5,11 +5,15 @@
 #include "libromano/logger.h"
 #include "libromano/math/stats32.h"
 
-#define VALUES_SIZE 16384
+#define ROMANO_ENABLE_PROFILING
+#include "libromano/profiling.h"
+
+#define VALUES_SIZE 10000
 
 int main(void)
 {
     size_t i;
+    float __sum;
     float mean;
     float variance;
     float std;
@@ -25,6 +29,9 @@ int main(void)
     {
         values[i] = (float)i;
     }
+
+    __sum = stats_sum(values, VALUES_SIZE);
+    logger_log(LogLevel_Info, "The sum is: %f", __sum);
 
     mean = stats_mean(values, VALUES_SIZE);
     logger_log(LogLevel_Info, "The mean is: %f", mean);
@@ -43,6 +50,34 @@ int main(void)
 
     range = stats_range(values, VALUES_SIZE);
     logger_log(LogLevel_Info, "The range is: %f", range);
+
+    logger_log(LogLevel_Info, "Starting performance profiling");
+
+    /* SUM */
+
+    SCOPED_PROFILE_START(scalar_sum_profiling);
+
+    __sum = __stats_sum_scalar(values, VALUES_SIZE);
+
+    SCOPED_PROFILE_END(scalar_sum_profiling);
+
+    logger_log(LogLevel_Info, "Scalar sum: %f", __sum);
+
+    SCOPED_PROFILE_START(sse_sum_profiling);
+
+    __sum = __stats_sum_sse(values, VALUES_SIZE);
+
+    SCOPED_PROFILE_END(sse_sum_profiling);
+
+    logger_log(LogLevel_Info, "SSE sum: %f", __sum);
+
+    SCOPED_PROFILE_START(avx2_sum_profiling);
+
+    __sum = __stats_sum_avx2(values, VALUES_SIZE);
+
+    SCOPED_PROFILE_END(avx2_sum_profiling);
+
+    logger_log(LogLevel_Info, "AVX2 sum: %f", __sum);
 
     free(values);
 

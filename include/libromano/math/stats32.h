@@ -9,18 +9,121 @@
 
 #include "libromano/libromano.h"
 #include "libromano/math/common32.h"
+#include "libromano/simd.h"
+
+/*
+    Simple statistics library using float32 
+    We use dynamic vectorization dispatching where possible to accelerate calculations
+*/
+
+/* Sum functions */
+static float __stats_sum_avx2(const float* array, const size_t n)
+{
+    size_t i;
+    float sum;
+    __m256 sums;
+
+    sums = _mm256_setzero_ps();
+
+    for(i = 0; i < (n - 8); i += 8)
+    {
+        sums = _mm256_add_ps(sums, _mm256_loadu_ps(&array[i]));
+    }
+
+    sum = _mm256_hsum_ps(sums);
+
+    for(; i < n; i++)
+    {
+        sum += array[i];
+    }
+
+    return sum;
+}
+
+static float __stats_sum_sse(const float* array, const size_t n)
+{
+    size_t i;
+    float sum;
+    __m128 sums;
+
+    sums = _mm_setzero_ps();
+
+    for(i = 0; i < (n - 4); i += 4)
+    {
+        sums = _mm_add_ps(sums, _mm_loadu_ps(&array[i]));
+    }
+
+    sum = _mm_hsum_ps(sums);
+
+    for(; i < n; i++)
+    {
+        sum += array[i];
+    }
+
+    return sum;
+}
+
+static float __stats_sum_scalar(const float* array, const size_t n)
+{
+    size_t i;
+    float sum;
+
+    sum = 0.0f;
+
+    for(i = 0; i < n; i++)
+    {
+        sum += array[i];
+    }
+
+    return sum;
+}
+
+typedef float (*sum_func)(const float*, const size_t);
+
+sum_func __stats_sum_funcs[3] = {
+    __stats_sum_scalar,
+    __stats_sum_sse,
+    __stats_sum_avx2
+};
+
+static ROMANO_FORCE_INLINE float stats_sum(const float* array, const size_t n)
+{
+    return __stats_sum_funcs[simd_get_vectorization_mode()](array, n);
+}
+
+/* Mean functions */
+static float __stats_mean_avx2(const float* array, const size_t n)
+{
+    size_t i;
+    float mean;
+    __m256 means;
+
+    for(i = 0; i < (n - 8); i += 8)
+    {
+
+    }
+
+
+
+    for(; i < n; i++)
+    {
+        mean = math_lerp(mean, array[i], 1.0f / (float)(i + 1));
+    }
+
+    return mean;
+}
 
 static ROMANO_FORCE_INLINE float stats_mean(const float* array, const size_t n)
 {
     size_t i;
-    float sum = 0.0f;
+    float mean = 0.0f;
 
     for(i = 0; i < n; i++)
     {
-        sum = math_lerp(sum, array[i], 1.0f / (float)(i + 1));
+        mean = math_lerp(mean, array[i], 1.0f / (float)(i + 1));
     }
 
-    return sum;
+    return mean;
 }
 
 static ROMANO_FORCE_INLINE float stats_std(const float* array, const size_t n)
