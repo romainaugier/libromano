@@ -14,15 +14,15 @@
 
 ROMANO_CPP_ENTER
 
-/* VEC3 */
+/* vec3f */
 
-typedef struct vec3 {
+typedef struct vec3f {
     float x, y, z;
-} vec3_t;
+} vec3f_t;
 
-static ROMANO_FORCE_INLINE vec3_t vec3_add(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_add(const vec3f_t a, const vec3f_t b)
 {
-    vec3_t res;
+    vec3f_t res;
 
     res.x = a.x + b.x;
     res.y = a.y + b.y;
@@ -31,9 +31,9 @@ static ROMANO_FORCE_INLINE vec3_t vec3_add(const vec3_t a, const vec3_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3_t vec3_sub(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_sub(const vec3f_t a, const vec3f_t b)
 {
-    vec3_t res;
+    vec3f_t res;
 
     res.x = a.x - b.x;
     res.y = a.y - b.y;
@@ -42,9 +42,9 @@ static ROMANO_FORCE_INLINE vec3_t vec3_sub(const vec3_t a, const vec3_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3_t vec3_mul(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_mul(const vec3f_t a, const vec3f_t b)
 {
-    vec3_t res;
+    vec3f_t res;
 
     res.x = a.x * b.x;
     res.y = a.y * b.y;
@@ -53,9 +53,9 @@ static ROMANO_FORCE_INLINE vec3_t vec3_mul(const vec3_t a, const vec3_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3_t vec3_div(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_div(const vec3f_t a, const vec3f_t b)
 {
-    vec3_t res;
+    vec3f_t res;
 
     res.x = a.x / b.x;
     res.y = a.y / b.y;
@@ -64,14 +64,14 @@ static ROMANO_FORCE_INLINE vec3_t vec3_div(const vec3_t a, const vec3_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE float vec3_dot(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE float vec3f_dot(const vec3f_t a, const vec3f_t b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-static ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_cross(const vec3f_t a, const vec3f_t b)
 {
-    vec3_t res;
+    vec3f_t res;
 
     res.x = a.y * b.z - a.z * b.y; 
     res.y = a.z * b.x - a.x * b.z; 
@@ -80,12 +80,12 @@ static ROMANO_FORCE_INLINE vec3_t vec3_cross(const vec3_t a, const vec3_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
+static ROMANO_FORCE_INLINE vec3f_t vec3f_norm(const vec3f_t v)
 {
     float t;
-    vec3_t res;
+    vec3f_t res;
 
-    t = math_rsqrt(vec3_dot(v, v));
+    t = math_rsqrt(vec3f_dot(v, v));
 
     res.x = v.x * t;
     res.y = v.y * t;
@@ -94,41 +94,54 @@ static ROMANO_FORCE_INLINE vec3_t vec3_norm(const vec3_t v)
     return res;
 }
 
-static ROMANO_FORCE_INLINE float vec3_length(const vec3_t v)
+static ROMANO_FORCE_INLINE float vec3f_length(const vec3f_t v)
 {
-    return math_sqrt(vec3_dot(v, v));
+    return math_sqrt(vec3f_dot(v, v));
 }
 
-static ROMANO_FORCE_INLINE float vec3_length2(const vec3_t v)
+static ROMANO_FORCE_INLINE float vec3f_length2(const vec3f_t v)
 {
-    return vec3_dot(v, v);
+    return vec3f_dot(v, v);
 }
 
-static ROMANO_FORCE_INLINE float vec3_dist(const vec3_t a, const vec3_t b)
+static ROMANO_FORCE_INLINE float vec3f_dist(const vec3f_t a, const vec3f_t b)
 {
     return math_sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
 
 /* MATRIX */
 
-typedef struct matrix44 {
+typedef struct matrix44f {
     float data[16];
-} matrix44_t;
+} matrix44f_t;
 
-struct matrix;
-typedef struct matrix matrix_t;
+struct matrixf {
+    float* data;
+};
 
-ROMANO_API matrix_t matrix_create(const int N, const int M);
+typedef struct matrixf matrixf_t;
 
-ROMANO_API void matrix_size(matrix_t* A, int* N, int* M);
+ROMANO_API matrixf_t matrixf_create(const int N, const int M);
 
-ROMANO_API int matrix_row_size(matrix_t* A);
+ROMANO_API void matrixf_size(matrixf_t* A, int* N, int* M);
 
-ROMANO_API int matrix_column_size(matrix_t* A);
+ROMANO_API void matrixf_resize(matrixf_t* A, const int N, const int M);
 
-ROMANO_API float matrix_trace(matrix_t* A);
+ROMANO_API int matrixf_row_size(matrixf_t* A);
 
-ROMANO_API void matrix_destroy(matrix_t* A);
+ROMANO_API int matrixf_column_size(matrixf_t* A);
+
+ROMANO_API void matrixf_set_at(matrixf_t* A, const float value, const int i, const int j);
+
+ROMANO_API float matrixf_get_at(matrixf_t* A, const int i, const int j);
+
+ROMANO_API float matrixf_trace(matrixf_t* A);
+
+ROMANO_API void matrixf_zero(matrixf_t* A);
+
+ROMANO_API void matrixf_transpose(matrixf_t* A);
+
+ROMANO_API void matrixf_destroy(matrixf_t* A);
 
 
 ROMANO_CPP_END

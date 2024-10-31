@@ -50,8 +50,7 @@ static Endianness _endianness = 0;
 
 void mem_check_endianness(void)
 {
-    if(is_big_endian()) _endianness = Endianness_Big;
-    else _endianness = Endianness_Little;
+    _endianness = is_big_endian() ? Endianness_Big : Endianness_Little;
 }
 
 Endianness mem_get_endianness(void)
