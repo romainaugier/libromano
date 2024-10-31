@@ -24,11 +24,23 @@ ROMANO_API strview_t strview_new(const char* data, size_t count);
 
 ROMANO_API int strview_cmp(const strview_t lhs, const strview_t rhs);
 
-ROMANO_API strview_t* strview_split(const char* data, const char* separator, size_t* count);
+ROMANO_API int strview_split(const char* data, const char* separator, strview_t* stringview);
 
-ROMANO_API int strview_split_yield(const char* data, const char* separator, strview_t* stringview);
+ROMANO_API strview_t strview_lsplit(const char* data, const char* separator, strview_t* stringview);
+
+ROMANO_API strview_t strview_rsplit(const char* data, const char* separator, strview_t* stringview);
+
+ROMANO_API int strview_find(const strview_t s, const char* substr, const int substr_len);
+
+ROMANO_API int strview_startswith(const strview_t s, const char* substr, const int substr_len);
+
+ROMANO_API int strview_endswith(const strview_t s, const char* substr, const int substr_len);
 
 ROMANO_API strview_t strview_trim(const char* data);
+
+ROMANO_API int strview_parse_int(const strview_t s);
+
+ROMANO_API int strview_parse_bool(const strview_t s);
 
 ROMANO_CPP_END
 
