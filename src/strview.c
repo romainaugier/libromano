@@ -138,12 +138,20 @@ int strview_find(const strview_t s, const char* substr, const int substr_len)
 
 int strview_startswith(const strview_t s, const char* substr, const int substr_len)
 {
+    const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
+    if(_substr_len > s.size) return 0;
+
+    return memcmp(substr, s.data, _substr_len) == 0;
 }
 
 int strview_endswith(const strview_t s, const char* substr, const int substr_len)
 {
+    const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
+    if(_substr_len > s.size) return 0;
+
+    return memcmp(substr, &(s.data[s.size - _substr_len]), _substr_len) == 0;
 }
 
 strview_t strview_trim(const char* data)

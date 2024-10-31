@@ -74,6 +74,18 @@ int main(void)
                                                                       strview_find(string_view_to_contain, contains[i], strlen(contains[i])));
     }
 
+    strview_t startswith;
+    startswith.data = "this phrase starts with";
+    startswith.size = strlen(startswith.data);
+
+    printf("\""STRVIEW_FMT"\" starts with: \"this\" %d\n", STRVIEW_ARG(startswith), strview_startswith(startswith, "this", 4));
+
+    strview_t endswith;
+    endswith.data = "this phrase ends with";
+    endswith.size = strlen(endswith.data);
+
+    printf("\""STRVIEW_FMT"\" ends with: \"with\" %d\n", STRVIEW_ARG(endswith), strview_endswith(endswith, "with", 4));
+
     char* const ints[NUM_INTS_TO_PARSE] = {
         "2147483647",
         "48190",
