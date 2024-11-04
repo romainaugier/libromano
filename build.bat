@@ -88,6 +88,8 @@ rem Little function to process args
 
 if "%~1" equ "--debug" set BUILDTYPE=Debug
 
+if "%~1" equ "--reldebug" set BUILDTYPE=RelWithDebInfo
+
 if "%~1" equ "--tests" set RUNTESTS=1
 
 if "%~1" equ "--clean" set REMOVEOLDDIR=1

@@ -29,7 +29,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
     add_custom_command(
         TARGET ${TESTNAME} POST_BUILD
-        COMMAND "$<$<CONFIG:Debug>:${ASAN_COPY_COMMAND}>"
+        COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${ASAN_COPY_COMMAND}>"
         COMMAND_EXPAND_LISTS
     )
 

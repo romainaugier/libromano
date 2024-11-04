@@ -13,6 +13,9 @@ ROMANO_CPP_ENTER
 
 typedef int bool;
 
+#define true 1
+#define false 0
+
 ROMANO_CPP_END
 
 #endif /* #define __LIBROMANO_BOOL */

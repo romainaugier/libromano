@@ -63,3 +63,8 @@ VectorizationMode simd_get_vectorization_mode(void)
 {
     return _vectorization_mode;
 }
+
+void simd_force_vectorization_mode(const VectorizationMode mode)
+{
+    _vectorization_mode = mode;
+}

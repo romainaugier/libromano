@@ -107,7 +107,7 @@ static float __stats_mean_avx2(const float* array, const size_t n)
 
     for(; i < n; i++)
     {
-        mean = math_lerp(mean, array[i], 1.0f / (float)(i + 1));
+        mean = mathf_lerp(mean, array[i], 1.0f / (float)(i + 1));
     }
 
     return mean;
@@ -120,7 +120,7 @@ static ROMANO_FORCE_INLINE float stats_mean(const float* array, const size_t n)
 
     for(i = 0; i < n; i++)
     {
-        mean = math_lerp(mean, array[i], 1.0f / (float)(i + 1));
+        mean = mathf_lerp(mean, array[i], 1.0f / (float)(i + 1));
     }
 
     return mean;
@@ -138,10 +138,10 @@ static ROMANO_FORCE_INLINE float stats_std(const float* array, const size_t n)
 
     for(i = 0; i < n; i++)
     {
-        variance = math_lerp(variance, math_sqr((array[i] - mean)), 1.0f / (float)(i + 1));
+        variance = mathf_lerp(variance, mathf_sqr((array[i] - mean)), 1.0f / (float)(i + 1));
     }
 
-    return math_sqrt(variance);
+    return mathf_sqrt(variance);
 }
 
 static ROMANO_FORCE_INLINE float stats_variance(const float* array, const size_t n)
@@ -156,7 +156,7 @@ static ROMANO_FORCE_INLINE float stats_variance(const float* array, const size_t
 
     for(i = 0; i < n; i++)
     {
-        variance = math_lerp(variance, math_sqr((array[i] - mean)), 1.0f / (float)(i + 1));
+        variance = mathf_lerp(variance, mathf_sqr((array[i] - mean)), 1.0f / (float)(i + 1));
     }
 
     return variance;
@@ -171,7 +171,7 @@ static ROMANO_FORCE_INLINE float stats_min(const float* array, const size_t n)
 
     for(i = 1; i < n; i++)
     {
-        min = math_min(min, array[i]);
+        min = mathf_min(min, array[i]);
     }
 
     return min;
@@ -186,7 +186,7 @@ static ROMANO_FORCE_INLINE float stats_max(const float* array, const size_t n)
 
     for(i = 1; i < n; i++)
     {
-        max = math_max(max, array[i]);
+        max = mathf_max(max, array[i]);
     }
 
     return max;
@@ -203,8 +203,8 @@ static ROMANO_FORCE_INLINE float stats_range(const float* array, const size_t n)
 
     for(i = 1; i < n; i++)
     {
-        min = math_min(min, array[i]); 
-        max = math_max(max, array[i]); 
+        min = mathf_min(min, array[i]); 
+        max = mathf_max(max, array[i]); 
     }
 
     return max - min;

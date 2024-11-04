@@ -31,6 +31,8 @@ ROMANO_API int simd_has_avx(void);
 
 ROMANO_API VectorizationMode simd_get_vectorization_mode(void);
 
+ROMANO_API void simd_force_vectorization_mode(const VectorizationMode mode);
+
 /* SIMD helper functions */
 
 /* Horizontal sums (sum the entire vector to a single element) */
