@@ -11,6 +11,7 @@
 #include <string.h>
 #include <immintrin.h>
 #include <assert.h>
+#include <stdio.h>
 
 /* MATRIX */
 
@@ -169,9 +170,9 @@ void matrixf_transpose(matrixf_t* A)
     SET_SIZE_M((*A), M);
 }
 
-void _matrixf_mul_scalar(const float* restrict A, 
-                         const float* restrict B,
-                         float* restrict C,
+void _matrixf_mul_scalar(const float* A, 
+                         const float* B,
+                         float* C,
                          const uint32_t M,
                          const uint32_t N,
                          const uint32_t P)
@@ -200,9 +201,9 @@ void _matrixf_mul_scalar(const float* restrict A,
 
 #define AVX2_BLOCK_SIZE 8
 
-void _matrixf_mul_avx2(const float* restrict A, 
-                       const float* restrict B,
-                       float* restrict C,
+void _matrixf_mul_avx2(const float* A, 
+                       const float* B,
+                       float* C,
                        const uint32_t M,
                        const uint32_t N,
                        const uint32_t P)
@@ -243,9 +244,9 @@ void _matrixf_mul_avx2(const float* restrict A,
     }
 }
 
-typedef void (*matmul_func)(const float* restrict, 
-                            const float* restrict,
-                            float* restrict,
+typedef void (*matmul_func)(const float*, 
+                            const float*,
+                            float*,
                             const uint32_t,
                             const uint32_t,
                             const uint32_t);
