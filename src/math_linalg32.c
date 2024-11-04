@@ -130,14 +130,19 @@ void matrixf_zero(matrixf_t* A)
 
 void matrixf_transpose(matrixf_t* A)
 {
+    uint32_t i;
+    uint32_t j;
+
+    float* new_data; 
+
     const int M = SIZE_M((*A));
     const int N = SIZE_N((*A));
 
     if(M == N)
     {
-        for(int i = 0; i < M; i++)
+        for(i = 0; i < M; i++)
         {
-            for(int j = (i + 1); j < M; j++)
+            for(j = (i + 1); j < M; j++)
             {
                 SWAP_FLOAT(A->data[i * M + j + 2], A->data[j * M + i + 2]);
             }
@@ -145,11 +150,11 @@ void matrixf_transpose(matrixf_t* A)
     }
     else
     {
-        float* new_data = (float*)mem_aligned_alloc((N * M + 2) * sizeof(float), sizeof(float));
+        new_data = (float*)mem_aligned_alloc((N * M + 2) * sizeof(float), sizeof(float));
 
-        for(int i = 0; i < M; i++)
+        for(i = 0; i < M; i++)
         {
-            for(int j = 0; j < N; j++)
+            for(j = 0; j < N; j++)
             {
                 new_data[j * N + i + 2] = A->data[i * N + j + 2];
             }
