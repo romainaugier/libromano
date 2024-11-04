@@ -7,6 +7,8 @@
 #include "libromano/memory.h"
 #include "libromano/cpu.h"
 
+#include <stdio.h>
+
 #if defined(ROMANO_WIN)
 #include <Windows.h>
 #endif /* defined(ROMANO_WIN) */

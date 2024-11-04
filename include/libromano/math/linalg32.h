@@ -146,6 +146,8 @@ ROMANO_API void matrixf_zero(matrixf_t* A);
 
 ROMANO_API void matrixf_transpose(matrixf_t* A);
 
+ROMANO_API matrixf_t matrixf_transpose_from(matrixf_t* A);
+
 ROMANO_API void matrixf_mul(matrixf_t* A, matrixf_t* B, matrixf_t* C);
 
 ROMANO_API void matrixf_add_f(matrixf_t* A, const float f);

@@ -10,13 +10,8 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
-#if defined(ROMANO_DEBUG)
-#define MATMUL_SIZE_M 500
-#define MATMUL_SIZE_N 500
-#else
-#define MATMUL_SIZE_M 1000
-#define MATMUL_SIZE_N 1000
-#endif /* defined(ROMANO_DEBUG) */
+#define MATMUL_SIZE_M 512
+#define MATMUL_SIZE_N 512
 
 #define M_CHOL 4
 
@@ -49,21 +44,21 @@ int main(void)
 
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
-    simd_force_vectorization_mode(VectorizationMode_Scalar);
-    SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
+    // simd_force_vectorization_mode(VectorizationMode_Scalar);
+    // SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
 
-    matrixf_t C_scalar = matrix_null();
-    matrixf_mul(&A, &B, &C_scalar);
+    // matrixf_t C_scalar = matrix_null();
+    // matrixf_mul(&A, &B, &C_scalar);
 
-    SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
+    // SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
 
-    simd_force_vectorization_mode(VectorizationMode_SSE);
-    SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
+    // simd_force_vectorization_mode(VectorizationMode_SSE);
+    // SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
 
-    matrixf_t C_sse = matrix_null();
-    matrixf_mul(&A, &B, &C_sse);
+    // matrixf_t C_sse = matrix_null();
+    // matrixf_mul(&A, &B, &C_sse);
 
-    SCOPED_PROFILE_END_SECONDS(matrixf_sse_mul);
+    // SCOPED_PROFILE_END_SECONDS(matrixf_sse_mul);
 
     simd_force_vectorization_mode(VectorizationMode_AVX);
     SCOPED_PROFILE_START_SECONDS(matrixf_avx_mul);
@@ -75,8 +70,8 @@ int main(void)
 
     matrixf_destroy(&A);
     matrixf_destroy(&B);
-    matrixf_destroy(&C_scalar);
-    matrixf_destroy(&C_sse);
+    // matrixf_destroy(&C_scalar);
+    // matrixf_destroy(&C_sse);
     matrixf_destroy(&C_avx);
 
     logger_log(LogLevel_Info, "Cholesky Solving");
@@ -118,6 +113,10 @@ int main(void)
     if(!res)
     {
         logger_log(LogLevel_Error, "Cannot solve linear system with Cholesky Decomposition: %u", res);
+
+        matrixf_destroy(&a);
+        matrixf_destroy(&b);
+
         return 1;
     }
 

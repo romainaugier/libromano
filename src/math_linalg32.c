@@ -9,7 +9,6 @@
 #include "libromano/logger.h"
 
 #include <string.h>
-#include <immintrin.h>
 #include <assert.h>
 #include <stdio.h>
 
@@ -170,6 +169,27 @@ void matrixf_transpose(matrixf_t* A)
     SET_SIZE_M((*A), M);
 }
 
+matrixf_t matrixf_transpose_from(matrixf_t* A)
+{
+    uint32_t i;
+    uint32_t j;
+
+    const int M = SIZE_M((*A));
+    const int N = SIZE_N((*A));
+
+    matrixf_t res = matrixf_create(M, N);
+    
+    for(i = 0; i < M; i++)
+    {
+        for(j = 0; j < N; j++)
+        {
+            SET_AT_WITH_N(res, N, GET_AT_WITH_N((*A), N, i, j), i, j);
+        }
+    }
+
+    return res;
+}
+
 void _matrixf_mul_scalar(const float* A, 
                          const float* B,
                          float* C,
@@ -228,8 +248,8 @@ void _matrixf_mul_avx2(const float* A,
 
             for (k = 0; k < block_end; k += AVX2_BLOCK_SIZE) 
             {
-                __m256 a_vec = _mm256_load_ps(&A[i * P + k]);
-                __m256 b_vec = _mm256_load_ps(&B[k * N + j]);
+                __m256 a_vec = _mm256_loadu_ps(&A[i * P + k]);
+                __m256 b_vec = _mm256_loadu_ps(&B[k * N + j]);
 
                 sum_vec = _mm256_fmadd_ps(a_vec, b_vec, sum_vec);
             }
@@ -567,6 +587,7 @@ bool matrixf_cholesky_solve(matrixf_t* A, matrixf_t* b, matrixf_t* x)
     if(!matrixf_cholesky_decomposition(A, &L))
     {
         logger_log(LogLevel_Error, "Cholesky Solve failed: cannot decompose matrix");
+        matrixf_destroy(&L);
         return false;
     }
 
@@ -617,6 +638,9 @@ bool matrixf_cholesky_solve(matrixf_t* A, matrixf_t* b, matrixf_t* x)
             SET_AT_WITH_N((*x), b_n, value, j2, i);
         }
     }
+
+    matrixf_destroy(&y);
+    matrixf_destroy(&L);
 
     return true;
 }

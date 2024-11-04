@@ -10,7 +10,6 @@
 #include "libromano/libromano.h"
 
 #include <stdio.h>
-#include <time.h>
 
 #if defined(ROMANO_MSVC)
 #include <intrin.h>
@@ -44,14 +43,22 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
     }
 #else
 #include <x86intrin.h>
+#define __USE_POSIX199309
 #include <time.h>
 
-#define GET_TIMESTAMP(freq, start) struct timespec start
-#define GET_ELAPSED_MICROSECONDS(freq, start) ({ \
-    struct timespec end; \
-    clock_gettime(CLOCK_MONOTONIC, &end); \
-    (double)((end.tv_sec - start.tv_sec) * 1e6 + (end.tv_nsec - start.tv_nsec) / 1e3); \
-})
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
+{
+    struct timespec s; 
+    clock_gettime(CLOCK_MONOTONIC, &s); 
+    return (uint64_t)s.tv_sec * 1000000000 + (uint64_t)s.tv_nsec;
+}
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier)
+{
+    double elapsed = (get_timestamp() - start) * 1e-9;
+    return elapsed * unit_multiplier;
+}
+
 #endif /* defined(ROMANO_MSVC) */
 
 ROMANO_CPP_ENTER

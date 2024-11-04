@@ -8,7 +8,7 @@ function(set_target_options target_name)
         set(CMAKE_C_FLAGS "-Wall -pedantic-errors")
 
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-O0 -fsanitize=leak -fsanitize=address>)
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -march=native>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -mavx2 -mfma)
 
         target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -16,7 +16,7 @@ function(set_target_options target_name)
         set(CMAKE_C_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
 
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-O0 -fsanitize=leak -fsanitize=address>)
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ffast-math -march=native -ftree-vectorizer-verbose=2>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
 
         target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")

@@ -74,12 +74,12 @@ strview_t strview_lsplit(const char* data, const char* separator, strview_t* str
         data++;
     }
     
-    res.data = start;
+    res.data = (char*)start;
     res.size = size;
 
     if(stringview != NULL)
     {
-        stringview->data = data;
+        stringview->data = (char*)data;
         stringview->size = strlen(data);
     }
 
@@ -104,12 +104,12 @@ strview_t strview_rsplit(const char* data, const char* separator, strview_t* str
         i--;
     }
 
-    res.data = &data[i];
+    res.data = (char*)&data[i];
     res.size = size + 1;
 
     if(stringview != NULL)
     {
-        stringview->data = start;
+        stringview->data = (char*)start;
         stringview->size = i;
     }
 
