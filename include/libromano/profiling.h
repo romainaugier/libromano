@@ -15,13 +15,6 @@
 #include <intrin.h>
 #include <Windows.h>
 
-#define GET_TIMESTAMP(freq, start) LARGE_INTEGER freq, start; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start)
-#define GET_ELAPSED_TIME(freq, start, unit_multiplier) ({ \
-        LARGE_INTEGER end; \
-        QueryPerformanceCounter(&end); \
-        ((double)(end.QuadPart - start.QuadPart) * unit_multiplier) / freq.QuadPart; \
-    })
-
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
     LARGE_INTEGER ticks; 
