@@ -171,9 +171,9 @@ static void entry_free(entry_t* entry)
 struct _hashmap;
 typedef struct _hashmap hashmap_t;
 
-#define HASHMAP_MAX_LOAD 0.75
+#define HASHMAP_MAX_LOAD 0.5f
 #define TOMBSTONE 0xFFFFFFFFFFFFFFFF
-#define GOLDEN_RATIO 1.61f
+#define HASHMAP_GROWTH_RATE 2.0f
 #define HASHMAP_INITIAL_CAPACITY 1024
 
 struct _hashmap {
@@ -320,7 +320,7 @@ static void hashmap_insert(hashmap_t* hashmap,
 
     if((hashmap->size + 1) > (hashmap->capacity * HASHMAP_MAX_LOAD))
     {
-        new_capacity = (size_t)((float)hashmap->capacity * GOLDEN_RATIO);
+        new_capacity = (size_t)((float)hashmap->capacity * HASHMAP_GROWTH_RATE);
         hashmap_grow(hashmap, new_capacity);
     }
 
