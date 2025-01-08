@@ -127,7 +127,9 @@ static ROMANO_FORCE_INLINE float mathf_rsqrt(const float x)
 #if defined(ROMANO_MSVC)
 static ROMANO_FORCE_INLINE float mathf_fmod(const float x, const float y) { return fmodf(x, y); }
 static ROMANO_FORCE_INLINE float mathf_log(const float x) { return logf(x); }
+static ROMANO_FORCE_INLINE float mathf_log2(const float x) { return log2f(x); }
 static ROMANO_FORCE_INLINE float mathf_log10(const float x) { return log10f(x); }
+static ROMANO_FORCE_INLINE float mathf_logN(const float x, const float base) { return log2f(x) / log2f(base); }
 static ROMANO_FORCE_INLINE float mathf_pow(const float x, const float y) { return powf(x, y); }
 static ROMANO_FORCE_INLINE float mathf_floor(const float x) { return floorf(x); }
 static ROMANO_FORCE_INLINE float mathf_ceil(const float x) { return ceilf(x); }
@@ -145,7 +147,9 @@ static ROMANO_FORCE_INLINE float mathf_tanh(const float x) { return tanhf(x); }
 #elif defined(ROMANO_GCC)
 static ROMANO_FORCE_INLINE float mathf_fmod(const float x, const float y) { return __builtin_fmodf(x, y); }
 static ROMANO_FORCE_INLINE float mathf_log(const float x) { return __builtin_logf(x); }
+static ROMANO_FORCE_INLINE float mathf_log2(const float x) { return __builtin_log2f(x); }
 static ROMANO_FORCE_INLINE float mathf_log10(const float x) { return __builtin_log10f(x); }
+static ROMANO_FORCE_INLINE float mathf_logN(const float x, const float base) { return __builtin_log2f(x) / __builtin_log2f(base); }
 static ROMANO_FORCE_INLINE float mathf_pow(const float x, const float y) { return __builtin_powf(x, y); }
 static ROMANO_FORCE_INLINE float mathf_floor(const float x) { return __builtin_floorf(x); }
 static ROMANO_FORCE_INLINE float mathf_ceil(const float x) { return __builtin_ceilf(x); }

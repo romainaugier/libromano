@@ -13,6 +13,29 @@ ROMANO_CPP_ENTER
 
 #define BIT(bit) (size_t)1 << bit
 
+ROMANO_FORCE_INLINE static uint32_t round_u32_to_next_pow2(uint32_t x)
+{
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x++;
+}
+
+ROMANO_FORCE_INLINE static uint64_t round_u64_to_next_pow2(uint64_t x)
+{
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    return x++;
+}
+
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_BIT) */

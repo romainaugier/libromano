@@ -50,6 +50,12 @@
 #endif /* defined(ROMANO_X64) */
 #endif /* defined(_WIN32) */
 
+#define ROMANO_BYTE_ORDER_UNDEFINED 0
+#define ROMANO_BYTE_ORDER_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#define ROMANO_BYTE_ORDER_BIG_ENDIAN __ORDER_BIG_ENDIAN__
+
+#define ROMANO_BYTE_ORDER __BYTE_ORDER__
+
 #if defined(ROMANO_WIN)
 #if defined(ROMANO_MSVC)
 #define ROMANO_EXPORT __declspec(dllexport)

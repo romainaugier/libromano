@@ -36,7 +36,9 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
     }
 #else
 #include <x86intrin.h>
+#if !defined(__USE_POSIX199309)
 #define __USE_POSIX199309
+#endif /* !defined(__USE_POSIX199309) */
 #include <time.h>
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
@@ -91,10 +93,16 @@ ROMANO_CPP_ENTER
 #define SCOPED_PROFILE_END_SECONDS(name) printf("Scoped profile \"%s\" -> %3f s\n", ___scp_##name, get_elapsed_time(___scp_##name##_start, 1.0)); 
 
 /* Profiling mean time execution */
-#define MEAN_PROFILE_INIT(name) const char* ___mean_##name = #name; uint64_t ___mean_accum_##name = 0; uint64_t ___mean_counter_##name = 0;
-#define MEAN_PROFILE_START(name) uint64_t ___mean_start_##name = (uint64_t)__rdtsc();
-#define MEAN_PROFILE_STOP(name) ___mean_accum_##name += (uint64_t)__rdtsc() - ___mean_start_##name; ___mean_counter_##name++;
-#define MEAN_PROFILE_RELEASE(name) printf("Mean profile \"%s\" -> %lld cpu cycles\n", ___mean_##name, ___mean_accum_##name / ___mean_counter_##name);
+#define __LERP_MEAN(X, Y, t) ((double)(X) * (double)(t) + (double)(Y) * (1.0 - (double)(t)))
+
+#define MEAN_PROFILE_INIT(name) const char* ___mean_##name = #name; double ___mean_accum_##name = 0; uint64_t ___mean_counter_##name = 0;
+#define MEAN_PROFILE_START(name) uint64_t ___mean_start_##name = get_timestamp();
+#define MEAN_PROFILE_STOP(name) const double ___time_##name = get_elapsed_time(___mean_start_##name, 1e9);             \
+                                ___mean_counter_##name++;                                                              \
+                                const double ___t_##name = 1.0 / (double)___mean_counter_##name;                       \
+                                ___mean_accum_##name = __LERP_MEAN(___mean_accum_##name, ___time_##name, ___t_##name); \
+
+#define MEAN_PROFILE_RELEASE(name) printf("Mean profile \"%s\" -> %f ns\n", ___mean_##name, ___mean_accum_##name);
 #else
 #define PROFILE(func) func
 #define SCOPED_PROFILE_START(name)

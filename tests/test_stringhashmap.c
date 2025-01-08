@@ -2,7 +2,6 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#define ROMANO_HASHMAP_INTERN_SMALL_VALUES
 #include "libromano/hashmap.h"
 
 #define ROMANO_ENABLE_PROFILING
@@ -24,7 +23,7 @@ int main(void)
     logger_init();
 
     size_t i;
-    hashmap_t* hashmap = hashmap_new();
+    StringHashMap* hashmap = string_hashmap_new();
 
     /* Insertion */
 
@@ -35,18 +34,18 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%d", i);
+        str key = str_new_fmt(KEY_NAME"%zu", i);
 
         MEAN_PROFILE_START(_hashmap_insert);
 
-        hashmap_insert(hashmap, key, str_length(key), &num, sizeof(int));
+        string_hashmap_insert(hashmap, key, str_length(key), &num, sizeof(int));
 
         MEAN_PROFILE_STOP(_hashmap_insert);
 
         str_free(key);
     }
 
-    logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap->size);
+    logger_log(LogLevel_Info, "Hashmap size : %zu", string_hashmap_size(hashmap));
 
     MEAN_PROFILE_RELEASE(_hashmap_insert);
 
@@ -61,19 +60,19 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%d", i);
+        str key = str_new_fmt(KEY_NAME"%zu", i);
 
         size_t size;
 
         MEAN_PROFILE_START(_hashmap_get);
 
-        int* num_ptr = (int*)hashmap_get(hashmap, key, str_length(key), &size);
+        int* num_ptr = (int*)string_hashmap_get(hashmap, key, str_length(key), &size);
 
         MEAN_PROFILE_STOP(_hashmap_get);
 
         if(num_ptr == NULL)
         {
-            logger_log(LogLevel_Info, "Cannot find value for key \"%s\"", key);
+            logger_log(LogLevel_Error, "Cannot find value for key \"%s\"", key);
         }
         else if(*num_ptr != num)
         {
@@ -96,11 +95,11 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%d", i);
+        str key = str_new_fmt(KEY_NAME"%zu", i);
 
         MEAN_PROFILE_START(_hashmap_delete);
 
-        hashmap_remove(hashmap, key, str_length(key));
+        string_hashmap_remove(hashmap, key, str_length(key));
 
         MEAN_PROFILE_STOP(_hashmap_delete);
 
@@ -109,11 +108,11 @@ int main(void)
 
     MEAN_PROFILE_RELEASE(_hashmap_delete);
 
-    logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap->size);
+    logger_log(LogLevel_Info, "Hashmap size : %zu", string_hashmap_size(hashmap));
 
     SCOPED_PROFILE_END_MILLISECONDS(_hashmap_delete);
 
-    hashmap_free(hashmap);
+    string_hashmap_free(hashmap);
 
     logger_release();
 
