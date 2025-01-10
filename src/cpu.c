@@ -20,7 +20,7 @@ typedef struct _PROCESSOR_POWER_INFORMATION
    ULONG CurrentIdleState;
 } PROCESSOR_POWER_INFORMATION, *PPROCESSOR_POWER_INFORMATION;
 
-#else if defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX)
 #include <x86intrin.h>
 
 #if !defined(__USE_POSIX199309)
@@ -31,7 +31,7 @@ typedef struct _PROCESSOR_POWER_INFORMATION
 
 static uint64_t _get_frequency_counter = 0;
 static uint32_t _frequency = 0;
-static uint32_t _refresh = 1000;
+static uint32_t _refresh = 10000;
 
 uint32_t _get_cpu_frequency(void)
 {

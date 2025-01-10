@@ -235,9 +235,8 @@ void bucket_free(Bucket* bucket)
     memset(bucket, 0, sizeof(Bucket));
 }
 
-#define HASHMAP_MAX_LOAD 0.95f
-#define MAX_PROBES_CAP_LOG_BASE 6.0f
-#define HASHMAP_GROWTH_RATE 2.0f
+#define HASHMAP_MAX_LOAD 0.9f
+#define MAX_PROBES_CAP_LOG_BASE 4.0f
 #define HASHMAP_INITIAL_CAPACITY 1024
 
 struct _HashMap {
@@ -347,8 +346,6 @@ void hashmap_move_entry(HashMap* hashmap, Bucket* entry)
 
     has_swapped = false;
 
-    start:
-
     max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
 
     if(!has_swapped)
@@ -377,12 +374,6 @@ void hashmap_move_entry(HashMap* hashmap, Bucket* entry)
 
             index = (index + 1) % hashmap->capacity;
             new_entry.probe_length++;
-
-            if(new_entry.probe_length >= max_probes)
-            {
-                hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
-                goto start;
-            }
         }
         else
         {
