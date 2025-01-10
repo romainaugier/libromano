@@ -34,6 +34,21 @@ str str_new(const char* data)
     return GET_STR_PTR(str_ptr);
 }
 
+str str_new_zero(const size_t length)
+{
+    char* str_ptr;
+
+    str_ptr = (char*)malloc(length + 1 + sizeof(size_t));
+
+    if(str_ptr == NULL) return NULL;
+
+    *(size_t*)str_ptr = length;
+
+    memset(GET_STR_PTR(str_ptr), 0, length + 1);
+
+    return GET_STR_PTR(str_ptr);
+}
+
 str str_new_fmt(const char* format, ...)
 {
     va_list args;

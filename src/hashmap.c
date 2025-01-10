@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2023 - Present Romain Augier */
+/* All rights reserved. */
+
 #include "libromano/hashmap.h"
 #include "libromano/math/common32.h"
 #include "libromano/bit.h"
@@ -6,29 +10,53 @@
 
 #define INTERNED_SIZE ((sizeof(size_t) - 1) + 4)
 
+typedef enum
+{
+    BucketFlag_KeyInterned = 0x1
+} BucketFlag;
+
 ROMANO_PACKED_STRUCT(struct _Bucket {
     void* key;
     uint32_t key_size;
     void* value;
     uint32_t value_size;
-    size_t probe_length;
+    uint32_t probe_length;
+    uint32_t flags;
 });
 
 typedef struct _Bucket Bucket;
+
+ROMANO_FORCE_INLINE void bucket_set_flag(Bucket* bucket, uint32_t flag)
+{
+    bucket->flags |= flag;
+}
+
+ROMANO_FORCE_INLINE void bucket_unset_flag(Bucket* bucket, uint32_t flag)
+{
+    bucket->flags &= ~flag;
+}
+
+ROMANO_FORCE_INLINE bool bucket_has_flag(Bucket* bucket, uint32_t flag)
+{
+    return bucket->flags & flag;
+}
 
 void bucket_new(Bucket* bucket,
                 const void* key, 
                 const uint32_t key_size,
                 void* value,
                 const uint32_t value_size,
-                const size_t probe_length)
+                const uint32_t probe_length)
 {
     assert(bucket != NULL);
+
+    memset(bucket, 0, sizeof(Bucket));
 
     if(key_size < (INTERNED_SIZE))
     {
         memcpy(bucket, key, key_size * sizeof(char));
         ((char*)bucket)[INTERNED_SIZE] = (key_size & 0xFF);
+        bucket_set_flag(bucket, BucketFlag_KeyInterned);
     }
     else
     {
@@ -39,6 +67,7 @@ void bucket_new(Bucket* bucket,
 #else
         bucket->key_size = key_size;
 #endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
+        bucket_unset_flag(bucket, BucketFlag_KeyInterned);
     }
 
     if(value_size == 0)
@@ -84,6 +113,8 @@ ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
                                              void* value,
                                              const uint32_t value_size)
 {
+    memset(&bucket->value, 0, sizeof(void*));
+
     if(bucket->value_size > 0)
     {
         if(value_size > 8)
@@ -142,10 +173,10 @@ ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
 
 ROMANO_FORCE_INLINE uint32_t bucket_get_key_size(Bucket* bucket)
 {
-    char key_size = (((char*)bucket)[INTERNED_SIZE]);
-
-    if(key_size < (INTERNED_SIZE))
+    if(bucket_has_flag(bucket, BucketFlag_KeyInterned))
     {
+        char key_size = (((char*)bucket)[INTERNED_SIZE]);
+
         return (uint32_t)key_size;
     }
 
@@ -158,7 +189,7 @@ ROMANO_FORCE_INLINE uint32_t bucket_get_key_size(Bucket* bucket)
 
 ROMANO_FORCE_INLINE void* bucket_get_key(Bucket* bucket)
 {
-    if(bucket_get_key_size(bucket) < (INTERNED_SIZE))
+    if(bucket_has_flag(bucket, BucketFlag_KeyInterned))
     {
         return (void*)bucket;
     }
@@ -166,7 +197,7 @@ ROMANO_FORCE_INLINE void* bucket_get_key(Bucket* bucket)
     return bucket->key;
 }
 
-ROMANO_FORCE_INLINE size_t bucket_get_probe_length(Bucket* bucket)
+ROMANO_FORCE_INLINE uint32_t bucket_get_probe_length(Bucket* bucket)
 {
     return bucket->probe_length;
 }
@@ -198,7 +229,8 @@ void bucket_free(Bucket* bucket)
     memset(bucket, 0, sizeof(Bucket));
 }
 
-#define HASHMAP_MAX_LOAD 0.9f
+#define HASHMAP_MAX_LOAD 0.95f
+#define MAX_PROBES_CAP_LOG_BASE 6.0f
 #define HASHMAP_GROWTH_RATE 2.0f
 #define HASHMAP_INITIAL_CAPACITY 1024
 
@@ -212,13 +244,14 @@ struct _HashMap {
 ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* key, const size_t key_size)
 {
     return hash_murmur3(key, key_size, hashmap->hashkey);
-    // return hash_fnv1a((const char*)key, (size_t)key_size);
 }
 
 size_t hashmap_get_new_capacity(HashMap* hashmap)
 {
     return round_u64_to_next_pow2(hashmap->capacity + 1) + 1;
 }
+
+void hashmap_move_entry(HashMap* hashmap, Bucket* entry);
 
 void hashmap_grow(HashMap* hashmap,
                   size_t capacity)
@@ -251,6 +284,9 @@ void hashmap_grow(HashMap* hashmap,
                 continue;
             }
 
+            hashmap_move_entry(hashmap, bucket);
+
+            /*
             hashmap_insert(hashmap, 
                            bucket_get_key(bucket),
                            bucket_get_key_size(bucket),
@@ -258,6 +294,7 @@ void hashmap_grow(HashMap* hashmap,
                            bucket_get_value_size(bucket));
 
             bucket_free(bucket);
+            */
         }
 
         free(old_buckets);
@@ -287,18 +324,14 @@ size_t hashmap_capacity(HashMap* hashmap)
     return hashmap->capacity;
 }
 
-void hashmap_insert(HashMap* hashmap,
-                    const void* key,
-                    const uint32_t key_size,
-                    void* value,
-                    const uint32_t value_size)
+void hashmap_move_entry(HashMap* hashmap, Bucket* entry)
 {
     Bucket* bucket;
-    Bucket entry;
+    Bucket new_entry;
     Bucket tmp;
 
     size_t index;
-    size_t max_probes;
+    uint32_t max_probes;
     bool has_swapped;
 
     if((hashmap->size + 1) > hashmap->capacity * HASHMAP_MAX_LOAD)
@@ -310,8 +343,76 @@ void hashmap_insert(HashMap* hashmap,
 
     start:
 
-    max_probes = (size_t)mathf_logN(hashmap->capacity, 3);
-    // max_probes = (size_t)mathf_log2(hashmap->capacity);
+    max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
+
+    if(!has_swapped)
+    {
+        memmove(&new_entry, entry, sizeof(Bucket));
+    }
+    
+    new_entry.probe_length = 0;
+
+    index = hashmap_hash(hashmap, bucket_get_key(&new_entry), bucket_get_key_size(&new_entry)) % hashmap->capacity;
+
+    while(1)
+    {
+        bucket = &hashmap->buckets[index];
+
+        if(!bucket_is_empty(bucket))
+        {
+            if(new_entry.probe_length > bucket->probe_length)
+            {
+                tmp = new_entry;
+                new_entry = *bucket;
+                *bucket = tmp;
+
+                has_swapped = true;
+            }
+
+            index = (index + 1) % hashmap->capacity;
+            new_entry.probe_length++;
+
+            if(new_entry.probe_length >= max_probes)
+            {
+                hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+                goto start;
+            }
+        }
+        else
+        {
+            *bucket = new_entry;
+
+            hashmap->size++;
+
+            return;
+        }
+    }
+}
+
+void hashmap_insert(HashMap* hashmap,
+                    const void* key,
+                    const uint32_t key_size,
+                    void* value,
+                    const uint32_t value_size)
+{
+    Bucket* bucket;
+    Bucket entry;
+    Bucket tmp;
+
+    size_t index;
+    uint32_t max_probes;
+    bool has_swapped;
+
+    if((hashmap->size + 1) > hashmap->capacity * HASHMAP_MAX_LOAD)
+    {
+        hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+    }
+
+    has_swapped = false;
+
+    start:
+
+    max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
 
     if(!has_swapped)
     {
@@ -373,7 +474,7 @@ void hashmap_update(HashMap* hashmap,
     Bucket* bucket;
 
     size_t index;
-    size_t probe_length;
+    uint32_t probe_length;
 
     probe_length = 0;
 
@@ -413,10 +514,10 @@ void* hashmap_get(HashMap* hashmap,
     Bucket* bucket;
 
     size_t index;
-    size_t n_probes;
+    uint32_t probe_length;
 
     index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
-    n_probes = 0;
+    probe_length = 0;
 
     while(1)
     {
@@ -429,13 +530,13 @@ void* hashmap_get(HashMap* hashmap,
             return bucket_get_value(bucket);
         }
 
-        if(bucket_is_empty(bucket) || n_probes > bucket_get_probe_length(bucket))
+        if(bucket_is_empty(bucket) || probe_length > bucket_get_probe_length(bucket))
         {
             return NULL;
         }
 
         index = (index + 1) % hashmap->capacity;
-        n_probes++;
+        probe_length++;
     }
 }
 
@@ -447,16 +548,16 @@ void hashmap_remove(HashMap* hashmap,
     Bucket* backward_shift_bucket;
 
     size_t index;
-    size_t n_probes;
+    uint32_t probe_length;
 
     index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
-    n_probes = 0;
+    probe_length = 0;
 
     while(1)
     {
         bucket = &hashmap->buckets[index];
 
-        if(bucket_is_empty(bucket) || n_probes > bucket_get_probe_length(bucket))
+        if(bucket_is_empty(bucket) || probe_length > bucket_get_probe_length(bucket))
         {
             return;
         }
@@ -487,7 +588,7 @@ void hashmap_remove(HashMap* hashmap,
         }
 
         index = (index + 1) % hashmap->capacity;
-        n_probes++;
+        probe_length++;
     }
 }
 
@@ -499,8 +600,6 @@ void hashmap_free(HashMap* hashmap)
 
     if(hashmap->buckets != NULL)
     {
-        free(hashmap->buckets);
-
         for(i = 0; i < hashmap->size; i++)
         {
             if(!bucket_is_empty(&hashmap->buckets[i]))
@@ -508,6 +607,8 @@ void hashmap_free(HashMap* hashmap)
                 bucket_free(&hashmap->buckets[i]);
             }
         }
+
+        free(hashmap->buckets);
     }
 
     free(hashmap);

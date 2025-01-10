@@ -101,6 +101,12 @@ int main(void)
 
     logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
 
+    if(hashmap_size(hashmap) != 0)
+    {
+        logger_log(LogLevel_Error, "Hashmap is not completely empty");
+        return 1;
+    }
+
     SCOPED_PROFILE_END_MILLISECONDS(_hashmap_delete);
 
     hashmap_free(hashmap);

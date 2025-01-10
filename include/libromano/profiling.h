@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 
+ROMANO_CPP_ENTER
+
 #if defined(ROMANO_MSVC)
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
@@ -19,7 +21,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier) 
 {
-    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_frequency() * 1000000.0) * unit_multiplier);
+    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_current_frequency() * 1000000.0) * unit_multiplier);
 }
 #else
 #if !defined(__USE_POSIX199309)
@@ -41,8 +43,6 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
 }
 
 #endif /* defined(ROMANO_MSVC) */
-
-ROMANO_CPP_ENTER
 
 #if defined(ROMANO_ENABLE_PROFILING)
 /* Profiling measured in cpu cycles */

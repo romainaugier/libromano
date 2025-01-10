@@ -9,6 +9,8 @@
 
 #include "libromano/libromano.h"
 
+ROMANO_CPP_ENTER
+
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t murmur64(uint64_t h) 
 {
     h ^= h >> 33;
@@ -48,7 +50,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float random_float_01(uint32_t state)
     return (float)x * *(float *)&tofloat;
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t random_int_range(const uint32_t state, const uint32_t low, const uint32_t high)
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t random_uint32_range(const uint32_t state, const uint32_t low, const uint32_t high)
 {
     return (uint32_t)(random_float_01(state) * ((float)high - (float)low)) + low;
 }
@@ -62,5 +64,7 @@ ROMANO_API uint32_t random_next_uint32();
 ROMANO_API uint32_t random_next_uint32_range(const uint32_t low, const uint32_t high);
 
 ROMANO_API uint64_t random_next_uint64();
+
+ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_RANDOM) */

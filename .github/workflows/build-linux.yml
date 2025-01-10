@@ -18,3 +18,6 @@ jobs:
 
       - name: build and test
         run: ./build.sh --tests --version:0.0.0
+
+      - name: show test results
+        run: cat build/Testing/Temporary/LastTest.log

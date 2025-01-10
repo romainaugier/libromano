@@ -17,7 +17,7 @@ uint32_t random_next_uint32_range(const uint32_t low, const uint32_t high)
 {
     _state++;
 
-    return random_int_range(_state, low, high);
+    return random_uint32_range(_state, low, high);
 }
 
 static uint32_t _state_next_uint32 = 0;

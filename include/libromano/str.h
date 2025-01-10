@@ -13,8 +13,11 @@ ROMANO_CPP_ENTER
 
 typedef char* str;
 
-/* Creates a new heap allocated data */
+/* Creates a new heap allocated string from existing data */
 ROMANO_API str str_new(const char* data);
+
+/* Creates a new heap allocated zero initialized string of the given size */
+ROMANO_API str str_new_zero(const size_t length);
 
 /* Creates a new heap allocated data with formatting */
 ROMANO_API str str_new_fmt(const char* format, ...);

@@ -3,27 +3,27 @@
 /* All rights reserved. */
 
 #include "libromano/hashmap.h"
+#include "libromano/vector.h"
+#include "libromano/random.h"
+#include "libromano/logger.h"
 
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
-
-#include "libromano/logger.h"
-#include "libromano/str.h"
 
 #if ROMANO_DEBUG
 #define HASHMAP_LOOP_COUNT 0xFFFF
 #else
 #define HASHMAP_LOOP_COUNT 0xFFFFF
 #endif /* ROMANO_DEBUG */
-#define KEY_NAME "long_key"
 
 
 int main(void)
 {
     logger_init();
 
-    size_t i;
+    uint64_t i;
     HashMap* hashmap = hashmap_new();
+    Vector* keys = vector_new(HASHMAP_LOOP_COUNT, sizeof(uint32_t));
 
     /* Insertion */
 
@@ -33,16 +33,16 @@ int main(void)
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
-        int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        uint32_t key = random_next_uint32();
+        uint32_t value = (uint32_t)i;
+
+        vector_push_back(keys, (void*)&key);
 
         MEAN_PROFILE_START(_hashmap_insert);
 
-        hashmap_insert(hashmap, (const void*)key, str_length(key), &num, sizeof(int));
+        hashmap_insert(hashmap, (const void*)&key, sizeof(uint32_t), &value, sizeof(uint32_t));
 
         MEAN_PROFILE_STOP(_hashmap_insert);
-
-        str_free(key);
     }
 
     logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
@@ -59,29 +59,26 @@ int main(void)
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
-        int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        const uint32_t* key = vector_at(keys, (size_t)i);
 
         uint32_t size;
 
         MEAN_PROFILE_START(_hashmap_get);
 
-        int* num_ptr = (int*)hashmap_get(hashmap, (const void*)key, str_length(key), &size);
+        uint32_t* num_ptr = (uint32_t*)hashmap_get(hashmap, (const void*)key, sizeof(uint32_t), &size);
 
         MEAN_PROFILE_STOP(_hashmap_get);
 
         if(num_ptr == NULL)
         {
-            logger_log(LogLevel_Error, "Cannot find value for key \"%s\"", key);
+            logger_log(LogLevel_Error, "Cannot find value for key \"%zu\"", i);
             return 1;
         }
-        else if(*num_ptr != num)
+        else if(*num_ptr != (uint32_t)i)
         {
-            logger_log(LogLevel_Error, "Num_ptr does not correspond to num: %d != %d", num, *num_ptr);
+            logger_log(LogLevel_Error, "Num_ptr does not correspond to num: %zu != %zu", i, *num_ptr);
             return 1;
         }
-
-        str_free(key);
     }
 
     MEAN_PROFILE_RELEASE(_hashmap_get);
@@ -96,16 +93,13 @@ int main(void)
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
-        int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        const uint32_t* key = vector_at(keys, (size_t)i);
 
         MEAN_PROFILE_START(_hashmap_delete);
 
-        hashmap_remove(hashmap, (const void*)key, str_length(key));
+        hashmap_remove(hashmap, (const void*)key, sizeof(uint32_t));
 
         MEAN_PROFILE_STOP(_hashmap_delete);
-
-        str_free(key);
     }
 
     MEAN_PROFILE_RELEASE(_hashmap_delete);
@@ -121,6 +115,8 @@ int main(void)
     SCOPED_PROFILE_END_MILLISECONDS(_hashmap_delete);
 
     hashmap_free(hashmap);
+
+    vector_free(keys);
 
     logger_release();
 

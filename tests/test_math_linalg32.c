@@ -29,7 +29,7 @@ int main(void)
         for(int j = 0; j < MATMUL_SIZE_N; j++)
         {
             float r1 = random_float_01((i + 1) * (j + 1) * 4738);
-            float r2 = random_float_01((i + 1) * (j + 1) * 8439);
+            float r2 = random_float_01((i + 1) * (j + 1) * 2341);
 
             matrixf_set_at(&A, (float)r1 + 1.0f, i, j);
             matrixf_set_at(&B, (float)r2 + 1.0f, j, i);
