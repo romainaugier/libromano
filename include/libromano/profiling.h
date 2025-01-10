@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_PROFILING)
 #define __LIBROMANO_PROFILING
 
-#include "libromano/libromano.h"
+#include "libromano/cpu.h"
 
 #include <stdio.h>
 
@@ -17,23 +17,13 @@
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
-    LARGE_INTEGER ticks; 
-
-    QueryPerformanceCounter(&ticks);
-
-    return (uint64_t)ticks.QuadPart;
+    return cpu_rdtsc();
 }
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier) 
 {
-        LARGE_INTEGER frequency;
-        LARGE_INTEGER end;
-
-        QueryPerformanceFrequency(&frequency);
-        QueryPerformanceCounter(&end);
-
-        return (double)(end.QuadPart - (LONGLONG)start) * unit_multiplier / (double)frequency.QuadPart;
-    }
+    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_frequency() * 1000000.0) * unit_multiplier);
+}
 #else
 #include <x86intrin.h>
 #if !defined(__USE_POSIX199309)
@@ -61,12 +51,20 @@ ROMANO_CPP_ENTER
 #if defined(ROMANO_ENABLE_PROFILING)
 /* Profiling measured in cpu cycles */
 /* It's not 100% precise because we'd need the cpu frequency while measuring */
-#define PROFILE(func) { uint64_t s = __rdtsc();                                                                             \
-                        do { func; } while (0);                                                                             \
-                        printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(__rdtsc() - s)); } \
+#define PROFILE(func) { uint64_t s = cpu_rdtsc();                                                                             \
+                        do { func; } while (0);                                                                               \
+                        printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(cpu_rdtsc() - s)); } \
 
-#define SCOPED_PROFILE_START(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = __rdtsc(); 
-#define SCOPED_PROFILE_END(name) printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_##name, (uint64_t)(__rdtsc() - ___scp_##name##_start)); 
+#define SCOPED_PROFILE_START(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = cpu_rdtsc(); 
+#define SCOPED_PROFILE_END(name) printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_##name, (uint64_t)(cpu_rdtsc() - ___scp_##name##_start)); 
+
+/* Profiling measured in nanoseconds */
+#define PROFILE_NANOSECONDS(func) { uint64_t s = get_timestamp();                                                              \
+                                     do { func; } while (0);                                                                   \
+                                     printf("%s at %s:%d -> %3f µs\n", #func, __FILE__, __LINE__, get_elapsed_time(s, 1e9)); } \
+
+#define SCOPED_PROFILE_START_NANOSECONDS(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = get_timestamp(); 
+#define SCOPED_PROFILE_END_NANOSECONDS(name) printf("Scoped profile \"%s\" -> %3f ns\n", ___scp_##name, get_elapsed_time(___scp_##name##_start, 1e9)); 
 
 /* Profiling measured in microseconds */
 #define PROFILE_MICROSECONDS(func) { uint64_t s = get_timestamp();                                                             \
@@ -85,24 +83,31 @@ ROMANO_CPP_ENTER
 #define SCOPED_PROFILE_END_MILLISECONDS(name) printf("Scoped profile \"%s\" -> %3f ms\n", ___scp_##name, get_elapsed_time(___scp_##name##_start, 1e3)); 
 
 /* Profiling measured in seconds */
-#define PROFILE_SECONDS(func) { uint64_t s = get_timestamp();                                                                                          \
-                                do { func; } while (0);                                                                                          \
+#define PROFILE_SECONDS(func) { uint64_t s = get_timestamp();                                                            \
+                                do { func; } while (0);                                                                  \
                                 printf("%s at %s:%d -> %3f s\n", #func, __FILE__, __LINE__, get_elapsed_time(s, 1.0)); } \
 
 #define SCOPED_PROFILE_START_SECONDS(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = get_timestamp(); 
 #define SCOPED_PROFILE_END_SECONDS(name) printf("Scoped profile \"%s\" -> %3f s\n", ___scp_##name, get_elapsed_time(___scp_##name##_start, 1.0)); 
 
 /* Profiling mean time execution */
-#define __LERP_MEAN(X, Y, t) ((double)(X) * (double)(t) + (double)(Y) * (1.0 - (double)(t)))
+#define ___LERP_MEAN(X, Y, t) ((double)(X) + ((double)(Y) - (double)(X)) * (double)(t))
 
 #define MEAN_PROFILE_INIT(name) const char* ___mean_##name = #name; double ___mean_accum_##name = 0; uint64_t ___mean_counter_##name = 0;
 #define MEAN_PROFILE_START(name) uint64_t ___mean_start_##name = get_timestamp();
 #define MEAN_PROFILE_STOP(name) const double ___time_##name = get_elapsed_time(___mean_start_##name, 1e9);             \
                                 ___mean_counter_##name++;                                                              \
                                 const double ___t_##name = 1.0 / (double)___mean_counter_##name;                       \
-                                ___mean_accum_##name = __LERP_MEAN(___mean_accum_##name, ___time_##name, ___t_##name); \
-
+                                ___mean_accum_##name = ___LERP_MEAN(___mean_accum_##name, ___time_##name, ___t_##name); 
 #define MEAN_PROFILE_RELEASE(name) printf("Mean profile \"%s\" -> %f ns\n", ___mean_##name, ___mean_accum_##name);
+
+#define MEAN_PROFILE_CYCLES_INIT(name) const char* ___mean_##name = #name; double ___mean_accum_##name = 0; uint64_t ___mean_counter_##name = 0;
+#define MEAN_PROFILE_CYCLES_START(name) uint64_t ___mean_start_##name = cpu_rdtsc();
+#define MEAN_PROFILE_CYCLES_STOP(name) const double ___time_##name = (double)(cpu_rdtsc() - ___mean_start_##name);            \
+                                       ___mean_counter_##name++;                                                              \
+                                       const double ___t_##name = 1.0 / (double)___mean_counter_##name;                       \
+                                       ___mean_accum_##name = ___LERP_MEAN(___mean_accum_##name, ___time_##name, ___t_##name); 
+#define MEAN_PROFILE_CYCLES_RELEASE(name) printf("Mean profile \"%s\" -> %f cycles\n", ___mean_##name, ___mean_accum_##name);
 #else
 #define PROFILE(func) func
 #define SCOPED_PROFILE_START(name)

@@ -23,7 +23,7 @@ int main(void)
     logger_init();
 
     size_t i;
-    StringHashMap* hashmap = string_hashmap_new();
+    HashMap* hashmap = hashmap_new();
 
     /* Insertion */
 
@@ -38,14 +38,14 @@ int main(void)
 
         MEAN_PROFILE_START(_hashmap_insert);
 
-        string_hashmap_insert(hashmap, key, str_length(key), &num, sizeof(int));
+        hashmap_insert(hashmap, (void*)key, str_length(key), &num, sizeof(int));
 
         MEAN_PROFILE_STOP(_hashmap_insert);
 
         str_free(key);
     }
 
-    logger_log(LogLevel_Info, "Hashmap size : %zu", string_hashmap_size(hashmap));
+    logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
 
     MEAN_PROFILE_RELEASE(_hashmap_insert);
 
@@ -62,21 +62,23 @@ int main(void)
         int num = (int)i;
         str key = str_new_fmt(KEY_NAME"%zu", i);
 
-        size_t size;
+        uint32_t size;
 
         MEAN_PROFILE_START(_hashmap_get);
 
-        int* num_ptr = (int*)string_hashmap_get(hashmap, key, str_length(key), &size);
+        int* num_ptr = (int*)hashmap_get(hashmap, (void*)key, str_length(key), &size);
 
         MEAN_PROFILE_STOP(_hashmap_get);
 
         if(num_ptr == NULL)
         {
             logger_log(LogLevel_Error, "Cannot find value for key \"%s\"", key);
+            return 1;
         }
         else if(*num_ptr != num)
         {
             logger_log(LogLevel_Error, "Num_ptr does not correspond to num: %d != %d", num, *num_ptr);
+            return 1;
         }
 
         str_free(key);
@@ -99,7 +101,7 @@ int main(void)
 
         MEAN_PROFILE_START(_hashmap_delete);
 
-        string_hashmap_remove(hashmap, key, str_length(key));
+        hashmap_remove(hashmap, (void*)key, str_length(key));
 
         MEAN_PROFILE_STOP(_hashmap_delete);
 
@@ -108,11 +110,11 @@ int main(void)
 
     MEAN_PROFILE_RELEASE(_hashmap_delete);
 
-    logger_log(LogLevel_Info, "Hashmap size : %zu", string_hashmap_size(hashmap));
+    logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
 
     SCOPED_PROFILE_END_MILLISECONDS(_hashmap_delete);
 
-    string_hashmap_free(hashmap);
+    hashmap_free(hashmap);
 
     logger_release();
 

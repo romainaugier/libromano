@@ -23,8 +23,13 @@ ROMANO_CPP_ENTER
 /* The string must be allocated before, and should be sizeof(int) * 12 + 1 (49 bytes) */
 ROMANO_API void cpu_get_name(char* name);
 
-/* Returns the frequency in MHz */
+/* Returns the cpu frequency in MHz, found during library initialization (via cpuid or system calls) */
 ROMANO_API uint32_t cpu_get_frequency(void);
+
+/* Returns the current cpu frequency in MHz (via system calls) */
+ROMANO_API uint32_t cpu_get_current_frequency(void);
+
+ROMANO_API uint64_t cpu_rdtsc(void);
 
 ROMANO_CPP_END
 

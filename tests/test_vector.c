@@ -12,7 +12,7 @@ int main(void)
     logger_init();
 
     logger_log(LogLevel_Info, "Creating a new vector");
-    vector_t* float_vec = vector_new(0, sizeof(float));
+    Vector* float_vec = vector_new(0, sizeof(float));
     
     logger_log(LogLevel_Info, "Pushing new elements in the vector");
 

@@ -1,490 +1,513 @@
 #include "libromano/hashmap.h"
 #include "libromano/math/common32.h"
 #include "libromano/bit.h"
+#include "libromano/random.h"
 #include "libromano/logger.h"
 
-#define INTERNED_SIZE ((sizeof(size_t) - 1) + ROMANO_SIZEOF_PTR)
+#define INTERNED_SIZE ((sizeof(size_t) - 1) + 4)
 
-ROMANO_PACKED_STRUCT(struct _entry {
-    char* key;
-    size_t key_size;
+ROMANO_PACKED_STRUCT(struct _Bucket {
+    void* key;
+    uint32_t key_size;
     void* value;
-    size_t value_size;
+    uint32_t value_size;
+    size_t probe_length;
 });
 
-typedef struct _entry entry_t;
+typedef struct _Bucket Bucket;
 
-static void entry_new(entry_t* entry,
-                      const char* key, 
-                      const size_t key_size,
-                      void* value,
-                      size_t value_size)
+void bucket_new(Bucket* bucket,
+                const void* key, 
+                const uint32_t key_size,
+                void* value,
+                const uint32_t value_size,
+                const size_t probe_length)
 {
-    assert(entry != NULL);
+    assert(bucket != NULL);
 
     if(key_size < (INTERNED_SIZE))
     {
-        memcpy(entry, key, key_size * sizeof(char));
-        ((char*)entry)[key_size] = '\0';
-        ((char*)entry)[INTERNED_SIZE] = (key_size & 0xFF);
+        memcpy(bucket, key, key_size * sizeof(char));
+        ((char*)bucket)[INTERNED_SIZE] = (key_size & 0xFF);
     }
     else
     {
-        entry->key = (char*)malloc((key_size + 1) * sizeof(char));
-        memcpy(entry->key, key, key_size * sizeof(char));
-        entry->key[key_size] = '\0';
+        bucket->key = malloc((key_size) * sizeof(char));
+        memcpy(bucket->key, key, key_size * sizeof(char));
 #if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
-        entry->key_size = mem_bswapu64(key_size);
+        bucket->key_size = mem_bswapu32(key_size);
 #else
-        entry->key_size = key_size;
+        bucket->key_size = key_size;
 #endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
     }
 
-    if(value_size <= INTERNED_SIZE)
+    if(value_size == 0)
     {
-        memcpy(&((char*)entry)[INTERNED_SIZE + 1], value, value_size);
-        ((char*)entry)[INTERNED_SIZE * 2] = (value_size & 0xFF);
+        bucket->value = value;
     }
     else
     {
-        entry->value = malloc(value_size);
-        memcpy(entry->value, value, value_size);
-#if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
-        entry->value_size = mem_bswapu64(value_size);
-#else
-        entry->value_size = value_size;
-#endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
+        if(value_size <= 8)
+        {
+            memcpy(&bucket->value, value, value_size);
+        }
+        else
+        {
+            bucket->value = malloc(value_size);
+            memcpy(bucket->value, value, value_size);
+        }
     }
+
+    bucket->value_size = value_size;
+
+    bucket->probe_length = probe_length;
 }
 
-ROMANO_FORCE_INLINE static size_t entry_get_value_size(entry_t* entry)
+ROMANO_FORCE_INLINE void* bucket_get_value(Bucket* bucket)
 {
-    size_t value_size;
-
-    value_size = (size_t)(((char*)entry)[INTERNED_SIZE * 2]);
-
-    if(value_size <= INTERNED_SIZE)
+    if(bucket->value_size <= 8)
     {
-        return value_size;
+        return &bucket->value;
     }
-
-#if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
-    return mem_bswapu64(entry->value_size);
-#else
-    return entry->value_size;
-#endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
-}
-
-ROMANO_FORCE_INLINE static void* entry_get_value(entry_t* entry)
-{
-    if(entry_get_value_size(entry) <= INTERNED_SIZE)
+    else
     {
-        return &(entry->value);
+        return bucket->value;
     }
-
-    return entry->value;
 }
 
-ROMANO_FORCE_INLINE static size_t entry_get_key_size(entry_t* entry)
+ROMANO_FORCE_INLINE uint32_t bucket_get_value_size(Bucket* bucket)
 {
-    char key_size = (((char*)entry)[INTERNED_SIZE]);
+    return bucket->value_size;
+}
 
-    if(key_size < (INTERNED_SIZE))
+ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket, 
+                                             void* value,
+                                             const uint32_t value_size)
+{
+    if(bucket->value_size > 0)
     {
-        return (size_t)key_size;
+        if(value_size > 8)
+        {
+            if(value_size == bucket->value_size)
+            {
+                memcpy(bucket->value, value, value_size);
+            }
+            else if(value_size == 0)
+            {
+                free(bucket->value);
+                bucket->value = value;
+            }
+            else
+            {
+                bucket->value = realloc(bucket->value, value_size);
+                memcpy(bucket->value, value, value_size);
+            }
+        }
+        else
+        {
+            if(value_size == bucket->value_size)
+            {
+                memcpy(&bucket->value, value, value_size);
+            }
+            else if(bucket->value_size > 8)
+            {
+                free(bucket->value);
+                memcpy(&bucket->value, value, value_size);
+            }
+            else
+            {
+                memcpy(&bucket->value, value, value_size);
+            }
+        }
     }
-
-#if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
-    return mem_bswapu64(entry->key_size);
-#else
-    return entry->key_size;
-#endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
-}
-
-ROMANO_FORCE_INLINE char* entry_get_key(entry_t* entry)
-{
-    if(entry_get_key_size(entry) < (INTERNED_SIZE))
+    else if(value_size > 0)
     {
-        return (char*)entry;
+        if(value_size > 8)
+        {
+            bucket->value = malloc(value_size);
+            memcpy(bucket->value, value, value_size);
+        }
+        else
+        {
+            memcpy(&bucket->value, value, value_size);
+        }
     }
-
-    return entry->key;
-}
-
-ROMANO_FORCE_INLINE bool entry_is_empty(entry_t* entry)
-{
-    return entry_get_key_size(entry) == 0;
-}
-
-#define TOMBSTONE 0xFFFFFFFFFFFFFFFF
-
-ROMANO_FORCE_INLINE void entry_set_tombstone(entry_t* entry)
-{
-    memset(entry, 0, sizeof(entry_t));
-    entry->value_size = TOMBSTONE;
-}
-
-ROMANO_FORCE_INLINE bool entry_is_tombstone(entry_t* entry)
-{
-    return entry_get_value_size(entry) == TOMBSTONE;
-}
-
-void entry_free(entry_t* entry)
-{
-    assert(entry != NULL);
+    else
+    {
+        bucket->value = value;
+    }
     
-    if(!(entry_get_key_size(entry) < INTERNED_SIZE))
+    bucket->value_size = value_size;
+}
+
+ROMANO_FORCE_INLINE uint32_t bucket_get_key_size(Bucket* bucket)
+{
+    char key_size = (((char*)bucket)[INTERNED_SIZE]);
+
+    if(key_size < (INTERNED_SIZE))
     {
-        free(entry->key);
+        return (uint32_t)key_size;
     }
 
-    if(!(entry_get_value_size(entry) <= INTERNED_SIZE))
+#if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
+    return mem_bswapu32(bucket->key_size);
+#else
+    return bucket->key_size;
+#endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
+}
+
+ROMANO_FORCE_INLINE void* bucket_get_key(Bucket* bucket)
+{
+    if(bucket_get_key_size(bucket) < (INTERNED_SIZE))
     {
-        free(entry->value);
+        return (void*)bucket;
     }
 
-    entry->key = NULL;
-    entry->key_size = 0;
-    entry->value = NULL;
-    entry->value_size = 0;
+    return bucket->key;
+}
+
+ROMANO_FORCE_INLINE size_t bucket_get_probe_length(Bucket* bucket)
+{
+    return bucket->probe_length;
+}
+
+ROMANO_FORCE_INLINE bool bucket_is_empty(Bucket* bucket)
+{
+    return bucket_get_key_size(bucket) == 0;
+}
+
+ROMANO_FORCE_INLINE void bucket_set_empty(Bucket* bucket)
+{
+    memset(bucket, 0, sizeof(Bucket));
+}
+
+void bucket_free(Bucket* bucket)
+{
+    assert(bucket != NULL);
+    
+    if(!(bucket_get_key_size(bucket) < INTERNED_SIZE))
+    {
+        free(bucket->key);
+    }
+
+    if(bucket_get_value_size(bucket) > 8)
+    {
+        free(bucket->value);
+    }
+
+    memset(bucket, 0, sizeof(Bucket));
 }
 
 #define HASHMAP_MAX_LOAD 0.9f
 #define HASHMAP_GROWTH_RATE 2.0f
 #define HASHMAP_INITIAL_CAPACITY 1024
 
-struct _StringHashMap {
-   entry_t* entries;
+struct _HashMap {
+   Bucket* buckets;
    size_t size;
    size_t capacity;
+   uint32_t hashkey;
 };
 
-entry_t* entry_find_get(entry_t* __restrict entries,
-                        const size_t capacity,
-                        const char* key,
-                        const size_t key_len)
+ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* key, const size_t key_size)
 {
-    entry_t* entry;
-    uint32_t index;
-    size_t entry_key_len;
-
-    assert(entries!= NULL);
-    assert(key != NULL);
-
-    entry = NULL;
-    index = hash_fnv1a(key, key_len) % capacity;
-
-    while(1)
-    {
-        entry = &entries[index];
-
-        entry_key_len = entry_get_key_size(entry);
-
-        if(entry_is_empty(entry))
-        {
-            if(!entry_is_tombstone(entry))
-            {
-                return NULL;
-            }
-        }
-        else if(entry_key_len == key_len && memcmp(key, entry_get_key(entry), key_len) == 0)
-        {
-            return entry;
-        }
-
-        index = (index + 1) % capacity;
-    }
-
-    return NULL;
+    return hash_murmur3(key, key_size, hashmap->hashkey);
+    // return hash_fnv1a((const char*)key, (size_t)key_size);
 }
 
-entry_t* entry_find_grow(entry_t* __restrict entries,
-                         size_t capacity,
-                         const char* key,
-                         size_t key_len)
-{
-    entry_t* entry;
-    uint32_t index;
-    size_t entry_key_len;
-
-    assert(entries != NULL);
-    assert(key != NULL);
-
-    entry = NULL;
-    index = hash_fnv1a(key, key_len) % capacity;
-
-    while(1)
-    {
-        entry = &entries[index];
-
-        entry_key_len = entry_get_key_size(entry);
-
-        if(entry_is_empty(entry))
-        {
-            return entry;
-        }
-
-        index = (index + 1) % capacity;
-    }
-
-    return NULL;
-}
-
-size_t string_hashmap_get_new_capacity(StringHashMap* hashmap)
+size_t hashmap_get_new_capacity(HashMap* hashmap)
 {
     return round_u64_to_next_pow2(hashmap->capacity + 1) + 1;
 }
 
-void string_hashmap_grow(StringHashMap* hashmap,
-                         size_t capacity)
+void hashmap_grow(HashMap* hashmap,
+                  size_t capacity)
 {
+    Bucket* old_buckets;
+    Bucket* bucket;
+
     size_t i;
-    entry_t* entries;
-    entry_t* entry;
-    entry_t* new_entry;
+    size_t index;
+    size_t old_capacity;
 
     assert(hashmap != NULL);
+
+    old_buckets = hashmap->buckets;
+    old_capacity = hashmap->capacity;
     
-    entries = (entry_t*)calloc(capacity, sizeof(entry_t));
-
+    hashmap->buckets = (Bucket*)calloc(capacity, sizeof(Bucket));
+    hashmap->capacity = capacity;
     hashmap->size = 0;
+    hashmap->hashkey ^= random_next_uint32();
 
-    if(hashmap->entries != NULL)
+    if(old_buckets != NULL)
     {
-        for(i = 0; i < hashmap->capacity; i++)
+        for(i = 0; i < old_capacity; i++)
         {
-            entry = &hashmap->entries[i];
+            bucket = &old_buckets[i];
 
-            if(entry_is_empty(entry))
+            if(bucket_is_empty(bucket))
             {
                 continue;
             }
 
-            new_entry = entry_find_grow(entries, capacity, entry_get_key(entry), entry_get_key_size(entry));
+            hashmap_insert(hashmap, 
+                           bucket_get_key(bucket),
+                           bucket_get_key_size(bucket),
+                           bucket_get_value(bucket),
+                           bucket_get_value_size(bucket));
 
-            memmove(new_entry, entry, sizeof(entry_t));
-
-            hashmap->size++;
+            bucket_free(bucket);
         }
 
-        free(hashmap->entries);
+        free(old_buckets);
     }
-
-    hashmap->entries = entries;
-    hashmap->capacity = capacity;
 }
 
-entry_t* entry_find_insert(StringHashMap* hashmap,
-                           const char* key,
-                           size_t key_len)
+HashMap* hashmap_new(void)
 {
-    entry_t* entry;
-    entry_t* tombstone;
-    uint32_t index;
-    size_t entry_key_len;
-    size_t num_probes;
-    size_t max_probes;
+    HashMap* hashmap = (HashMap*)malloc(sizeof(HashMap));
+    hashmap->buckets = NULL;
+    hashmap->size = 0;
+    hashmap->capacity = 0;
+    hashmap->hashkey ^= random_next_uint32();
 
-    assert(hashmap != NULL);
-    assert(key != NULL);
+    hashmap_grow(hashmap, HASHMAP_INITIAL_CAPACITY);
 
-    start:
-
-    entry = NULL;
-    tombstone = NULL;
-    num_probes = 0;
-    max_probes = (size_t)mathf_log((float)hashmap->capacity);
-    index = hash_fnv1a(key, key_len) % hashmap->capacity;
-
-    while(1)
-    {
-        entry = &hashmap->entries[index];
-
-        entry_key_len = entry_get_key_size(entry);
-
-        if(entry_is_empty(entry))
-        {
-            if(!entry_is_tombstone(entry))
-            {
-                return tombstone != NULL ? tombstone : entry;
-            }
-            else
-            {
-                if(tombstone == NULL) tombstone = entry;
-            }
-        }
-        else if(entry_key_len == key_len && memcmp(key, entry_get_key(entry), key_len) == 0)
-        {
-            return entry;
-        }
-
-        index = (index + 1) % hashmap->capacity;
-
-        num_probes++;
-
-        if(num_probes == max_probes)
-        {
-            string_hashmap_grow(hashmap, string_hashmap_get_new_capacity(hashmap));
-            goto start;
-        }
-    }
-
-    return NULL;
+    return hashmap;
 }
 
-StringHashMap* string_hashmap_new(void)
-{
-    StringHashMap* hm = (StringHashMap*)malloc(sizeof(StringHashMap));
-    hm->entries = NULL;
-    hm->size = 0;
-    hm->capacity = 0;
-
-    string_hashmap_grow(hm, HASHMAP_INITIAL_CAPACITY);
-
-    return hm;
-}
-
-size_t string_hashmap_size(StringHashMap* hashmap)
+size_t hashmap_size(HashMap* hashmap)
 {
     return hashmap->size;
 }
 
-size_t string_hashmap_capacity(StringHashMap* hashmap)
+size_t hashmap_capacity(HashMap* hashmap)
 {
     return hashmap->capacity;
 }
 
-void string_hashmap_insert(StringHashMap* hashmap, 
-                           const char* key, 
-                           size_t key_len,
-                           void* value, 
-                           size_t value_size)
+void hashmap_insert(HashMap* hashmap,
+                    const void* key,
+                    const uint32_t key_size,
+                    void* value,
+                    const uint32_t value_size)
 {
-    size_t new_capacity;
-    entry_t* entry;
+    Bucket* bucket;
+    Bucket entry;
+    Bucket tmp;
 
-    assert(hashmap != NULL);
-    assert(key != NULL);
-    assert(value != NULL);
+    size_t index;
+    size_t max_probes;
+    bool has_swapped;
 
-    if((hashmap->size + 1) > (hashmap->capacity * HASHMAP_MAX_LOAD))
+    if((hashmap->size + 1) > hashmap->capacity * HASHMAP_MAX_LOAD)
     {
-        string_hashmap_grow(hashmap, string_hashmap_get_new_capacity(hashmap));
+        hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
     }
 
-    entry = entry_find_insert(hashmap, key, key_len);
+    has_swapped = false;
 
-    if(entry_is_empty(entry))
+    start:
+
+    max_probes = (size_t)mathf_logN(hashmap->capacity, 3);
+    // max_probes = (size_t)mathf_log2(hashmap->capacity);
+
+    if(!has_swapped)
     {
-        hashmap->size++;
+        bucket_new(&entry, key, key_size, value, value_size, 0);
     }
     else
     {
-        entry_free(entry);
+        entry.probe_length = 0;
     }
 
-    entry_new(entry, key, key_len, value, value_size);
+    index = hashmap_hash(hashmap, bucket_get_key(&entry), bucket_get_key_size(&entry)) % hashmap->capacity;
+
+    while(1)
+    {
+        bucket = &hashmap->buckets[index];
+
+        if(!bucket_is_empty(bucket))
+        {
+            if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+            {
+                return;
+            }
+
+            if(entry.probe_length > bucket->probe_length)
+            {
+                tmp = entry;
+                entry = *bucket;
+                *bucket = tmp;
+
+                has_swapped = true;
+            }
+
+            index = (index + 1) % hashmap->capacity;
+            entry.probe_length++;
+
+            if(entry.probe_length >= max_probes)
+            {
+                hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+                goto start;
+            }
+        }
+        else
+        {
+            *bucket = entry;
+
+            hashmap->size++;
+
+            return;
+        }
+    }
 }
 
-void string_hashmap_update(StringHashMap* hashmap,
-                           const char* key,
-                           size_t key_len,
-                           void* value,
-                           size_t value_size)
+void hashmap_update(HashMap* hashmap,
+                    const void* key,
+                    const uint32_t key_size,
+                    void* value,
+                    const uint32_t value_size)
 {
-    entry_t* entry;
+    Bucket* bucket;
 
-    assert(hashmap != NULL);
-    assert(key != NULL);
-    assert(value != NULL);
+    size_t index;
+    size_t probe_length;
 
-    entry = entry_find_insert(hashmap, key, key_len);
+    probe_length = 0;
 
-    if(entry_is_empty(entry))
+    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+
+    while(1)
     {
-        hashmap->size++;
-    }
-    else
-    {
-        entry_free(entry);
-    }
+        bucket = &hashmap->buckets[index];
 
-    entry_new(entry, key, key_len, value, value_size);
+        if(!bucket_is_empty(bucket))
+        {
+            if((size_t)bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+            {
+                bucket_update_value(bucket, value, value_size);
+                return;
+            }
+
+            index = (index + 1) % hashmap->capacity;
+            probe_length++;
+        }
+        else
+        {
+            bucket_new(bucket, key, key_size, value, value_size, probe_length);
+
+            hashmap->size++;
+
+            return;
+        }
+    }
 }
 
-void* string_hashmap_get(StringHashMap* hashmap,
-                         const char* key,
-                         size_t key_len,
-                         size_t* value_size)
+void* hashmap_get(HashMap* hashmap,
+                  const void* key,
+                  const uint32_t key_size,
+                  uint32_t* value_size)
 {
-    entry_t* entry;
+    Bucket* bucket;
 
-    assert(hashmap != NULL);
-    assert(key != NULL);
-    assert(value_size != NULL);
+    size_t index;
+    size_t n_probes;
 
-    if(hashmap->size == 0)
+    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+    n_probes = 0;
+
+    while(1)
     {
-        return NULL;
+        bucket = &hashmap->buckets[index];
+
+        if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+        {
+            *value_size = bucket_get_value_size(bucket);
+
+            return bucket_get_value(bucket);
+        }
+
+        if(bucket_is_empty(bucket) || n_probes > bucket_get_probe_length(bucket))
+        {
+            return NULL;
+        }
+
+        index = (index + 1) % hashmap->capacity;
+        n_probes++;
     }
-
-    entry = entry_find_get(hashmap->entries, hashmap->capacity, key, key_len);
-
-    if(entry_is_empty(entry))
-    {
-        return NULL;
-    }
-
-    *value_size = entry_get_value_size(entry);
-
-    return entry_get_value(entry);
 }
 
-void string_hashmap_remove(StringHashMap* hashmap,
-                           const char* key,
-                           size_t key_len)
+void hashmap_remove(HashMap* hashmap,
+                    const void* key,
+                    const uint32_t key_size)
 {
-    entry_t* entry;
+    Bucket* bucket;
+    Bucket* backward_shift_bucket;
 
-    assert(hashmap != NULL);
-    assert(key != NULL);
+    size_t index;
+    size_t n_probes;
 
-    if(hashmap->size == 0)
+    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+    n_probes = 0;
+
+    while(1)
     {
-        return;
+        bucket = &hashmap->buckets[index];
+
+        if(bucket_is_empty(bucket) || n_probes > bucket_get_probe_length(bucket))
+        {
+            return;
+        }
+
+        if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+        {
+            bucket_free(bucket);
+
+            hashmap->size--;
+
+            while(1)
+            {
+                bucket_set_empty(bucket);
+
+                index = (index + 1) % hashmap->capacity;
+
+                backward_shift_bucket = &hashmap->buckets[index];
+
+                if(bucket_is_empty(backward_shift_bucket) || bucket_get_probe_length(backward_shift_bucket) == 0)
+                {
+                    return;
+                }
+
+                backward_shift_bucket->probe_length--;
+                *bucket = *backward_shift_bucket;
+                bucket = backward_shift_bucket;
+            }
+        }
+
+        index = (index + 1) % hashmap->capacity;
+        n_probes++;
     }
-
-    entry = entry_find_get(hashmap->entries, hashmap->capacity, key, key_len);
-
-    if(entry_is_empty(entry))
-    {
-        return;
-    }
-
-    entry_free(entry);
-
-    entry_set_tombstone(entry);
-
-    hashmap->size--;
 }
 
-void string_hashmap_free(StringHashMap* hashmap)
+void hashmap_free(HashMap* hashmap)
 {
     size_t i;
 
     assert(hashmap != NULL);
 
-    for(i = 0; i < hashmap->size; i++)
+    if(hashmap->buckets != NULL)
     {
-        if(!entry_is_empty(&hashmap->entries[i]))
-        {
-            entry_free(&hashmap->entries[i]);
-        }
-    }
+        free(hashmap->buckets);
 
-    if(hashmap->entries != NULL)
-    {
-        free(hashmap->entries);
+        for(i = 0; i < hashmap->size; i++)
+        {
+            if(!bucket_is_empty(&hashmap->buckets[i]))
+            {
+                bucket_free(&hashmap->buckets[i]);
+            }
+        }
     }
 
     free(hashmap);

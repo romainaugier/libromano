@@ -298,7 +298,7 @@ typedef struct work work_t;
 
 struct threadpool
 {
-    vector_t* work_vector;
+    Vector* work_vector;
     
     mutex_t* work_mutex;
 

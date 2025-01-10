@@ -13,12 +13,12 @@
 
 #define GOLDEN_RATIO 1.61f
 
-vector_t* vector_new(const size_t initial_capacity, const size_t element_size)
+Vector* vector_new(const size_t initial_capacity, const size_t element_size)
 {
-    vector_t* new_vector;
+    Vector* new_vector;
     size_t capacity;
 
-    new_vector = (vector_t*)malloc(sizeof(vector_t));
+    new_vector = (Vector*)malloc(sizeof(Vector));
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
     
@@ -31,7 +31,7 @@ vector_t* vector_new(const size_t initial_capacity, const size_t element_size)
     return new_vector;
 }
 
-void vector_init(vector_t* vector, const size_t initial_capacity, const size_t element_size)
+void vector_init(Vector* vector, const size_t initial_capacity, const size_t element_size)
 {
     size_t capacity;
 
@@ -44,7 +44,7 @@ void vector_init(vector_t* vector, const size_t initial_capacity, const size_t e
     ((size_t*)vector->data)[2] = element_size;
 }
 
-void vector_resize(vector_t* vector, const size_t new_capacity)
+void vector_resize(Vector* vector, const size_t new_capacity)
 {
     size_t old_capacity;
     size_t element_size;
@@ -70,7 +70,7 @@ void vector_resize(vector_t* vector, const size_t new_capacity)
     ((size_t*)vector->data)[1] = new_capacity;
 }
 
-void _vector_grow(vector_t* vector)
+void _vector_grow(Vector* vector)
 {
     size_t new_capacity;
 
@@ -81,7 +81,7 @@ void _vector_grow(vector_t* vector)
     vector_resize(vector, new_capacity);
 }
 
-void vector_push_back(vector_t* vector, void* element)
+void vector_push_back(Vector* vector, void* element)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -105,7 +105,7 @@ void vector_push_back(vector_t* vector, void* element)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_emplace_back(vector_t* vector, void* element)
+void vector_emplace_back(Vector* vector, void* element)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -129,7 +129,7 @@ void vector_emplace_back(vector_t* vector, void* element)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_insert(vector_t* vector, void* element, const size_t position)
+void vector_insert(Vector* vector, void* element, const size_t position)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -156,7 +156,7 @@ void vector_insert(vector_t* vector, void* element, const size_t position)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_remove(vector_t* vector, const size_t position)
+void vector_remove(Vector* vector, const size_t position)
 {
     size_t vec_size;
     size_t elem_size;
@@ -173,7 +173,7 @@ void vector_remove(vector_t* vector, const size_t position)
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
 
-void vector_pop(vector_t* vector)
+void vector_pop(Vector* vector)
 {
     size_t vec_size;
 
@@ -186,7 +186,7 @@ void vector_pop(vector_t* vector)
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
 
-void* vector_at(vector_t* vector, const size_t index)
+void* vector_at(Vector* vector, const size_t index)
 {
     size_t element_size;
     
@@ -197,7 +197,7 @@ void* vector_at(vector_t* vector, const size_t index)
     return (void*)((char*)((size_t*)vector->data + 3) + index * element_size);
 }
 
-void vector_shrink_to_fit(vector_t* vector)
+void vector_shrink_to_fit(Vector* vector)
 {
     size_t vec_size;
     size_t elem_size;
@@ -214,7 +214,7 @@ void vector_shrink_to_fit(vector_t* vector)
     ((size_t*)vector->data)[1] = vec_size;
 }
 
-void vector_free(vector_t* vector)
+void vector_free(Vector* vector)
 {
     if(vector != NULL)
     {

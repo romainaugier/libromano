@@ -9,13 +9,13 @@
 
 #include "libromano/libromano.h"
 
-#define EMPTY_HASH ((uint32_t)0x811c9dc5u)
-
 ROMANO_CPP_ENTER
 
 ROMANO_API uint32_t hash_fnv1a(const char* str, size_t n);
 
 ROMANO_API uint32_t hash_fnv1a_pippip(const char* str, size_t n);
+
+ROMANO_API uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed);
 
 ROMANO_CPP_END
 

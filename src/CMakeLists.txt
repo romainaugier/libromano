@@ -24,7 +24,7 @@ if(UNIX)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
 elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch)
+    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf)
 endif()
 
 target_include_directories(${PROJECT_NAME}

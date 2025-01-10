@@ -48,6 +48,26 @@
 #else
 #define ROMANO_PLATFORM_STR "LINUX32"
 #endif /* defined(ROMANO_X64) */
+#elif defined(__APPLE__)
+#define ROMANO_APPLE
+#if defined(ROMANO_X64)
+#define ROMANO_PLATFORM_STR "APPLE64"
+#else
+#define ROMANO_PLATFORM_STR "APPLE32"
+#endif /* defined(ROMANO_X64) */
+#elif defined(__OpenBSD__)
+#define ROMANO_OPENBSD
+#if defined(ROMANO_X64)
+#define ROMANO_PLATFORM_STR "OPENBSD64"
+#else
+#define ROMANO_PLATFORM_STR "OPENBSD32"
+#endif /* defined(ROMANO_X64) */
+#elif defined(__NetBSD__) 
+#define ROMANO_NETBSD
+#elif defined(__FreeBSD__) 
+#define ROMANO_FREEBSD
+#elif defined(__DragonFly__)
+#define ROMANO_DRAGONFLY
 #endif /* defined(_WIN32) */
 
 #define ROMANO_BYTE_ORDER_UNDEFINED 0
@@ -82,6 +102,14 @@
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
 #endif /* defined(ROMANO_MSVC) */
+
+#if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+#define	ROMANO_LIKELY(x)	__builtin_expect((x) != 0, 1)
+#define	ROMANO_UNLIKELY(x)	__builtin_expect((x) != 0, 0)
+#else
+#define	ROMANO_LIKELY(x) (x)
+#define	ROMANO_UNLIKELY(x) (x)
+#endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
 
 #if defined(ROMANO_BUILD_SHARED)
 #define ROMANO_API ROMANO_EXPORT

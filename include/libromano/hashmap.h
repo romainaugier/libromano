@@ -15,53 +15,45 @@
 #include <string.h>
 #include <assert.h>
 
-/* 
-    Flag used to turn on an optimization similar to sso for keys and values of size less than 
-    sizeof(size_t) - 1 + sizeof(void*)
-    On little endian platforms we need to swap the size when it is not interned as we check the last
-    byte of the size when looking for interning size
-*/
-
-#if defined(ROMANO_HASHMAP_INTERN_SMALL_VALUES)
-#define __ROMANO_HASHMAP_INTERN_SMALL_VALUES 1
-#else
-#define __ROMANO_HASHMAP_INTERN_SMALL_VALUES 0
-#endif /* defined(ROMANO_HASHMAP_INTERN_SMALL_VALUES) */
-
 ROMANO_CPP_ENTER
 
-struct _StringHashMap;
+typedef enum
+{
+    HashMapFlags_NoValueCopy = 0x1,
+} HashMapFlags;
 
-typedef struct _StringHashMap StringHashMap;
+struct _HashMap;
 
-ROMANO_API StringHashMap* string_hashmap_new(void);
+typedef struct _HashMap HashMap;
 
-ROMANO_API size_t string_hashmap_size(StringHashMap* hashmap);
+ROMANO_API HashMap* hashmap_new(void);
 
-ROMANO_API size_t string_hashmap_capacity(StringHashMap* hashmap);
+ROMANO_API size_t hashmap_size(HashMap* hashmap);
 
-ROMANO_API void string_hashmap_insert(StringHashMap* hashmap,
-                                      const char* key,
-                                      const size_t key_len,
-                                      void* value,
-                                      const size_t value_size);
+ROMANO_API size_t hashmap_capacity(HashMap* hashmap);
 
-ROMANO_API void string_hashmap_update(StringHashMap* hashmap,
-                                      const char* key,
-                                      const size_t key_len,
-                                      void* value,
-                                      const size_t value_size);
+ROMANO_API void hashmap_insert(HashMap* hashmap,
+                               const void* key,
+                               const uint32_t key_size,
+                               void* value,
+                               const uint32_t value_size);
 
-ROMANO_API void* string_hashmap_get(StringHashMap* hashmap,
-                                    const char* key,
-                                    const size_t key_len,
-                                    size_t* value_size);
+ROMANO_API void hashmap_update(HashMap* hashmap,
+                               const void* key,
+                               const uint32_t key_size,
+                               void* value,
+                               const uint32_t value_size);
 
-ROMANO_API void string_hashmap_remove(StringHashMap* hashmap,
-                                      const char* key,
-                                      size_t key_len);
+ROMANO_API void* hashmap_get(HashMap* hashmap,
+                             const void* key,
+                             const uint32_t key_size,
+                             uint32_t* value_size);
 
-ROMANO_API void string_hashmap_free(StringHashMap* hashmap);
+ROMANO_API void hashmap_remove(HashMap* hashmap,
+                               const void* key,
+                               const uint32_t key_size);
+
+ROMANO_API void hashmap_free(HashMap* hashmap);
 
 ROMANO_CPP_END
 

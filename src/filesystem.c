@@ -123,7 +123,7 @@ typedef struct fs_walk_data {
     HANDLE h_find;
 #elif defined(ROMANO_LINUX)
 #endif /* defined(ROMANO_WIN) */
-    vector_t* dir_queue;
+    Vector* dir_queue;
 } fs_walk_data;
 
 static fs_walk_data* search_data = NULL;
