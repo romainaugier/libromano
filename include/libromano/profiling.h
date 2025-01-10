@@ -31,15 +31,19 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
-    struct timespec s; 
-    clock_gettime(CLOCK_MONOTONIC, &s); 
-    return (uint64_t)s.tv_sec * 1000000000 + (uint64_t)s.tv_nsec;
+    // struct timespec s; 
+    // clock_gettime(CLOCK_MONOTONIC, &s); 
+    // return (uint64_t)s.tv_sec * 1000000000 + (uint64_t)s.tv_nsec;
+
+    return cpu_rdtsc();
 }
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier)
 {
-    double elapsed = (get_timestamp() - start) * 1e-9;
-    return elapsed * unit_multiplier;
+    // double elapsed = (get_timestamp() - start) * 1e-9;
+    // return elapsed * unit_multiplier;
+
+    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_current_frequency() * 1000000.0) * unit_multiplier);
 }
 
 #endif /* defined(ROMANO_MSVC) */
@@ -56,8 +60,8 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
 
 /* Profiling measured in nanoseconds */
 #define PROFILE_NANOSECONDS(func) { uint64_t s = get_timestamp();                                                              \
-                                     do { func; } while (0);                                                                   \
-                                     printf("%s at %s:%d -> %3f µs\n", #func, __FILE__, __LINE__, get_elapsed_time(s, 1e9)); } \
+                                    do { func; } while (0);                                                                   \
+                                    printf("%s at %s:%d -> %3f ns\n", #func, __FILE__, __LINE__, get_elapsed_time(s, 1e9)); } \
 
 #define SCOPED_PROFILE_START_NANOSECONDS(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = get_timestamp(); 
 #define SCOPED_PROFILE_END_NANOSECONDS(name) printf("Scoped profile \"%s\" -> %3f ns\n", ___scp_##name, get_elapsed_time(___scp_##name##_start, 1e9)); 

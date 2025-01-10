@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <time.h>
 
 #if defined(ROMANO_WIN)
 typedef HANDLE thread_handle;

@@ -36,17 +36,17 @@
     N -> columns
 */
 
-matrixf_t matrix_null()
+MatrixF matrix_null()
 {
-    matrixf_t A;
+    MatrixF A;
     A.data = NULL;
 
     return A;
 }
 
-matrixf_t matrixf_create(const int M, const int N)
+MatrixF matrixf_create(const int M, const int N)
 {
-    matrixf_t A;
+    MatrixF A;
 
     A.data = (float*)mem_aligned_alloc((M * N + 2) * sizeof(float), ALIGNMENT);
     SET_SIZE_M(A, M);
@@ -55,9 +55,9 @@ matrixf_t matrixf_create(const int M, const int N)
     return A;
 }
 
-matrixf_t matrixf_copy(matrixf_t* A)
+MatrixF matrixf_copy(MatrixF* A)
 {
-    matrixf_t B;
+    MatrixF B;
 
     const uint64_t size = (SIZE_M((*A)) * SIZE_N((*A)) + 2) * sizeof(float);
 
@@ -67,7 +67,7 @@ matrixf_t matrixf_copy(matrixf_t* A)
     return B;
 }
 
-void matrixf_size(matrixf_t* A, int* M, int* N)
+void matrixf_size(MatrixF* A, int* M, int* N)
 {
     if(A->data != NULL)
     {
@@ -76,7 +76,7 @@ void matrixf_size(matrixf_t* A, int* M, int* N)
     }
 }
 
-void matrixf_resize(matrixf_t* A, const int M, const int N)
+void matrixf_resize(MatrixF* A, const int M, const int N)
 {
     if(A->data != NULL)
     {
@@ -88,7 +88,7 @@ void matrixf_resize(matrixf_t* A, const int M, const int N)
     SET_SIZE_N((*A), N);
 }
 
-int matrixf_row_size(matrixf_t* A)
+int matrixf_row_size(MatrixF* A)
 {
     if(A->data)
     {
@@ -98,7 +98,7 @@ int matrixf_row_size(matrixf_t* A)
     return 0;
 }
 
-int matrixf_column_size(matrixf_t* A)
+int matrixf_column_size(MatrixF* A)
 {
     if(A->data)
     {
@@ -108,27 +108,27 @@ int matrixf_column_size(matrixf_t* A)
     return 0;
 }
 
-void matrixf_set_at(matrixf_t* A, const float value, const int i, const int j)
+void matrixf_set_at(MatrixF* A, const float value, const int i, const int j)
 {
     A->data[i * SIZE_N((*A)) + j + 2] = value;
 }
 
-float matrixf_get_at(matrixf_t* A, const int i, const int j)
+float matrixf_get_at(MatrixF* A, const int i, const int j)
 {
     return A->data[i * SIZE_N((*A)) + j + 2];
 }
 
-float matrixf_trace(matrixf_t* A)
+float matrixf_trace(MatrixF* A)
 {
     return 0.0f;
 }
 
-void matrixf_zero(matrixf_t* A)
+void matrixf_zero(MatrixF* A)
 {
     memset(A->data + 2, 0, SIZE_M((*A)) * SIZE_N((*A)) * sizeof(float));
 }
 
-void matrixf_transpose(matrixf_t* A)
+void matrixf_transpose(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
@@ -169,7 +169,7 @@ void matrixf_transpose(matrixf_t* A)
     SET_SIZE_M((*A), M);
 }
 
-matrixf_t matrixf_transpose_from(matrixf_t* A)
+MatrixF matrixf_transpose_from(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
@@ -177,7 +177,7 @@ matrixf_t matrixf_transpose_from(matrixf_t* A)
     const int M = SIZE_M((*A));
     const int N = SIZE_N((*A));
 
-    matrixf_t res = matrixf_create(M, N);
+    MatrixF res = matrixf_create(M, N);
     
     for(i = 0; i < M; i++)
     {
@@ -277,7 +277,7 @@ matmul_func __matmul_funcs[3] = {
     _matrixf_mul_avx2,
 };
 
-void matrixf_mul(matrixf_t* A, matrixf_t* B, matrixf_t* C)
+void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 {
     uint32_t M;
     uint32_t N;
@@ -304,7 +304,7 @@ void matrixf_mul(matrixf_t* A, matrixf_t* B, matrixf_t* C)
     }
 }
 
-void _matrixf_add_f_scalar(matrixf_t* A, const float f, const uint32_t M, const uint32_t N)
+void _matrixf_add_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
 {
     uint32_t i;
     uint32_t j;
@@ -318,7 +318,7 @@ void _matrixf_add_f_scalar(matrixf_t* A, const float f, const uint32_t M, const 
     }
 }
 
-void matrixf_add_f(matrixf_t* A, float f)
+void matrixf_add_f(MatrixF* A, float f)
 {
     const uint32_t M = SIZE_M((*A));
     const uint32_t N = SIZE_N((*A));
@@ -326,7 +326,7 @@ void matrixf_add_f(matrixf_t* A, float f)
     _matrixf_add_f_scalar(A, f, M, N);
 }
 
-void _matrixf_sub_f_scalar(matrixf_t* A, const float f, const uint32_t M, const uint32_t N)
+void _matrixf_sub_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
 {
     uint32_t i;
     uint32_t j;
@@ -340,7 +340,7 @@ void _matrixf_sub_f_scalar(matrixf_t* A, const float f, const uint32_t M, const 
     }
 }
 
-void matrixf_sub_f(matrixf_t* A, float f)
+void matrixf_sub_f(MatrixF* A, float f)
 {
     const uint32_t M = SIZE_M((*A));
     const uint32_t N = SIZE_N((*A));
@@ -348,7 +348,7 @@ void matrixf_sub_f(matrixf_t* A, float f)
     _matrixf_sub_f_scalar(A, f, M, N);
 }
 
-void _matrixf_mul_by_f_scalar(matrixf_t* A, const float f, const uint32_t M, const uint32_t N)
+void _matrixf_mul_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
 {
     uint32_t i;
     uint32_t j;
@@ -362,7 +362,7 @@ void _matrixf_mul_by_f_scalar(matrixf_t* A, const float f, const uint32_t M, con
     }
 }
 
-void matrixf_mul_by_f(matrixf_t* A, float f)
+void matrixf_mul_by_f(MatrixF* A, float f)
 {
     const uint32_t M = SIZE_M((*A));
     const uint32_t N = SIZE_N((*A));
@@ -370,7 +370,7 @@ void matrixf_mul_by_f(matrixf_t* A, float f)
     _matrixf_mul_by_f_scalar(A, f, M, N);
 }
 
-void _matrixf_div_by_f_scalar(matrixf_t* A, const float f, const uint32_t M, const uint32_t N)
+void _matrixf_div_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
 {
     uint32_t i;
     uint32_t j;
@@ -384,7 +384,7 @@ void _matrixf_div_by_f_scalar(matrixf_t* A, const float f, const uint32_t M, con
     }
 }
 
-void matrixf_div_by_f(matrixf_t* A, float f)
+void matrixf_div_by_f(MatrixF* A, float f)
 {
     const uint32_t M = SIZE_M((*A));
     const uint32_t N = SIZE_N((*A));
@@ -392,7 +392,7 @@ void matrixf_div_by_f(matrixf_t* A, float f)
     _matrixf_div_by_f_scalar(A, f, M, N);
 }
 
-void _matrixf_debug_full(matrixf_t* A, const uint32_t M, const uint32_t N)
+void _matrixf_debug_full(MatrixF* A, const uint32_t M, const uint32_t N)
 {
     uint32_t i;
     uint32_t j;
@@ -408,7 +408,7 @@ void _matrixf_debug_full(matrixf_t* A, const uint32_t M, const uint32_t N)
     }
 }
 
-void _matrixf_debug_limited(matrixf_t* A, const uint32_t M, const uint32_t N, const uint32_t max_M, const uint32_t max_N)
+void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, const uint32_t max_M, const uint32_t max_N)
 {
     uint32_t i;
     uint32_t j;
@@ -466,7 +466,7 @@ void _matrixf_debug_limited(matrixf_t* A, const uint32_t M, const uint32_t N, co
     }
 }
 
-void matrixf_debug(matrixf_t* A, uint32_t max_rows, uint32_t max_columns)
+void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns)
 {
     const uint32_t M = SIZE_M((*A));
     const uint32_t N = SIZE_N((*A));
@@ -483,7 +483,7 @@ void matrixf_debug(matrixf_t* A, uint32_t max_rows, uint32_t max_columns)
     }
 }
 
-void matrixf_destroy(matrixf_t* A)
+void matrixf_destroy(MatrixF* A)
 {
     if(A->data != NULL)
     {
@@ -492,7 +492,7 @@ void matrixf_destroy(matrixf_t* A)
     }
 }
 
-bool matrixf_cholesky_decomposition(matrixf_t* A, matrixf_t* L)
+bool matrixf_cholesky_decomposition(MatrixF* A, MatrixF* L)
 {
     uint32_t i;
     uint32_t j;
@@ -558,7 +558,7 @@ bool matrixf_cholesky_decomposition(matrixf_t* A, matrixf_t* L)
     return true;
 }
 
-bool matrixf_cholesky_solve(matrixf_t* A, matrixf_t* b, matrixf_t* x)
+bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
 {
     uint32_t i;
     uint32_t j;
@@ -573,8 +573,8 @@ bool matrixf_cholesky_solve(matrixf_t* A, matrixf_t* b, matrixf_t* x)
     float value;
     float tmp;
 
-    matrixf_t L = matrix_null();
-    matrixf_t y = matrix_null();
+    MatrixF L = matrix_null();
+    MatrixF y = matrix_null();
 
     const uint32_t N = SIZE_N((*A));
 

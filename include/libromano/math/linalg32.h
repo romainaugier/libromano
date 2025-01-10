@@ -120,51 +120,51 @@ struct matrixf {
     float* data;
 };
 
-typedef struct matrixf matrixf_t;
+typedef struct matrixf MatrixF;
 
-ROMANO_API matrixf_t matrix_null();
+ROMANO_API MatrixF matrix_null();
 
-ROMANO_API matrixf_t matrixf_create(const int M, const int N);
+ROMANO_API MatrixF matrixf_create(const int M, const int N);
 
-ROMANO_API matrixf_t matrixf_copy(matrixf_t* A);
+ROMANO_API MatrixF matrixf_copy(MatrixF* A);
 
-ROMANO_API void matrixf_size(matrixf_t* A, int* M, int* N);
+ROMANO_API void matrixf_size(MatrixF* A, int* M, int* N);
 
-ROMANO_API void matrixf_resize(matrixf_t* A, const int M, const int N);
+ROMANO_API void matrixf_resize(MatrixF* A, const int M, const int N);
 
-ROMANO_API int matrixf_row_size(matrixf_t* A);
+ROMANO_API int matrixf_row_size(MatrixF* A);
 
-ROMANO_API int matrixf_column_size(matrixf_t* A);
+ROMANO_API int matrixf_column_size(MatrixF* A);
 
-ROMANO_API void matrixf_set_at(matrixf_t* A, const float value, const int i, const int j);
+ROMANO_API void matrixf_set_at(MatrixF* A, const float value, const int i, const int j);
 
-ROMANO_API float matrixf_get_at(matrixf_t* A, const int i, const int j);
+ROMANO_API float matrixf_get_at(MatrixF* A, const int i, const int j);
 
-ROMANO_API float matrixf_trace(matrixf_t* A);
+ROMANO_API float matrixf_trace(MatrixF* A);
 
-ROMANO_API void matrixf_zero(matrixf_t* A);
+ROMANO_API void matrixf_zero(MatrixF* A);
 
-ROMANO_API void matrixf_transpose(matrixf_t* A);
+ROMANO_API void matrixf_transpose(MatrixF* A);
 
-ROMANO_API matrixf_t matrixf_transpose_from(matrixf_t* A);
+ROMANO_API MatrixF matrixf_transpose_from(MatrixF* A);
 
-ROMANO_API void matrixf_mul(matrixf_t* A, matrixf_t* B, matrixf_t* C);
+ROMANO_API void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C);
 
-ROMANO_API void matrixf_add_f(matrixf_t* A, const float f);
+ROMANO_API void matrixf_add_f(MatrixF* A, const float f);
 
-ROMANO_API void matrixf_sub_f(matrixf_t* A, const float f);
+ROMANO_API void matrixf_sub_f(MatrixF* A, const float f);
 
-ROMANO_API void matrixf_mul_by_f(matrixf_t* A, const float f);
+ROMANO_API void matrixf_mul_by_f(MatrixF* A, const float f);
 
-ROMANO_API void matrixf_div_by_f(matrixf_t* A, const float f);
+ROMANO_API void matrixf_div_by_f(MatrixF* A, const float f);
 
-ROMANO_API void matrixf_debug(matrixf_t* A, uint32_t max_rows, uint32_t max_columns);
+ROMANO_API void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns);
 
-ROMANO_API void matrixf_destroy(matrixf_t* A);
+ROMANO_API void matrixf_destroy(MatrixF* A);
 
-ROMANO_API bool matrixf_cholesky_decomposition(matrixf_t* A, matrixf_t* L);
+ROMANO_API bool matrixf_cholesky_decomposition(MatrixF* A, MatrixF* L);
 
-ROMANO_API bool matrixf_cholesky_solve(matrixf_t* A, matrixf_t* b, matrixf_t* x);
+ROMANO_API bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x);
 
 ROMANO_CPP_END
 

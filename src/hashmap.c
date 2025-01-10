@@ -12,7 +12,7 @@
 
 typedef enum
 {
-    BucketFlag_KeyInterned = 0x1
+    BucketFlag_KeyInterned = 0x1,
 } BucketFlag;
 
 ROMANO_PACKED_STRUCT(struct _Bucket {
@@ -62,11 +62,13 @@ void bucket_new(Bucket* bucket,
     {
         bucket->key = malloc((key_size) * sizeof(char));
         memcpy(bucket->key, key, key_size * sizeof(char));
+
 #if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
         bucket->key_size = mem_bswapu32(key_size);
 #else
         bucket->key_size = key_size;
 #endif /* ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN */
+
         bucket_unset_flag(bucket, BucketFlag_KeyInterned);
     }
 
@@ -88,7 +90,6 @@ void bucket_new(Bucket* bucket,
     }
 
     bucket->value_size = value_size;
-
     bucket->probe_length = probe_length;
 }
 
@@ -215,10 +216,15 @@ ROMANO_FORCE_INLINE void bucket_set_empty(Bucket* bucket)
 void bucket_free(Bucket* bucket)
 {
     assert(bucket != NULL);
-    
-    if(!(bucket_get_key_size(bucket) < INTERNED_SIZE))
+
+    if(bucket_is_empty(bucket))
     {
-        free(bucket->key);
+        return;
+    }
+    
+    if(!bucket_has_flag(bucket, BucketFlag_KeyInterned))
+    {
+        free(bucket_get_key(bucket));
     }
 
     if(bucket_get_value_size(bucket) > 8)
@@ -600,12 +606,14 @@ void hashmap_free(HashMap* hashmap)
 
     if(hashmap->buckets != NULL)
     {
-        for(i = 0; i < hashmap->size; i++)
+        for(i = 0; i < hashmap->capacity; i++)
         {
-            if(!bucket_is_empty(&hashmap->buckets[i]))
+            if(bucket_is_empty(&hashmap->buckets[i]))
             {
-                bucket_free(&hashmap->buckets[i]);
+                continue;
             }
+            
+            bucket_free(&hashmap->buckets[i]);
         }
 
         free(hashmap->buckets);

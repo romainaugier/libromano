@@ -4,6 +4,7 @@
 
 #include "libromano/logger.h"
 #include "libromano/math/stats32.h"
+#include "libromano/simd.h"
 
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
@@ -27,7 +28,7 @@ int main(void)
 
     for(i = 0; i < VALUES_SIZE; i++)
     {
-        values[i] = (float)i;
+        values[i] = (float)i + 1.0f;
     }
 
     __sum = stats_sum(values, VALUES_SIZE);
@@ -55,25 +56,28 @@ int main(void)
 
     /* SUM */
 
+    simd_force_vectorization_mode(VectorizationMode_Scalar);
     SCOPED_PROFILE_START(scalar_sum_profiling);
 
-    __sum = __stats_sum_scalar(values, VALUES_SIZE);
+    __sum = stats_sum(values, VALUES_SIZE);
 
     SCOPED_PROFILE_END(scalar_sum_profiling);
 
     logger_log(LogLevel_Info, "Scalar sum: %f", __sum);
 
+    simd_force_vectorization_mode(VectorizationMode_SSE);
     SCOPED_PROFILE_START(sse_sum_profiling);
 
-    __sum = __stats_sum_sse(values, VALUES_SIZE);
+    __sum = stats_sum(values, VALUES_SIZE);
 
     SCOPED_PROFILE_END(sse_sum_profiling);
 
     logger_log(LogLevel_Info, "SSE sum: %f", __sum);
 
+    simd_force_vectorization_mode(VectorizationMode_AVX);
     SCOPED_PROFILE_START(avx2_sum_profiling);
 
-    __sum = __stats_sum_avx2(values, VALUES_SIZE);
+    __sum = stats_sum(values, VALUES_SIZE);
 
     SCOPED_PROFILE_END(avx2_sum_profiling);
 

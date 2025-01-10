@@ -10,7 +10,8 @@
 #include <windows.h>
 #include <powerbase.h>
 
-typedef struct _PROCESSOR_POWER_INFORMATION {
+typedef struct _PROCESSOR_POWER_INFORMATION 
+{
    ULONG Number;
    ULONG MaxMhz;
    ULONG CurrentMhz;
@@ -21,16 +22,22 @@ typedef struct _PROCESSOR_POWER_INFORMATION {
 
 #else if defined(ROMANO_LINUX)
 #include <x86intrin.h>
+
+#if !defined(__USE_POSIX199309)
+#define __USE_POSIX199309
+#endif /* !defined(__USE_POSIX199309) */
+#include <time.h>
 #endif /* defined(ROMANO_WIN) */
 
 static uint64_t _get_frequency_counter = 0;
 static uint32_t _frequency = 0;
+static uint32_t _refresh = 1000;
 
 uint32_t _get_cpu_frequency(void)
 {
-#if defined(ROMANO_WIN)
-    if(_get_frequency_counter % 100 == 0)
+    if(_get_frequency_counter % _refresh == 0)
     {
+#if defined(ROMANO_WIN)
         PROCESSOR_POWER_INFORMATION* ppi;
         LONG ret;
         size_t size;
@@ -66,14 +73,26 @@ uint32_t _get_cpu_frequency(void)
         LocalFree(p_buffer);
 
         _frequency = (uint32_t)current;
+#elif defined(ROMANO_LINUX)
+        const uint64_t start = cpu_rdtsc();
+
+        struct timespec wait_duration;
+        wait_duration.tv_sec = 0;
+        wait_duration.tv_nsec = 1000000;
+
+        nanosleep(&wait_duration, NULL);
+
+        const uint64_t end = cpu_rdtsc();
+
+        const double frequency = (double)(end - start) * 1000;
+
+        _frequency = (uint32_t)(frequency / 1000000);
+#endif /* defined(ROMANO_WIN) */
     }
 
     _get_frequency_counter++;
 
     return _frequency;
-#endif /* defined(ROMANO_WIN) */
-
-    return 0;
 }
 
 static uint32_t _cpu_freq_mhz = 0;
@@ -126,6 +145,11 @@ uint32_t cpu_get_frequency(void)
 uint32_t cpu_get_current_frequency(void)
 {
     return _get_cpu_frequency();
+}
+
+uint32_t cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency)
+{
+    _refresh = refresh_frequency;
 }
 
 uint64_t cpu_rdtsc(void)

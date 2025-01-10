@@ -10,23 +10,26 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
-#define MATMUL_SIZE_M 512
-#define MATMUL_SIZE_N 512
+#define MATMUL_SIZE_M 2048
+#define MATMUL_SIZE_N 1024
 
 #define M_CHOL 4
 
 int main(void)
 {
+    size_t i;
+    size_t j;
+
     logger_init();
 
     logger_log(LogLevel_Info, "Starting math_linalg32 test");
 
-    matrixf_t A = matrixf_create(MATMUL_SIZE_M, MATMUL_SIZE_N);
-    matrixf_t B = matrixf_create(MATMUL_SIZE_N, MATMUL_SIZE_M);
+    MatrixF A = matrixf_create(MATMUL_SIZE_M, MATMUL_SIZE_N);
+    MatrixF B = matrixf_create(MATMUL_SIZE_N, MATMUL_SIZE_M);
 
-    for(int i = 0; i < MATMUL_SIZE_M; i++)
+    for(i = 0; i < MATMUL_SIZE_M; i++)
     {
-        for(int j = 0; j < MATMUL_SIZE_N; j++)
+        for(j = 0; j < MATMUL_SIZE_N; j++)
         {
             float r1 = random_float_01((i + 1) * (j + 1) * 4738);
             float r2 = random_float_01((i + 1) * (j + 1) * 2341);
@@ -44,13 +47,13 @@ int main(void)
 
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
-    // simd_force_vectorization_mode(VectorizationMode_Scalar);
-    // SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
+    simd_force_vectorization_mode(VectorizationMode_Scalar);
+    SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
 
-    // matrixf_t C_scalar = matrix_null();
+    MatrixF C_scalar = matrix_null();
     // matrixf_mul(&A, &B, &C_scalar);
 
-    // SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
+    SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
 
     // simd_force_vectorization_mode(VectorizationMode_SSE);
     // SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
@@ -63,41 +66,41 @@ int main(void)
     simd_force_vectorization_mode(VectorizationMode_AVX);
     SCOPED_PROFILE_START_SECONDS(matrixf_avx_mul);
 
-    matrixf_t C_avx = matrix_null();
-    matrixf_mul(&A, &B, &C_avx);
+    MatrixF C_avx = matrix_null();
+    // matrixf_mul(&A, &B, &C_avx);
 
     SCOPED_PROFILE_END_SECONDS(matrixf_avx_mul);
 
     matrixf_destroy(&A);
     matrixf_destroy(&B);
-    // matrixf_destroy(&C_scalar);
+    matrixf_destroy(&C_scalar);
     // matrixf_destroy(&C_sse);
     matrixf_destroy(&C_avx);
 
     logger_log(LogLevel_Info, "Cholesky Solving");
 
-    matrixf_t _a = matrixf_create(M_CHOL, M_CHOL);
+    MatrixF _a = matrixf_create(M_CHOL, M_CHOL);
 
-    for(int i = 0; i < M_CHOL; i++)
+    for(i = 0; i < M_CHOL; i++)
     {
-        for(int j = 0; j < M_CHOL; j++)
+        for(j = 0; j < M_CHOL; j++)
         {
             float r1 = random_float_01((i + 1) * (j + 1) * 8439);
             matrixf_set_at(&_a, (float)r1 + 1.0f, i, j);
         }
     }
 
-    matrixf_t b = matrixf_create(M_CHOL, 1);
+    MatrixF b = matrixf_create(M_CHOL, 1);
 
-    for(int i = 0; i < M_CHOL; i++)
+    for(i = 0; i < M_CHOL; i++)
     {
         matrixf_set_at(&b, (float)i + 1.0f, i, 0);
     }
 
-    matrixf_t _at = matrixf_copy(&_a);
+    MatrixF _at = matrixf_copy(&_a);
     matrixf_transpose(&_at);
 
-    matrixf_t a = matrix_null();
+    MatrixF a = matrix_null();
     matrixf_mul(&_a, &_at, &a);
 
     matrixf_destroy(&_a);
@@ -106,7 +109,7 @@ int main(void)
     logger_log(LogLevel_Info, "A");
     matrixf_debug(&a, 0, 0);
 
-    matrixf_t x = matrix_null();
+    MatrixF x = matrix_null();
 
     bool res = matrixf_cholesky_solve(&a, &b, &x);
 

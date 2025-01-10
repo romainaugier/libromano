@@ -2,9 +2,10 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#define ROMANO_ENABLE_PROFILING
-
 #include "libromano/hash.h"
+#include "libromano/random.h"
+
+#define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
 #include <stdio.h>
@@ -32,11 +33,15 @@ int main(void)
     const size_t text_len = strlen(text_to_hash);
     
     {
-        PROFILE(hash_fnv1a(text_to_hash, text_len));
+        PROFILE_NANOSECONDS(hash_fnv1a(text_to_hash, text_len));
     }
 
     {
-        PROFILE(hash_fnv1a_pippip(text_to_hash, text_len));
+        PROFILE_NANOSECONDS(hash_fnv1a_pippip(text_to_hash, text_len));
+    }
+
+    {
+        PROFILE_NANOSECONDS(hash_murmur3((const void*)text_to_hash, text_len, random_next_uint32()));
     }
 
     return 0;
