@@ -24,7 +24,7 @@ int main(void)
     str s_fmt = str_new_fmt("Int : %d, Float: %f, Size_t: %zd, char*: %s\n",
                             81930, 18.0f, (size_t)192, "This is a char");
 
-    printf(s_fmt);
+    printf((const char*)s_fmt);
 
     str_free(s_fmt);
     

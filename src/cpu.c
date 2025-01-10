@@ -19,6 +19,8 @@ typedef struct _PROCESSOR_POWER_INFORMATION {
    ULONG CurrentIdleState;
 } PROCESSOR_POWER_INFORMATION, *PPROCESSOR_POWER_INFORMATION;
 
+#else if defined(ROMANO_LINUX)
+#include <x86intrin.h>
 #endif /* defined(ROMANO_WIN) */
 
 static uint64_t _get_frequency_counter = 0;

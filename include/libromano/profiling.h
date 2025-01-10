@@ -12,9 +12,6 @@
 #include <stdio.h>
 
 #if defined(ROMANO_MSVC)
-#include <intrin.h>
-#include <Windows.h>
-
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
     return cpu_rdtsc();
@@ -25,7 +22,6 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_
     return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_frequency() * 1000000.0) * unit_multiplier);
 }
 #else
-#include <x86intrin.h>
 #if !defined(__USE_POSIX199309)
 #define __USE_POSIX199309
 #endif /* !defined(__USE_POSIX199309) */
@@ -53,10 +49,10 @@ ROMANO_CPP_ENTER
 /* It's not 100% precise because we'd need the cpu frequency while measuring */
 #define PROFILE(func) { uint64_t s = cpu_rdtsc();                                                                             \
                         do { func; } while (0);                                                                               \
-                        printf("%s at %s:%d -> %lld cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(cpu_rdtsc() - s)); } \
+                        printf("%s at %s:%d -> %zu cpu cycles\n", #func, __FILE__, __LINE__, (uint64_t)(cpu_rdtsc() - s)); }
 
 #define SCOPED_PROFILE_START(name) const char* ___scp_##name = #name; uint64_t ___scp_##name##_start = cpu_rdtsc(); 
-#define SCOPED_PROFILE_END(name) printf("Scoped profile \"%s\" -> %lld cpu cycles\n", ___scp_##name, (uint64_t)(cpu_rdtsc() - ___scp_##name##_start)); 
+#define SCOPED_PROFILE_END(name) printf("Scoped profile \"%s\" -> %zu cpu cycles\n", ___scp_##name, (uint64_t)(cpu_rdtsc() - ___scp_##name##_start)); 
 
 /* Profiling measured in nanoseconds */
 #define PROFILE_NANOSECONDS(func) { uint64_t s = get_timestamp();                                                              \
