@@ -29,7 +29,7 @@ ROMANO_API uint32_t cpu_get_frequency(void);
 /* Returns the current cpu frequency in MHz (via system calls) */
 ROMANO_API uint32_t cpu_get_current_frequency(void);
 
-ROMANO_API uint32_t cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency);
+ROMANO_API void cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency);
 
 ROMANO_API uint64_t cpu_rdtsc(void);
 

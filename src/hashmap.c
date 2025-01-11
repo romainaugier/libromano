@@ -206,7 +206,7 @@ ROMANO_FORCE_INLINE uint32_t bucket_get_hash(Bucket* bucket)
     return bucket->hash;
 }
 
-ROMANO_FORCE_INLINE uint32_t bucket_set_hash(Bucket* bucket, const uint32_t hash)
+ROMANO_FORCE_INLINE void bucket_set_hash(Bucket* bucket, const uint32_t hash)
 {
     bucket->hash = hash;
 }

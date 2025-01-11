@@ -147,7 +147,7 @@ uint32_t cpu_get_current_frequency(void)
     return _get_cpu_frequency();
 }
 
-uint32_t cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency)
+void cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency)
 {
     _refresh = refresh_frequency;
 }
