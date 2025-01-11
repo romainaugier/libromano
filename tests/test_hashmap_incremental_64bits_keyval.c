@@ -21,7 +21,7 @@ int main(void)
     logger_init();
 
     size_t i;
-    HashMap* hashmap = hashmap_new();
+    HashMap* hashmap = hashmap_new(HASHMAP_LOOP_COUNT / 8);
 
     /* Insertion */
 

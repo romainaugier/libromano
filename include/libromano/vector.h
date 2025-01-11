@@ -57,8 +57,14 @@ ROMANO_API void vector_pop(Vector* vector);
 /* Returns the address to the element at the given index */
 ROMANO_API void* vector_at(Vector* vector, const size_t index);
 
-/* Fit the vector to its size (if the capacity is greater than the size) */
+/* Fits the vector to its size (if the capacity is greater than the size) */
 ROMANO_API void vector_shrink_to_fit(Vector* vector);
+
+typedef int (*vector_sort_cmp_function)(const void*, const void*);
+
+ROMANO_API void vector_sort(Vector* vector, vector_sort_cmp_function cmp);
+
+ROMANO_API void vector_shuffle(Vector* vector, const uint64_t seed);
 
 /* Frees the given vector and releases it */
 ROMANO_API void vector_free(Vector* vector);

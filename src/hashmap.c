@@ -254,20 +254,20 @@ void bucket_free(Bucket* bucket)
 }
 
 #define HASHMAP_MAX_LOAD 0.9f
-#define MAX_PROBES_CAP_LOG_BASE 4.0f
 #define HASHMAP_INITIAL_CAPACITY 1024
 
 struct _HashMap {
    Bucket* buckets;
    size_t size;
    size_t capacity;
+   hashmap_hash_func hash_func;
    uint32_t hashkey;
    uint32_t max_probes;
 };
 
 ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* key, const size_t key_size)
 {
-    return hash_murmur3(key, key_size, hashmap->hashkey);
+    return hashmap->hash_func(key, key_size, hashmap->hashkey);
 }
 
 ROMANO_FORCE_INLINE size_t hashmap_index(const HashMap* hashmap, const uint32_t hash) 
@@ -307,7 +307,7 @@ void hashmap_grow(HashMap* hashmap,
         hashmap->hashkey ^= random_next_uint32();
     }
 
-    hashmap->max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
+    hashmap->max_probes = (uint32_t)mathf_log2((float)hashmap->capacity);
 
     if(old_buckets != NULL)
     {
@@ -321,31 +321,33 @@ void hashmap_grow(HashMap* hashmap,
             }
 
             hashmap_move_entry(hashmap, bucket, rehash);
-
-            /*
-            hashmap_insert(hashmap, 
-                           bucket_get_key(bucket),
-                           bucket_get_key_size(bucket),
-                           bucket_get_value(bucket),
-                           bucket_get_value_size(bucket));
-
-            bucket_free(bucket);
-            */
         }
 
         free(old_buckets);
     }
 }
 
-HashMap* hashmap_new(void)
+HashMap* hashmap_new(size_t initial_capacity)
 {
     HashMap* hashmap = (HashMap*)malloc(sizeof(HashMap));
     hashmap->buckets = NULL;
+    hashmap->hash_func = hash_murmur3;
     hashmap->size = 0;
     hashmap->capacity = 0;
     hashmap->hashkey ^= random_next_uint32();
 
-    hashmap_grow(hashmap, HASHMAP_INITIAL_CAPACITY, false);
+    if(initial_capacity == 0)
+    {
+        initial_capacity = HASHMAP_INITIAL_CAPACITY;
+    }
+    else
+    {
+        initial_capacity = round_u64_to_next_pow2(initial_capacity + 1) + 1;
+    }
+
+    hashmap_grow(hashmap,
+                 initial_capacity, 
+                 false);
 
     return hashmap;
 }
@@ -358,6 +360,11 @@ size_t hashmap_size(HashMap* hashmap)
 size_t hashmap_capacity(HashMap* hashmap)
 {
     return hashmap->capacity;
+}
+
+void hashmap_set_hash_func(HashMap* hashmap, hashmap_hash_func func)
+{
+    hashmap->hash_func = func;
 }
 
 void hashmap_move_entry(HashMap* hashmap, 
@@ -566,7 +573,10 @@ void* hashmap_get(HashMap* hashmap,
            (bucket_get_key_size(bucket) == key_size) && 
            (memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0))
         {
-            *value_size = bucket_get_value_size(bucket);
+            if(value_size != NULL)
+            {
+                *value_size = bucket_get_value_size(bucket);
+            }
 
             return bucket_get_value(bucket);
         }

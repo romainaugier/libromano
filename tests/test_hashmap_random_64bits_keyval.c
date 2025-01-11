@@ -22,7 +22,7 @@ int main(void)
     logger_init();
 
     uint64_t i;
-    HashMap* hashmap = hashmap_new();
+    HashMap* hashmap = hashmap_new(0);
     Vector* keys = vector_new(HASHMAP_LOOP_COUNT, sizeof(uint64_t));
 
     /* Insertion */

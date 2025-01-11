@@ -11,11 +11,11 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_API uint32_t hash_fnv1a(const char* str, size_t n);
+ROMANO_API uint32_t hash_fnv1a(const char* str, const size_t n);
 
-ROMANO_API uint32_t hash_fnv1a_pippip(const char* str, size_t n);
+ROMANO_API uint32_t hash_fnv1a_pippip(const char* str, const size_t n);
 
-ROMANO_API uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed);
+ROMANO_API uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed);
 
 ROMANO_CPP_END
 

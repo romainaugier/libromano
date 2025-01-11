@@ -10,7 +10,7 @@
 #define EMPTY_HASH ((uint32_t)0x811c9dc5u)
 
 /* fnv1a hash */
-uint32_t hash_fnv1a(const char* str, size_t n)
+uint32_t hash_fnv1a(const char* str, const size_t n)
 {
     uint32_t result = EMPTY_HASH;
     uint8_t* s = (uint8_t*)str;
@@ -32,7 +32,7 @@ uint32_t hash_fnv1a(const char* str, size_t n)
 /* fnv1a_pippip hash */
 #define _PADr_KAZE(x, n) (((x) << (n)) >> (n))
 
-uint32_t hash_fnv1a_pippip(const char *str, size_t n) 
+uint32_t hash_fnv1a_pippip(const char *str, const size_t n) 
 {
 	const uint32_t PRIME = 591798841u; 
     uint32_t hash32; 
@@ -73,15 +73,16 @@ uint32_t hash_fnv1a_pippip(const char *str, size_t n)
  *	https://github.com/aappleby/smhasher/
  */
 
-uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed)
+uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 {
+	size_t len2 = len;
 	const uint8_t *data = key;
 	const size_t orig_len = len;
 	uint32_t h = seed;
 
 	if (ROMANO_LIKELY(((uintptr_t)key & 3) == 0)) 
     {
-		while (len >= sizeof(uint32_t)) 
+		while (len2 >= sizeof(uint32_t)) 
         {
 			uint32_t k = *(const uint32_t *)(const void *)data;
 
@@ -96,12 +97,12 @@ uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed)
 			h = h * 5 + 0xe6546b64;
 
 			data += sizeof(uint32_t);
-			len -= sizeof(uint32_t);
+			len2 -= sizeof(uint32_t);
 		}
 	} 
     else 
     {
-		while (len >= sizeof(uint32_t)) 
+		while (len2 >= sizeof(uint32_t)) 
         {
 			uint32_t k;
 
@@ -119,7 +120,7 @@ uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed)
 			h = h * 5 + 0xe6546b64;
 
 			data += sizeof(uint32_t);
-			len -= sizeof(uint32_t);
+			len2 -= sizeof(uint32_t);
 		}
 	}
 
@@ -128,7 +129,7 @@ uint32_t hash_murmur3(const void *key, size_t len, uint32_t seed)
 	 */
 	uint32_t k = 0;
 
-	switch (len) 
+	switch (len2) 
     {
         case 3:
             k ^= data[2] << 16;

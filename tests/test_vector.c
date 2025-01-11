@@ -5,7 +5,18 @@
 #include "libromano/vector.h"
 #include "libromano/logger.h"
 
+#if ROMANO_DEBUG
+#define NUM_LOOPS 100000
+#else
+#define NUM_LOOPS 1000000
+#endif /* ROMANO_DEBUG */
+
 #include <stdio.h>
+
+int float_cmp(const void* x, const void* y)
+{
+    return (int)(*(const float*)x - *(const float*)y);
+}
 
 int main(void)
 {
@@ -18,11 +29,11 @@ int main(void)
 
     size_t i;
 
-    for(i = 0; i < 1000000; i++)
+    for(i = 0; i < NUM_LOOPS; i++)
     {
         float f = (float)i;
         
-        if(i < (float)500000)
+        if(i < (float)(NUM_LOOPS / 2))
         {
             vector_push_back(float_vec, &f);
         }
@@ -60,6 +71,29 @@ int main(void)
     logger_log(LogLevel_Info, "Vector size : %d", vector_size(float_vec));
     logger_log(LogLevel_Info, "Vector capacity : %d", vector_capacity(float_vec));
     logger_log(LogLevel_Info, "Vector element size : %d", vector_element_size(float_vec));
+
+    for(i = 0; i < 10; i++)
+    {
+        logger_log(LogLevel_Info, "Vector at %d: %f", i, *(float*)vector_at(float_vec, i));
+    }
+
+    logger_log(LogLevel_Info, "Shuffling vector");
+
+    vector_shuffle(float_vec, 18);
+
+    for(i = 0; i < 10; i++)
+    {
+        logger_log(LogLevel_Info, "Vector at %d: %f", i, *(float*)vector_at(float_vec, i));
+    }
+
+    logger_log(LogLevel_Info, "Sorting vector");
+
+    vector_sort(float_vec, &float_cmp);
+
+    for(i = 0; i < 10; i++)
+    {
+        logger_log(LogLevel_Info, "Vector at %d: %f", i, *(float*)vector_at(float_vec, i));
+    }
 
     logger_log(LogLevel_Info, "Freeing vector");
     vector_free(float_vec);

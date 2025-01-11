@@ -10,43 +10,25 @@
 #include "libromano/cpu.h"
 
 #include <stdio.h>
+#if !defined(__USE_POSIX199309)
+#define __USE_POSIX199309
+#endif
+#include <time.h>
 
 ROMANO_CPP_ENTER
 
-#if defined(ROMANO_MSVC)
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
 {
-    return cpu_rdtsc();
-}
-
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier) 
-{
-    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_current_frequency() * 1000000.0) * unit_multiplier);
-}
-#else
-#if !defined(__USE_POSIX199309)
-#define __USE_POSIX199309
-#endif /* !defined(__USE_POSIX199309) */
-#include <time.h>
-
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t get_timestamp(void)
-{
-    // struct timespec s; 
-    // clock_gettime(CLOCK_MONOTONIC, &s); 
-    // return (uint64_t)s.tv_sec * 1000000000 + (uint64_t)s.tv_nsec;
-
     return cpu_rdtsc();
 }
 
 ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE double get_elapsed_time(const uint64_t start, const double unit_multiplier)
 {
-    // double elapsed = (get_timestamp() - start) * 1e-9;
-    // return elapsed * unit_multiplier;
+    const uint64_t end = cpu_rdtsc();
+    const uint32_t freq = cpu_get_current_frequency();
 
-    return ((double)(cpu_rdtsc() - start) / ((double)cpu_get_current_frequency() * 1000000.0) * unit_multiplier);
+    return ((double)(end - start) / ((double)freq * 1000000.0) * unit_multiplier);
 }
-
-#endif /* defined(ROMANO_MSVC) */
 
 #if defined(ROMANO_ENABLE_PROFILING)
 /* Profiling measured in cpu cycles */

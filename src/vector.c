@@ -5,6 +5,8 @@
 #define __LIBROMANO_VECTOR_IMPL
 
 #include "libromano/vector.h"
+#include "libromano/random.h"
+#include "libromano/memory.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -214,11 +216,40 @@ void vector_shrink_to_fit(Vector* vector)
     ((size_t*)vector->data)[1] = vec_size;
 }
 
+void vector_sort(Vector* vector, vector_sort_cmp_function cmp)
+{
+    qsort(vector_at(vector, 0), vector_size(vector), vector_element_size(vector), cmp);
+}
+
+void vector_shuffle(Vector* vector, const uint64_t seed)
+{
+    size_t size;
+    size_t element_size;
+    size_t i;
+    size_t j;
+    size_t rnd;
+
+    size = vector_size(vector);
+    element_size = vector_element_size(vector);
+
+    for (i = 0; i < (size - 1); ++i) 
+    {
+        rnd = murmur64(seed + i);
+        j = i + rnd / (UINT64_MAX / (size - i) + 1);
+
+        mem_swap(vector_at(vector, i), vector_at(vector, j), element_size);
+    }
+}
+
 void vector_free(Vector* vector)
 {
     if(vector != NULL)
     {
-        free(vector->data);
+        if(vector->data != NULL)
+        {
+            free(vector->data);
+        }
+
         free(vector);
     }
 }
