@@ -16,6 +16,8 @@ parse_args()
 {
     [ "$1" == "--debug" ] && BUILDTYPE="Debug"
 
+    [ "$1" == "--reldebug" ] && BUILDTYPE="RelWithDebInfo"
+
     [ "$1" == "--tests" ] && RUNTESTS=1
 
     [ "$1" == "--clean" ] && REMOVEOLDDIR=1

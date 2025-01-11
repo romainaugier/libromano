@@ -20,25 +20,26 @@ ROMANO_PACKED_STRUCT(struct _Bucket {
     uint32_t key_size;
     void* value;
     uint32_t value_size;
-    uint32_t probe_length;
-    uint32_t flags;
+    uint32_t hash;
+    uint16_t probe_length;
+    uint16_t flags;
 });
 
 typedef struct _Bucket Bucket;
 
 ROMANO_FORCE_INLINE void bucket_set_flag(Bucket* bucket, uint32_t flag)
 {
-    bucket->flags |= flag;
+    bucket->flags |= (uint16_t)flag;
 }
 
 ROMANO_FORCE_INLINE void bucket_unset_flag(Bucket* bucket, uint32_t flag)
 {
-    bucket->flags &= ~flag;
+    bucket->flags &= ~(uint16_t)flag;
 }
 
 ROMANO_FORCE_INLINE bool bucket_has_flag(Bucket* bucket, uint32_t flag)
 {
-    return bucket->flags & flag;
+    return bucket->flags & (uint16_t)flag;
 }
 
 void bucket_new(Bucket* bucket,
@@ -46,6 +47,7 @@ void bucket_new(Bucket* bucket,
                 const uint32_t key_size,
                 void* value,
                 const uint32_t value_size,
+                const uint32_t hash,
                 const uint32_t probe_length)
 {
     assert(bucket != NULL);
@@ -90,7 +92,8 @@ void bucket_new(Bucket* bucket,
     }
 
     bucket->value_size = value_size;
-    bucket->probe_length = probe_length;
+    bucket->hash = hash;
+    bucket->probe_length = (uint16_t)probe_length;
 }
 
 ROMANO_FORCE_INLINE void* bucket_get_value(Bucket* bucket)
@@ -198,9 +201,24 @@ ROMANO_FORCE_INLINE void* bucket_get_key(Bucket* bucket)
     return bucket->key;
 }
 
+ROMANO_FORCE_INLINE uint32_t bucket_get_hash(Bucket* bucket)
+{
+    return bucket->hash;
+}
+
+ROMANO_FORCE_INLINE uint32_t bucket_set_hash(Bucket* bucket, const uint32_t hash)
+{
+    bucket->hash = hash;
+}
+
 ROMANO_FORCE_INLINE uint32_t bucket_get_probe_length(Bucket* bucket)
 {
-    return bucket->probe_length;
+    return (uint32_t)bucket->probe_length;
+}
+
+ROMANO_FORCE_INLINE void bucket_set_probe_length(Bucket* bucket, const uint32_t probe_length)
+{
+    bucket->probe_length = (uint16_t)probe_length;
 }
 
 ROMANO_FORCE_INLINE bool bucket_is_empty(Bucket* bucket)
@@ -244,6 +262,7 @@ struct _HashMap {
    size_t size;
    size_t capacity;
    uint32_t hashkey;
+   uint32_t max_probes;
 };
 
 ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* key, const size_t key_size)
@@ -251,15 +270,21 @@ ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* ke
     return hash_murmur3(key, key_size, hashmap->hashkey);
 }
 
-size_t hashmap_get_new_capacity(HashMap* hashmap)
+ROMANO_FORCE_INLINE size_t hashmap_index(const HashMap* hashmap, const uint32_t hash) 
+{
+    return hash & (hashmap->capacity - 1); 
+}
+
+ROMANO_FORCE_INLINE size_t hashmap_get_new_capacity(HashMap* hashmap)
 {
     return round_u64_to_next_pow2(hashmap->capacity + 1) + 1;
 }
 
-void hashmap_move_entry(HashMap* hashmap, Bucket* entry);
+void hashmap_move_entry(HashMap* hashmap, Bucket* entry, const bool rehash);
 
 void hashmap_grow(HashMap* hashmap,
-                  size_t capacity)
+                  const size_t capacity,
+                  const bool rehash)
 {
     Bucket* old_buckets;
     Bucket* bucket;
@@ -276,7 +301,13 @@ void hashmap_grow(HashMap* hashmap,
     hashmap->buckets = (Bucket*)calloc(capacity, sizeof(Bucket));
     hashmap->capacity = capacity;
     hashmap->size = 0;
-    hashmap->hashkey ^= random_next_uint32();
+    
+    if(rehash)
+    {
+        hashmap->hashkey ^= random_next_uint32();
+    }
+
+    hashmap->max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
 
     if(old_buckets != NULL)
     {
@@ -289,7 +320,7 @@ void hashmap_grow(HashMap* hashmap,
                 continue;
             }
 
-            hashmap_move_entry(hashmap, bucket);
+            hashmap_move_entry(hashmap, bucket, rehash);
 
             /*
             hashmap_insert(hashmap, 
@@ -314,7 +345,7 @@ HashMap* hashmap_new(void)
     hashmap->capacity = 0;
     hashmap->hashkey ^= random_next_uint32();
 
-    hashmap_grow(hashmap, HASHMAP_INITIAL_CAPACITY);
+    hashmap_grow(hashmap, HASHMAP_INITIAL_CAPACITY, false);
 
     return hashmap;
 }
@@ -329,33 +360,33 @@ size_t hashmap_capacity(HashMap* hashmap)
     return hashmap->capacity;
 }
 
-void hashmap_move_entry(HashMap* hashmap, Bucket* entry)
+void hashmap_move_entry(HashMap* hashmap, 
+                        Bucket* entry,
+                        const bool rehash)
 {
     Bucket* bucket;
     Bucket new_entry;
     Bucket tmp;
 
     size_t index;
-    uint32_t max_probes;
-    bool has_swapped;
 
-    if((hashmap->size + 1) > hashmap->capacity * HASHMAP_MAX_LOAD)
+    uint32_t hash;
+
+    memmove(&new_entry, entry, sizeof(Bucket));
+
+    bucket_set_probe_length(&new_entry, 0);
+
+    if(rehash)
     {
-        hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+        hash = hashmap_hash(hashmap, bucket_get_key(&new_entry), bucket_get_key_size(&new_entry));
+        bucket_set_hash(&new_entry, hash);
+    }
+    else
+    {
+        hash = bucket_get_hash(&new_entry);
     }
 
-    has_swapped = false;
-
-    max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
-
-    if(!has_swapped)
-    {
-        memmove(&new_entry, entry, sizeof(Bucket));
-    }
-    
-    new_entry.probe_length = 0;
-
-    index = hashmap_hash(hashmap, bucket_get_key(&new_entry), bucket_get_key_size(&new_entry)) % hashmap->capacity;
+    index = hashmap_index(hashmap, hash);
 
     while(1)
     {
@@ -363,16 +394,14 @@ void hashmap_move_entry(HashMap* hashmap, Bucket* entry)
 
         if(!bucket_is_empty(bucket))
         {
-            if(new_entry.probe_length > bucket->probe_length)
+            if(new_entry.probe_length > bucket_get_probe_length(bucket))
             {
                 tmp = new_entry;
                 new_entry = *bucket;
                 *bucket = tmp;
-
-                has_swapped = true;
             }
 
-            index = (index + 1) % hashmap->capacity;
+            index = (index + 1) & (hashmap->capacity - 1);
             new_entry.probe_length++;
         }
         else
@@ -397,30 +426,32 @@ void hashmap_insert(HashMap* hashmap,
     Bucket tmp;
 
     size_t index;
-    uint32_t max_probes;
+    uint32_t hash;
     bool has_swapped;
 
     if((hashmap->size + 1) > hashmap->capacity * HASHMAP_MAX_LOAD)
     {
-        hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+        hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap), false);
     }
 
     has_swapped = false;
 
     start:
 
-    max_probes = (uint32_t)mathf_logN(hashmap->capacity, MAX_PROBES_CAP_LOG_BASE);
-
     if(!has_swapped)
     {
-        bucket_new(&entry, key, key_size, value, value_size, 0);
+        hash = hashmap_hash(hashmap, key, key_size);
+        bucket_new(&entry, key, key_size, value, value_size, hash, 0);
     }
     else
     {
-        entry.probe_length = 0;
+        hash = hashmap_hash(hashmap, bucket_get_key(&entry), bucket_get_key_size(&entry));
+
+        bucket_set_probe_length(&entry, 0);
+        bucket_set_hash(&entry, hash);
     }
 
-    index = hashmap_hash(hashmap, bucket_get_key(&entry), bucket_get_key_size(&entry)) % hashmap->capacity;
+    index = hashmap_index(hashmap, hash);
 
     while(1)
     {
@@ -428,7 +459,9 @@ void hashmap_insert(HashMap* hashmap,
 
         if(!bucket_is_empty(bucket))
         {
-            if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+            if((bucket_get_hash(bucket) == hash) && 
+               (bucket_get_key_size(bucket) == key_size) &&
+               (memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0))
             {
                 return;
             }
@@ -442,12 +475,12 @@ void hashmap_insert(HashMap* hashmap,
                 has_swapped = true;
             }
 
-            index = (index + 1) % hashmap->capacity;
+            index = (index + 1) & (hashmap->capacity - 1);
             entry.probe_length++;
 
-            if(entry.probe_length >= max_probes)
+            if(entry.probe_length >= hashmap->max_probes)
             {
-                hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap));
+                hashmap_grow(hashmap, hashmap_get_new_capacity(hashmap), false);
                 goto start;
             }
         }
@@ -471,11 +504,14 @@ void hashmap_update(HashMap* hashmap,
     Bucket* bucket;
 
     size_t index;
+    uint32_t hash;
     uint32_t probe_length;
 
     probe_length = 0;
 
-    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+    hash = hashmap_hash(hashmap, key, key_size);
+
+    index = hashmap_index(hashmap, hash);
 
     while(1)
     {
@@ -483,18 +519,20 @@ void hashmap_update(HashMap* hashmap,
 
         if(!bucket_is_empty(bucket))
         {
-            if((size_t)bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+            if((bucket_get_hash(bucket) == hash) && 
+               (bucket_get_key_size(bucket) == key_size) &&
+               (memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0))
             {
                 bucket_update_value(bucket, value, value_size);
                 return;
             }
 
-            index = (index + 1) % hashmap->capacity;
+            index = (index + 1) & (hashmap->capacity - 1);
             probe_length++;
         }
         else
         {
-            bucket_new(bucket, key, key_size, value, value_size, probe_length);
+            bucket_new(bucket, key, key_size, value, value_size, hash, probe_length);
 
             hashmap->size++;
 
@@ -511,16 +549,22 @@ void* hashmap_get(HashMap* hashmap,
     Bucket* bucket;
 
     size_t index;
+    uint32_t hash;
     uint32_t probe_length;
 
-    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+    hash = hashmap_hash(hashmap, key, key_size);
+
+    index = hashmap_index(hashmap, hash);
+
     probe_length = 0;
 
     while(1)
     {
         bucket = &hashmap->buckets[index];
 
-        if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+        if((bucket_get_hash(bucket) == hash) && 
+           (bucket_get_key_size(bucket) == key_size) && 
+           (memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0))
         {
             *value_size = bucket_get_value_size(bucket);
 
@@ -532,7 +576,7 @@ void* hashmap_get(HashMap* hashmap,
             return NULL;
         }
 
-        index = (index + 1) % hashmap->capacity;
+        index = (index + 1) & (hashmap->capacity - 1);
         probe_length++;
     }
 }
@@ -545,9 +589,13 @@ void hashmap_remove(HashMap* hashmap,
     Bucket* backward_shift_bucket;
 
     size_t index;
+    uint32_t hash;
     uint32_t probe_length;
 
-    index = hashmap_hash(hashmap, key, key_size) % hashmap->capacity;
+    hash = hashmap_hash(hashmap, key, key_size);
+
+    index = hashmap_index(hashmap, hash);
+
     probe_length = 0;
 
     while(1)
@@ -559,7 +607,9 @@ void hashmap_remove(HashMap* hashmap,
             return;
         }
 
-        if(bucket_get_key_size(bucket) == key_size && memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0)
+        if((bucket_get_hash(bucket) == hash) && 
+           (bucket_get_key_size(bucket) == key_size) && 
+           (memcmp(bucket_get_key(bucket), key, (size_t)key_size) == 0))
         {
             bucket_free(bucket);
 
@@ -569,7 +619,7 @@ void hashmap_remove(HashMap* hashmap,
             {
                 bucket_set_empty(bucket);
 
-                index = (index + 1) % hashmap->capacity;
+                index = (index + 1) & (hashmap->capacity - 1);
 
                 backward_shift_bucket = &hashmap->buckets[index];
 
@@ -578,13 +628,15 @@ void hashmap_remove(HashMap* hashmap,
                     return;
                 }
 
-                backward_shift_bucket->probe_length--;
+                bucket_set_probe_length(backward_shift_bucket,
+                                        bucket_get_probe_length(backward_shift_bucket) - 1);
+
                 *bucket = *backward_shift_bucket;
                 bucket = backward_shift_bucket;
             }
         }
 
-        index = (index + 1) % hashmap->capacity;
+        index = (index + 1) & (hashmap->capacity - 1);
         probe_length++;
     }
 }
