@@ -10,8 +10,8 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
-#define MATMUL_SIZE_M 2048
-#define MATMUL_SIZE_N 1024
+#define MATMUL_SIZE_M 485
+#define MATMUL_SIZE_N 194
 
 #define M_CHOL 4
 
@@ -51,7 +51,7 @@ int main(void)
     SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
 
     MatrixF C_scalar = matrix_null();
-    // matrixf_mul(&A, &B, &C_scalar);
+    matrixf_mul(&A, &B, &C_scalar);
 
     SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
 
@@ -67,7 +67,7 @@ int main(void)
     SCOPED_PROFILE_START_SECONDS(matrixf_avx_mul);
 
     MatrixF C_avx = matrix_null();
-    // matrixf_mul(&A, &B, &C_avx);
+    matrixf_mul(&A, &B, &C_avx);
 
     SCOPED_PROFILE_END_SECONDS(matrixf_avx_mul);
 

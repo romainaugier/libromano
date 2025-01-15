@@ -150,7 +150,7 @@ void matrixf_transpose(MatrixF* A)
     }
     else
     {
-        new_data = (float*)mem_aligned_alloc((N * M + 2) * sizeof(float), sizeof(float));
+        new_data = (float*)mem_aligned_alloc((N * M + 2) * sizeof(float), ALIGNMENT);
 
         for(i = 0; i < M; i++)
         {
@@ -190,8 +190,8 @@ MatrixF matrixf_transpose_from(MatrixF* A)
     return res;
 }
 
-void _matrixf_mul_scalar(const float* A, 
-                         const float* B,
+void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A, 
+                         const float* ROMANO_RESTRICT B,
                          float* C,
                          const uint32_t M,
                          const uint32_t N,
@@ -238,27 +238,27 @@ void _matrixf_mul_avx2(const float* A,
     __m256 b_vec;
     __m256 sum_vec;
 
-    uint32_t block_end = P / (AVX2_BLOCK_SIZE * AVX2_BLOCK_SIZE);
+    const uint32_t block_end = N / AVX2_BLOCK_SIZE * AVX2_BLOCK_SIZE;
 
     for(i = 0; i < M; i++) 
     {
-        for(j = 0; j < N; j++) 
+        for(j = 0; j < P; j++) 
         {
             sum_vec = _mm256_setzero_ps();
 
             for (k = 0; k < block_end; k += AVX2_BLOCK_SIZE) 
             {
-                __m256 a_vec = _mm256_loadu_ps(&A[i * P + k]);
-                __m256 b_vec = _mm256_loadu_ps(&B[k * N + j]);
+                a_vec = _mm256_load_ps(&A[i * N + k]);
+                b_vec = _mm256_load_ps(&B[k * P + j]);
 
                 sum_vec = _mm256_fmadd_ps(a_vec, b_vec, sum_vec);
             }
 
-            C[i * N + j] = _mm256_hsum_ps(sum_vec);
+            C[i * P + j] = _mm256_hsum_ps(sum_vec);
 
-            for(k = block_end; k < P; k++) 
+            for(k = block_end; k < N; k++) 
             {
-                C[i * N + j] += A[i * P + k] * B[k * N + j];
+                C[i * P + j] += A[i * N + k] * B[k * P + j];
             }
         }
     }
@@ -288,8 +288,8 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
     assert(SIZE_N((*A)) == SIZE_M((*B)));    
 
     M = SIZE_M((*A));
-    P = SIZE_N((*A));
-    N = SIZE_N((*B));
+    N = SIZE_N((*A));
+    P = SIZE_N((*B));
 
     matrixf_resize(C, M, P);
     matrixf_zero(C);

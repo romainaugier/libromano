@@ -84,6 +84,8 @@ float __stats_mean_avx2(const float* array, const size_t n)
     float mean;
     __m256 means;
 
+    mean = 0.0f;
+
     for(i = 0; i < (n - 8); i += 8)
     {
 
