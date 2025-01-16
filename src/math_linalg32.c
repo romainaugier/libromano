@@ -256,8 +256,8 @@ void _matrixf_mul_avx2(const float* A,
 
             for (k = 0; k < block_end; k += AVX2_BLOCK_SIZE) 
             {
-                a_vec = _mm256_loadu_ps(&A[i * N + k]);
-                b_vec = _mm256_loadu_ps(&B[k * P + j]);
+                a_vec = _mm256_load_ps(&A[i * N + k]);
+                b_vec = _mm256_load_ps(&B[k * P + j]);
 
                 sum_vec = _mm256_fmadd_ps(a_vec, b_vec, sum_vec);
             }
