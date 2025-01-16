@@ -164,7 +164,7 @@ void matrixf_transpose(MatrixF* A)
         {
             for(j = 0; j < N; j++)
             {
-                new_data[j * N + i + HEADER_SIZE] = A->data[i * N + j + HEADER_SIZE];
+                new_data[j * M + i + HEADER_SIZE] = A->data[i * N + j + HEADER_SIZE];
             }
         }
 
@@ -185,13 +185,13 @@ MatrixF matrixf_transpose_from(MatrixF* A)
     const int M = SIZE_M((*A));
     const int N = SIZE_N((*A));
 
-    MatrixF res = matrixf_create(M, N);
+    MatrixF res = matrixf_create(N, M);
     
     for(i = 0; i < M; i++)
     {
         for(j = 0; j < N; j++)
         {
-            SET_AT_WITH_N(res, N, GET_AT_WITH_N((*A), N, i, j), i, j);
+            SET_AT_WITH_N(res, M, GET_AT_WITH_N((*A), N, i, j), j, i);
         }
     }
 
@@ -219,7 +219,7 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < N; k++)
             {
-                sum += A[i * N + k] * B[k * P + j];
+                sum += A[i * N + k] * B[j * N + k];
             }
 
             C[i * P + j] = sum;
@@ -227,47 +227,80 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
     }
 }
 
-#define AVX2_BLOCK_SIZE 8
-
-void _matrixf_mul_avx2(const float* A, 
-                       const float* B,
+void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A, 
+                       const float* ROMANO_RESTRICT B,
                        float* C,
                        const uint32_t M,
                        const uint32_t N,
                        const uint32_t P)
 {
+    float sum1;
+    float sum2;
+
+    __m256 a1_avx;
+    __m256 a2_avx;
+    __m256 b_avx;
+    __m256 avx_sum1;
+    __m256 avx_sum2;
+
     uint32_t i;
     uint32_t j;
     uint32_t k;
+    uint32_t n_blocks = N - (N % 8);
 
-    float value;
-
-    __m256 a_vec;
-    __m256 b_vec;
-    __m256 sum_vec;
-
-    const uint32_t block_end = N / AVX2_BLOCK_SIZE * AVX2_BLOCK_SIZE;
-
-    for(i = 0; i < M; i++) 
+    for(i = 0; i < (M - 1); i += 2)
     {
-        for(j = 0; j < P; j++) 
+        for(j = 0; j < P; j++)
         {
-            sum_vec = _mm256_setzero_ps();
+            avx_sum1 = _mm256_setzero_ps();
+            avx_sum2 = _mm256_setzero_ps();
 
-            for (k = 0; k < block_end; k += AVX2_BLOCK_SIZE) 
+            for(k = 0; k < n_blocks; k += 8)
             {
-                a_vec = _mm256_load_ps(&A[i * N + k]);
-                b_vec = _mm256_load_ps(&B[k * P + j]);
+                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
+                a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
+                b_avx = _mm256_load_ps(&B[j * N + k]);
 
-                sum_vec = _mm256_fmadd_ps(a_vec, b_vec, sum_vec);
+                avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
+                avx_sum2 = _mm256_fmadd_ps(a2_avx, b_avx, avx_sum2);
             }
 
-            C[i * P + j] = _mm256_hsum_ps(sum_vec);
+            sum1 = _mm256_hsum_ps(avx_sum1);
+            sum2 = _mm256_hsum_ps(avx_sum2);
 
-            for(k = block_end; k < N; k++) 
+            for(k = n_blocks; k < N; k++)
             {
-                C[i * P + j] += A[i * N + k] * B[k * P + j];
+                sum1 += A[i * N + k] * B[j * N + k];
+                sum2 += A[(i + 1) * N + k] * B[j * N + k];
             }
+
+            C[i * P + j] = sum1;
+            C[(i + 1) * P + j] = sum2;
+        }
+    }
+
+    if(M % 2)
+    {
+        for(j = 0; j < P; j++)
+        {
+            avx_sum1 = _mm256_setzero_ps();
+
+            for(k = 0; k < n_blocks; k += 8)
+            {
+                a1_avx = _mm256_loadu_ps(&A[(M - 1) * N + k]);
+                b_avx = _mm256_loadu_ps(&B[j * N + k]);
+
+                avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
+            }
+
+            sum1 = _mm256_hsum_ps(avx_sum1);
+
+            for(k = n_blocks; k < N; k++)
+            {
+                sum1 += A[(M - 1) * N + k] * B[j * N + k];
+            }
+
+            C[(M - 1) * P + j] = sum1;
         }
     }
 }
@@ -281,7 +314,7 @@ typedef void (*matmul_func)(const float*,
 
 matmul_func __matmul_funcs[3] = {
     _matrixf_mul_scalar,
-    _matrixf_mul_scalar,
+    _matrixf_mul_avx2,
     _matrixf_mul_avx2,
 };
 
@@ -290,6 +323,8 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
     uint32_t M;
     uint32_t N;
     uint32_t P;
+
+    MatrixF B_t;
 
     float sum;
 
@@ -304,7 +339,9 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 
     if(M >= 8)
     {
-        __matmul_funcs[simd_get_vectorization_mode()](GET_PTR((*A)), GET_PTR((*B)), GET_PTR((*C)), M, N, P);
+        B_t = matrixf_transpose_from(B);
+
+        __matmul_funcs[simd_get_vectorization_mode()](GET_PTR((*A)), GET_PTR((B_t)), GET_PTR((*C)), M, N, P);
     }
     else
     {

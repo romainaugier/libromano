@@ -49,15 +49,11 @@ static ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
 
 static ROMANO_FORCE_INLINE float _mm256_hsum_ps(__m256 x)
 {
-    __m128 hi_quad = _mm256_extractf128_ps(x, 1);
-    __m128 low_quad = _mm256_castps256_ps128(x);
-    __m128 sum_quad = _mm_add_ps(low_quad, hi_quad);
-    __m128 low_dual = sum_quad;
-    __m128 hi_dual = _mm_movehl_ps(sum_quad, sum_quad);
-    __m128 sum_dual = _mm_add_ps(low_dual, hi_dual);
-    __m128 low = sum_dual;
-    __m128 hi = _mm_shuffle_ps(sum_dual, sum_dual, 1);
-    __m128 sum = _mm_add_ss(low, hi);
+    const __m128 hi = _mm256_extractf128_ps(x, 1);
+    const __m128 lo = _mm256_castps256_ps128(x);
+    __m128 sum = _mm_add_ps(hi, lo);
+    sum = _mm_hadd_ps(sum, sum);
+    sum = _mm_hadd_ps(sum, sum);
     return _mm_cvtss_f32(sum);
 }
 

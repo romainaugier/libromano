@@ -10,10 +10,14 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
-#define MATMUL_SIZE_M 485
-#define MATMUL_SIZE_N 194
+#define MATMUL_SIZE_M 1578
+#define MATMUL_SIZE_N 1247
 
 #define M_CHOL 4
+
+#define DEBUG_SIZE 4
+
+#define EPSILON 0.01f
 
 int main(void)
 {
@@ -40,10 +44,18 @@ int main(void)
     }
 
     logger_log(LogLevel_Info, "A");
-    matrixf_debug(&A, 4, 4);
+    matrixf_debug(&A, DEBUG_SIZE, DEBUG_SIZE);
 
     logger_log(LogLevel_Info, "B");
-    matrixf_debug(&B, 4, 4);
+    matrixf_debug(&B, DEBUG_SIZE, DEBUG_SIZE);
+
+    logger_log(LogLevel_Info, "Matrix transposition");
+
+    MatrixF B_t = matrixf_transpose_from(&B);
+
+    matrixf_debug(&B_t, DEBUG_SIZE, DEBUG_SIZE);
+
+    matrixf_destroy(&B_t);
 
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
@@ -54,6 +66,8 @@ int main(void)
     matrixf_mul(&A, &B, &C_scalar);
 
     SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
+
+    matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
 
     // simd_force_vectorization_mode(VectorizationMode_SSE);
     // SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
@@ -70,6 +84,24 @@ int main(void)
     matrixf_mul(&A, &B, &C_avx);
 
     SCOPED_PROFILE_END_SECONDS(matrixf_avx_mul);
+
+    matrixf_debug(&C_avx, DEBUG_SIZE, DEBUG_SIZE);
+
+    for(i = 0; i < MATMUL_SIZE_M; i++)
+    {
+        for(j = 0; j < MATMUL_SIZE_M; j++)
+        {
+            const float scalar = matrixf_get_at(&C_scalar, i, j);
+            const float avx = matrixf_get_at(&C_avx, i, j);
+
+            if((scalar - avx) > EPSILON)
+            {
+                logger_log(LogLevel_Error, "Scalar and avx matmul results are not equal: %f != %f", scalar, avx);
+
+                return 1;
+            }
+        }
+    }
 
     matrixf_destroy(&A);
     matrixf_destroy(&B);
