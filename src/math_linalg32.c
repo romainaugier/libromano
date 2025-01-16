@@ -14,22 +14,26 @@
 
 /* MATRIX */
 
+#define HEADER_SIZE 8
+
 #define SIZE_N(A) ((int)A.data[0])
 #define SIZE_M(A) ((int)A.data[1])
 #define SET_SIZE_N(A, N) A.data[0] = (float)N
 #define SET_SIZE_M(A, M) A.data[1] = (float)M
 
-#define GET_AT(A, i, j) (A.data[i * SIZE_N(A) + j + 2])
-#define SET_AT(A, value, i, j) (A.data[i * SIZE_N(A) + j + 2] = value)
+#define GET_AT(A, i, j) (A.data[i * SIZE_N(A) + j + HEADER_SIZE])
+#define SET_AT(A, value, i, j) (A.data[i * SIZE_N(A) + j + HEADER_SIZE] = value)
 
-#define GET_PTR(A) ((float*)&(A.data[2]))
+#define GET_PTR(A) ((float*)&(A.data[HEADER_SIZE]))
 
-#define GET_AT_WITH_N(A, N, i, j) (A.data[i * N + j + 2])
-#define SET_AT_WITH_N(A, N, value, i, j) (A.data[i * N + j + 2] = value)
+#define GET_AT_WITH_N(A, N, i, j) (A.data[i * N + j + HEADER_SIZE])
+#define SET_AT_WITH_N(A, N, value, i, j) (A.data[i * N + j + HEADER_SIZE] = value)
 
 #define SWAP_FLOAT(f1, f2) do { float tmp = f1; f1 = f2; f2 = tmp; } while (0)
 
 #define ALIGNMENT simd_has_avx() ? 32 : 16
+
+#define INIT_HEADER(data) (memset(data, 0, HEADER_SIZE * sizeof(float)))
 
 /* 
     M -> rows
@@ -48,7 +52,8 @@ MatrixF matrixf_create(const int M, const int N)
 {
     MatrixF A;
 
-    A.data = (float*)mem_aligned_alloc((M * N + 2) * sizeof(float), ALIGNMENT);
+    A.data = (float*)mem_aligned_alloc((M * N + HEADER_SIZE) * sizeof(float), ALIGNMENT);
+    INIT_HEADER(A.data);
     SET_SIZE_M(A, M);
     SET_SIZE_N(A, N);
 
@@ -59,9 +64,10 @@ MatrixF matrixf_copy(MatrixF* A)
 {
     MatrixF B;
 
-    const uint64_t size = (SIZE_M((*A)) * SIZE_N((*A)) + 2) * sizeof(float);
+    const uint64_t size = (SIZE_M((*A)) * SIZE_N((*A)) + HEADER_SIZE) * sizeof(float);
 
     B.data = (float*)mem_aligned_alloc(size, ALIGNMENT);
+    INIT_HEADER(B.data);
     memcpy(B.data, A->data, size);
 
     return B;
@@ -83,7 +89,8 @@ void matrixf_resize(MatrixF* A, const int M, const int N)
         mem_aligned_free(A->data);
     }
 
-    A->data = (float*)mem_aligned_alloc((M * N + 2) * sizeof(float), ALIGNMENT);
+    A->data = (float*)mem_aligned_alloc((M * N + HEADER_SIZE) * sizeof(float), ALIGNMENT);
+    INIT_HEADER(A->data);
     SET_SIZE_M((*A), M);
     SET_SIZE_N((*A), N);
 }
@@ -110,12 +117,12 @@ int matrixf_column_size(MatrixF* A)
 
 void matrixf_set_at(MatrixF* A, const float value, const int i, const int j)
 {
-    A->data[i * SIZE_N((*A)) + j + 2] = value;
+    A->data[i * SIZE_N((*A)) + j + HEADER_SIZE] = value;
 }
 
 float matrixf_get_at(MatrixF* A, const int i, const int j)
 {
-    return A->data[i * SIZE_N((*A)) + j + 2];
+    return A->data[i * SIZE_N((*A)) + j + HEADER_SIZE];
 }
 
 float matrixf_trace(MatrixF* A)
@@ -125,7 +132,7 @@ float matrixf_trace(MatrixF* A)
 
 void matrixf_zero(MatrixF* A)
 {
-    memset(A->data + 2, 0, SIZE_M((*A)) * SIZE_N((*A)) * sizeof(float));
+    memset(A->data + HEADER_SIZE, 0, SIZE_M((*A)) * SIZE_N((*A)) * sizeof(float));
 }
 
 void matrixf_transpose(MatrixF* A)
@@ -144,19 +151,20 @@ void matrixf_transpose(MatrixF* A)
         {
             for(j = (i + 1); j < M; j++)
             {
-                SWAP_FLOAT(A->data[i * M + j + 2], A->data[j * M + i + 2]);
+                SWAP_FLOAT(A->data[i * M + j + HEADER_SIZE], A->data[j * M + i + HEADER_SIZE]);
             }
         }
     }
     else
     {
-        new_data = (float*)mem_aligned_alloc((N * M + 2) * sizeof(float), ALIGNMENT);
+        new_data = (float*)mem_aligned_alloc((N * M + HEADER_SIZE) * sizeof(float), ALIGNMENT);
+        INIT_HEADER(new_data);
 
         for(i = 0; i < M; i++)
         {
             for(j = 0; j < N; j++)
             {
-                new_data[j * N + i + 2] = A->data[i * N + j + 2];
+                new_data[j * N + i + HEADER_SIZE] = A->data[i * N + j + HEADER_SIZE];
             }
         }
 
