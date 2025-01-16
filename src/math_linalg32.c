@@ -259,7 +259,7 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
             {
                 a1_avx = _mm256_loadu_ps(&A[i * N + k]);
                 a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
-                b_avx = _mm256_load_ps(&B[j * N + k]);
+                b_avx = _mm256_loadu_ps(&B[j * N + k]);
 
                 avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
                 avx_sum2 = _mm256_fmadd_ps(a2_avx, b_avx, avx_sum2);
