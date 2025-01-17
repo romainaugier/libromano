@@ -8,7 +8,6 @@
 #define __LIBROMANO_MEMORY
 
 #include "libromano/libromano.h"
-#include "libromano/bool.h"
 
 #include <immintrin.h>
 

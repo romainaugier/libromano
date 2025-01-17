@@ -3,7 +3,7 @@
 ![Windows Build](https://github.com/romainaugier/libromano/actions/workflows/build-windows.yml/badge.svg)
 ![Linux Build](https://github.com/romainaugier/libromano/actions/workflows/build-linux.yml/badge.svg)
 
-ISO C utility library for projects and learning
+C99 utility library for projects and learning
 
 Roadmap (C library) :
 - :clock3: string

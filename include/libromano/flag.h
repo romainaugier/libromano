@@ -9,6 +9,8 @@
 
 #include "libromano/libromano.h"
 
+ROMANO_CPP_ENTER
+
 typedef uint32_t flag32;
 typedef uint64_t flag64;
 
@@ -19,5 +21,7 @@ typedef uint64_t flag64;
 #define SET_FLAG(flag, bit) flag |= bit 
 
 #define UNSET_FLAG(flag, bit) flag &= ~bit
+
+ROMANO_CPP_END
 
 #endif  /* !defined(__LIBROMANO_FLAG) */

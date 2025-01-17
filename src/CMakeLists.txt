@@ -10,7 +10,7 @@ file(GLOB_RECURSE src_files *.c)
 add_definitions(-DROMANO_BUILD_SHARED)
 
 add_library(${PROJECT_NAME} SHARED ${src_files})
-set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 90)
+set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 99)
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}$<$<CONFIG:Debug>:d>")
 

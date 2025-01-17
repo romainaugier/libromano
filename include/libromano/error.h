@@ -17,7 +17,7 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_FORCE_INLINE int get_last_error(void)
+static ROMANO_FORCE_INLINE int get_last_error(void)
 {
 #if defined(ROMANO_WIN)
     return GetLastError();

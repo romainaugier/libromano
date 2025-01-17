@@ -11,6 +11,8 @@
 
 #include "libromano/libromano.h"
 
+ROMANO_CPP_ENTER
+
 #if defined(ROMANO_LINUX)
 
 #include <endian.h>
@@ -103,5 +105,7 @@
 #error endian.h: platform not supported
 
 #endif /* defined(ROMANO_LINUX) */
+
+ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_ENDIAN) */

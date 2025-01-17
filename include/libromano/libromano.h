@@ -22,6 +22,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
 #define ROMANO_X64
@@ -76,31 +77,7 @@
 
 #define ROMANO_BYTE_ORDER __BYTE_ORDER__
 
-#if defined(__STDC__)
-#  if defined(__STDC_VERSION__)
-#    if (__STDC_VERSION__ >= 201710L)
-#      define ROMANO_C_STANDARD 2018
-#    elif (__STDC_VERSION__ >= 201112L)
-#      define ROMANO_C_STANDARD 2011
-#    elif (__STDC_VERSION__ >= 199901L)
-#      define ROMANO_C_STANDARD 1999
-#    elif (__STDC_VERSION__ >= 199409L)
-#      define ROMANO_C_STANDARD 1995
-#    endif
-#  else
-#      define ROMANO_C_STANDARD 1990
-#  endif
-#else
-#      define ROMANO_C_STANDARD 1972
-#endif /* defined(__STDC__) */
-
-#if ROMANO_C_STANDARD >= 1999
 #define ROMANO_RESTRICT restrict
-#elif defined(ROMANO_MSVC)
-#define ROMANO_RESTRICT __restrict
-#else
-#define ROMANO_RESTRICT 
-#endif /* ROMANO_C_STANDARD >= 1999 */
 
 #if defined(ROMANO_WIN)
 #if defined(ROMANO_MSVC)

@@ -8,11 +8,12 @@
 #define __LIB_ROMANO_ATOMIC
 
 #include "libromano/libromano.h"
-#include "libromano/bool.h"
 
 #if defined(ROMANO_WIN)
 #include "Windows.h"
 #endif /* defined(ROMANO_WIN) */
+
+ROMANO_CPP_ENTER
 
 typedef int32_t atomic32_t;
 typedef int64_t atomic64_t;
@@ -126,5 +127,7 @@ static ROMANO_FORCE_INLINE atomic64_t atomic_exchange_64(atomic64_t* volatile de
     return __sync_lock_test_and_set(dest, exchange);
 #endif /* defined(ROMANO_MSVC) */
 }
+
+ROMANO_CPP_END
 
 #endif /* !defined(__LIB_ROMANO_ATOMIC) */

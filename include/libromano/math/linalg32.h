@@ -9,7 +9,6 @@
 
 #include "libromano/libromano.h"
 #include "libromano/math/common32.h"
-#include "libromano/bool.h"
 
 #include <stdlib.h>
 

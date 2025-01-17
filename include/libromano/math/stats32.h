@@ -9,6 +9,8 @@
 
 #include "libromano/libromano.h"
 
+ROMANO_CPP_ENTER
+
 ROMANO_API float stats_sum(const float* array, const size_t n);
 
 ROMANO_API float stats_mean(const float* array, const size_t n);
@@ -22,5 +24,7 @@ ROMANO_API float stats_min(const float* array, const size_t n);
 ROMANO_API float stats_max(const float* array, const size_t n);
 
 ROMANO_API float stats_range(const float* array, const size_t n);
+
+ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_MATH_STATS32) */
