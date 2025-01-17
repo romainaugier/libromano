@@ -200,7 +200,7 @@ MatrixF matrixf_transpose_from(MatrixF* A)
 
 void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A, 
                          const float* ROMANO_RESTRICT B,
-                         float* C,
+                         float* ROMANO_RESTRICT C,
                          const uint32_t M,
                          const uint32_t N,
                          const uint32_t P)
@@ -227,67 +227,173 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
     }
 }
 
-void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A, 
-                       const float* ROMANO_RESTRICT B,
-                       float* C,
-                       const uint32_t M,
-                       const uint32_t N,
-                       const uint32_t P)
-{
-    float sum1;
-    float sum2;
+#define M_BLOCK_SIZE 4
+#define SSE_N_BLOCK_SIZE 4
+#define AVX_N_BLOCK_SIZE 8
 
-    __m256 a1_avx;
-    __m256 a2_avx;
-    __m256 b_avx;
-    __m256 avx_sum1;
-    __m256 avx_sum2;
+void _matrixf_mul_sse(const float* ROMANO_RESTRICT A, 
+                      const float* ROMANO_RESTRICT B,
+                      float* ROMANO_RESTRICT C,
+                      const uint32_t M,
+                      const uint32_t N,
+                      const uint32_t P)
+{
+    float sum1, sum2, sum3, sum4;
+
+    __m128 a1_sse, a2_sse, a3_sse, a4_sse;
+    __m128 b_sse;
+    __m128 sse_sum1, sse_sum2, sse_sum3, sse_sum4;
 
     uint32_t i;
     uint32_t j;
     uint32_t k;
-    uint32_t n_blocks = N - (N % 8);
 
-    for(i = 0; i < (M - 1); i += 2)
+    const uint32_t m_blocks = M - (M % M_BLOCK_SIZE);
+    const uint32_t n_blocks = N - (N % SSE_N_BLOCK_SIZE);
+
+    for(i = 0; i < m_blocks; i += M_BLOCK_SIZE)
     {
         for(j = 0; j < P; j++)
         {
-            avx_sum1 = _mm256_setzero_ps();
-            avx_sum2 = _mm256_setzero_ps();
+            sse_sum1 = _mm_setzero_ps();
+            sse_sum2 = _mm_setzero_ps();
+            sse_sum3 = _mm_setzero_ps();
+            sse_sum4 = _mm_setzero_ps();
 
-            for(k = 0; k < n_blocks; k += 8)
+            for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
-                a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
-                b_avx = _mm256_loadu_ps(&B[j * N + k]);
+                a1_sse = _mm_loadu_ps(&A[i * N + k]);
+                a2_sse = _mm_loadu_ps(&A[(i + 1) * N + k]);
+                a3_sse = _mm_loadu_ps(&A[(i + 2) * N + k]);
+                a4_sse = _mm_loadu_ps(&A[(i + 3) * N + k]);
 
-                avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
-                avx_sum2 = _mm256_fmadd_ps(a2_avx, b_avx, avx_sum2);
+                b_sse = _mm_loadu_ps(&B[j * N + k]);
+
+                sse_sum1 = _mm_fmadd_ps(a1_sse, b_sse, sse_sum1);
+                sse_sum2 = _mm_fmadd_ps(a2_sse, b_sse, sse_sum2);
+                sse_sum3 = _mm_fmadd_ps(a3_sse, b_sse, sse_sum3);
+                sse_sum4 = _mm_fmadd_ps(a4_sse, b_sse, sse_sum4);
             }
 
-            sum1 = _mm256_hsum_ps(avx_sum1);
-            sum2 = _mm256_hsum_ps(avx_sum2);
+            sum1 = _mm_hsum_ps(sse_sum1);
+            sum2 = _mm_hsum_ps(sse_sum2);
+            sum3 = _mm_hsum_ps(sse_sum3);
+            sum4 = _mm_hsum_ps(sse_sum4);
 
             for(k = n_blocks; k < N; k++)
             {
                 sum1 += A[i * N + k] * B[j * N + k];
                 sum2 += A[(i + 1) * N + k] * B[j * N + k];
+                sum3 += A[(i + 2) * N + k] * B[j * N + k];
+                sum4 += A[(i + 3) * N + k] * B[j * N + k];
             }
 
             C[i * P + j] = sum1;
             C[(i + 1) * P + j] = sum2;
+            C[(i + 2) * P + j] = sum3;
+            C[(i + 3) * P + j] = sum4;
         }
     }
 
-    if(M % 2)
+    for(i = m_blocks; i < M; i++)
+    {
+        for(j = 0; j < P; j++)
+        {
+            sse_sum1 = _mm_setzero_ps();
+
+            for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
+            {
+                a1_sse = _mm_loadu_ps(&A[i * N + k]);
+                b_sse = _mm_loadu_ps(&B[j * N + k]);
+
+                sse_sum1 = _mm_fmadd_ps(a1_sse, b_sse, sse_sum1);
+            }
+
+            sum1 = _mm_hsum_ps(sse_sum1);
+
+            for(k = n_blocks; k < N; k++)
+            {
+                sum1 += A[i * N + k] * B[j * N + k];
+            }
+
+            C[i * P + j] = sum1;
+        }
+    }
+}
+
+void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A, 
+                       const float* ROMANO_RESTRICT B,
+                       float* ROMANO_RESTRICT C,
+                       const uint32_t M,
+                       const uint32_t N,
+                       const uint32_t P)
+{
+    float sum1, sum2, sum3, sum4;
+
+    __m256 a1_avx, a2_avx, a3_avx, a4_avx;
+    __m256 b_avx;
+    __m256 avx_sum1, avx_sum2, avx_sum3, avx_sum4;
+
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+
+    const uint32_t m_blocks = M - (M % M_BLOCK_SIZE);
+    const uint32_t n_blocks = N - (N % AVX_N_BLOCK_SIZE);
+
+    for(i = 0; i < m_blocks; i += M_BLOCK_SIZE)
+    {
+        for(j = 0; j < P; j++)
+        {
+            avx_sum1 = _mm256_setzero_ps();
+            avx_sum2 = _mm256_setzero_ps();
+            avx_sum3 = _mm256_setzero_ps();
+            avx_sum4 = _mm256_setzero_ps();
+
+            for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
+            {
+                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
+                a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
+                a3_avx = _mm256_loadu_ps(&A[(i + 2) * N + k]);
+                a4_avx = _mm256_loadu_ps(&A[(i + 3) * N + k]);
+
+                b_avx = _mm256_loadu_ps(&B[j * N + k]);
+
+                avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
+                avx_sum2 = _mm256_fmadd_ps(a2_avx, b_avx, avx_sum2);
+                avx_sum3 = _mm256_fmadd_ps(a3_avx, b_avx, avx_sum3);
+                avx_sum4 = _mm256_fmadd_ps(a4_avx, b_avx, avx_sum4);
+            }
+
+            sum1 = _mm256_hsum_ps(avx_sum1);
+            sum2 = _mm256_hsum_ps(avx_sum2);
+            sum3 = _mm256_hsum_ps(avx_sum3);
+            sum4 = _mm256_hsum_ps(avx_sum4);
+
+            for(k = n_blocks; k < N; k++)
+            {
+                sum1 += A[i * N + k] * B[j * N + k];
+                sum2 += A[(i + 1) * N + k] * B[j * N + k];
+                sum3 += A[(i + 2) * N + k] * B[j * N + k];
+                sum4 += A[(i + 3) * N + k] * B[j * N + k];
+            }
+
+            C[i * P + j] = sum1;
+            C[(i + 1) * P + j] = sum2;
+            C[(i + 2) * P + j] = sum3;
+            C[(i + 3) * P + j] = sum4;
+        }
+    }
+
+    for(i = m_blocks; i < M; i++)
     {
         for(j = 0; j < P; j++)
         {
             avx_sum1 = _mm256_setzero_ps();
 
-            for(k = 0; k < n_blocks; k += 8)
+            for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_loadu_ps(&A[(M - 1) * N + k]);
+                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
                 b_avx = _mm256_loadu_ps(&B[j * N + k]);
 
                 avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
@@ -297,24 +403,24 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
 
             for(k = n_blocks; k < N; k++)
             {
-                sum1 += A[(M - 1) * N + k] * B[j * N + k];
+                sum1 += A[i * N + k] * B[j * N + k];
             }
 
-            C[(M - 1) * P + j] = sum1;
+            C[i * P + j] = sum1;
         }
     }
 }
 
-typedef void (*matmul_func)(const float*, 
-                            const float*,
-                            float*,
+typedef void (*matmul_func)(const float* ROMANO_RESTRICT, 
+                            const float* ROMANO_RESTRICT,
+                            float* ROMANO_RESTRICT,
                             const uint32_t,
                             const uint32_t,
                             const uint32_t);
 
 matmul_func __matmul_funcs[3] = {
     _matrixf_mul_scalar,
-    _matrixf_mul_avx2,
+    _matrixf_mul_sse,
     _matrixf_mul_avx2,
 };
 

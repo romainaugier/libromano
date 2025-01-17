@@ -96,6 +96,8 @@
 
 #if ROMANO_C_STANDARD >= 1999
 #define ROMANO_RESTRICT restrict
+#elif defined(ROMANO_MSVC)
+#define ROMANO_RESTRICT __restrict
 #else
 #define ROMANO_RESTRICT 
 #endif /* ROMANO_C_STANDARD >= 1999 */

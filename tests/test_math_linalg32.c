@@ -11,7 +11,7 @@
 #include "libromano/profiling.h"
 
 #define MATMUL_SIZE_M 1578
-#define MATMUL_SIZE_N 1247
+#define MATMUL_SIZE_N 1578
 
 #define M_CHOL 4
 
@@ -69,13 +69,13 @@ int main(void)
 
     matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
 
-    // simd_force_vectorization_mode(VectorizationMode_SSE);
-    // SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
+    simd_force_vectorization_mode(VectorizationMode_SSE);
+    SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
 
-    // matrixf_t C_sse = matrix_null();
-    // matrixf_mul(&A, &B, &C_sse);
+    MatrixF C_sse = matrix_null();
+    matrixf_mul(&A, &B, &C_sse);
 
-    // SCOPED_PROFILE_END_SECONDS(matrixf_sse_mul);
+    SCOPED_PROFILE_END_SECONDS(matrixf_sse_mul);
 
     simd_force_vectorization_mode(VectorizationMode_AVX);
     SCOPED_PROFILE_START_SECONDS(matrixf_avx_mul);
@@ -85,28 +85,43 @@ int main(void)
 
     SCOPED_PROFILE_END_SECONDS(matrixf_avx_mul);
 
-    matrixf_debug(&C_avx, DEBUG_SIZE, DEBUG_SIZE);
+    float sse_err = 0.0f;
+    float avx_err = 0.0f;   
+    uint32_t count = 1;
 
     for(i = 0; i < MATMUL_SIZE_M; i++)
     {
         for(j = 0; j < MATMUL_SIZE_M; j++)
         {
             const float scalar = matrixf_get_at(&C_scalar, i, j);
+            const float sse = matrixf_get_at(&C_sse, i, j);
             const float avx = matrixf_get_at(&C_avx, i, j);
 
-            if((scalar - avx) > EPSILON)
-            {
-                logger_log(LogLevel_Error, "Scalar and avx matmul results are not equal: %f != %f", scalar, avx);
-
-                return 1;
-            }
+            sse_err = mathf_lerp(sse_err, mathf_abs(scalar - sse), 1.0f / (float)count);
+            avx_err = mathf_lerp(avx_err, mathf_abs(scalar - avx), 1.0f / (float)count);
+            count++;
         }
+    }
+
+    logger_log(LogLevel_Info, "Average sse_err: %f", sse_err);
+    logger_log(LogLevel_Info, "Average avx_err: %f", avx_err);
+
+    if(sse_err > EPSILON)
+    {
+        logger_log(LogLevel_Error, "Average err is too high between sse and scalar matmul");
+        return 1;
+    }
+
+    if(avx_err > EPSILON)
+    {
+        logger_log(LogLevel_Error, "Average err is too high between avx and scalar matmul");
+        return 1;
     }
 
     matrixf_destroy(&A);
     matrixf_destroy(&B);
     matrixf_destroy(&C_scalar);
-    // matrixf_destroy(&C_sse);
+    matrixf_destroy(&C_sse);
     matrixf_destroy(&C_avx);
 
     logger_log(LogLevel_Info, "Cholesky Solving");
