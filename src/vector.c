@@ -234,7 +234,7 @@ void vector_shuffle(Vector* vector, const uint64_t seed)
 
     for (i = 0; i < (size - 1); ++i) 
     {
-        rnd = murmur64(seed + i);
+        rnd = murmur_64(seed + i);
         j = i + rnd / (UINT64_MAX / (size - i) + 1);
 
         mem_swap(vector_at(vector, i), vector_at(vector, j), element_size);

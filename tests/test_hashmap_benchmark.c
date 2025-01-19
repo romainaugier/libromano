@@ -32,7 +32,7 @@ void get_random_uint64_t_vector(Vector* vector, size_t n)
 
     for(i = 0; i < n; i++)
     {
-        k = murmur64(seed + i);
+        k = murmur_64(seed + i);
 
         vector_push_back(vector, (void*)&k);
     }

@@ -448,6 +448,8 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
         B_t = matrixf_transpose_from(B);
 
         __matmul_funcs[simd_get_vectorization_mode()](GET_PTR((*A)), GET_PTR((B_t)), GET_PTR((*C)), M, N, P);
+
+        matrixf_destroy(&B_t);
     }
     else
     {

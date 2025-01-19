@@ -10,8 +10,13 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
+#if ROMANO_DEBUG
+#define MATMUL_SIZE_M 389
+#define MATMUL_SIZE_N 274
+#else
 #define MATMUL_SIZE_M 1578
-#define MATMUL_SIZE_N 1578
+#define MATMUL_SIZE_N 1730
+#endif /* ROMANO_DEBUG */
 
 #define M_CHOL 4
 

@@ -11,7 +11,7 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t murmur64(uint64_t h) 
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t murmur_64(uint64_t h) 
 {
     h ^= h >> 33;
     h *= 0xff51afd7ed558ccdL;
@@ -20,6 +20,10 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t murmur64(uint64_t h)
     h ^= h >> 33;
     return h;
 }
+
+ROMANO_API uint64_t random_wyhash_64();
+
+ROMANO_API uint64_t random_lehmer_64();
 
 /* Very fast pseudo random generator with a good distribution */
 
