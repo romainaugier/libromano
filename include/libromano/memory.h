@@ -37,6 +37,12 @@ ROMANOAPI void debug_free_override(void* ptr,
 static ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _mm_malloc(size, alignment); }
 static ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _mm_free(ptr); }
 
+#if defined(ROMANO_MSVC)
+#define mem_alloca(size) _malloca((size))
+#elif defined(ROMANO_GCC)
+#define mem_alloca(size) alloca((size))
+#endif /* defined(ROMANO_MSVC) */
+
 typedef enum
 {
     Endianness_Little = 0,
