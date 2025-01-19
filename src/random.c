@@ -4,10 +4,16 @@
 
 #include "libromano/random.h"
 
+#if !defined(ROMANO_MSVC)
 static uint64_t wyhash64_x = 1; 
+#endif /* !defined(ROMANO_MSVC) */
 
 uint64_t random_wyhash_64() 
 {
+#if defined(ROMANO_MSVC)
+#pragma message("uint128_t is not supported by MSVC, disabling random_wyhash_64 in "__FILE__":"__LINE__)
+    return 0;
+#else
     wyhash64_x += 0x60bee2bee120fc15;
     __uint128_t tmp;
     tmp = (__uint128_t) wyhash64_x * 0xa3b195354a39b70d;
@@ -15,14 +21,22 @@ uint64_t random_wyhash_64()
     tmp = (__uint128_t)m1 * 0x1b03738712fad5c9;
     uint64_t m2 = (tmp >> 64) ^ tmp;
     return m2;
+#endif /* defined(ROMANO_MSVC) */
 }
 
+#if !defined(ROMANO_MSVC)
 static __uint128_t g_lehmer64_state = 1;
+#endif /* !defined(ROMANO_MSVC) */
 
 uint64_t random_lehmer_64() 
 {
+#if defined(ROMANO_MSVC)
+#pragma message("uint128_t is not supported by MSVC, disabling random_lehmer_64 in "__FILE__":"__LINE__)
+    return 0;
+#else
     g_lehmer64_state *= 0xda942042e4dd58b5;
     return g_lehmer64_state >> 64;
+#endif /* defined(ROMANO_MSVC) */
 }
 
 static uint32_t _state = 0;
