@@ -28,7 +28,10 @@ else()
     endif()
 endif()
 
+if(WIN32)
+    set_and_check(libromano_BIN_DIR "@PACKAGE_CMAKE_INSTALL_BINDIR@")
+endif()
+
 set_and_check(libromano_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
-set_and_check(libromano_BIN_DIR "@PACKAGE_CMAKE_INSTALL_BINDIR@")
 set(libromano_LIBRARIES libromano::libromano)
 check_required_components(libromano)
