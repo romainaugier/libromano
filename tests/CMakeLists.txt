@@ -43,10 +43,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     )
 endif()
 
-# Copy libromano shared lib to the tests bin directory
+# Copy dlls to the tests runtime directory
 
-add_custom_command(
-    TARGET ${TESTNAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:${PROJECT_NAME}> $<TARGET_FILE_DIR:${TESTNAME}>
-)
+if(WIN32)
+    add_custom_command(
+        TARGET ${TESTNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_RUNTIME_DLLS:${TESTNAME}>
+            $<TARGET_FILE_DIR:${TESTNAME}>
+        COMMAND_EXPAND_LISTS
+    )
+endif()

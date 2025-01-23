@@ -13,7 +13,7 @@ ROMANO_CPP_ENTER
 
 #define BIT(bit) (size_t)1 << bit
 
-ROMANO_FORCE_INLINE static uint32_t round_u32_to_next_pow2(uint32_t x)
+ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
 {
     x--;
     x |= x >> 1;
@@ -24,7 +24,7 @@ ROMANO_FORCE_INLINE static uint32_t round_u32_to_next_pow2(uint32_t x)
     return x++;
 }
 
-ROMANO_FORCE_INLINE static uint64_t round_u64_to_next_pow2(uint64_t x)
+ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
 {
     x--;
     x |= x >> 1;
