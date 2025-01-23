@@ -6,19 +6,23 @@
 
 #include "libromano/regex.h"
 
-typedef struct
+struct _State 
 {
     int c;
-    State* out;
-    State* out1;
+    struct _State* out;
+    struct _State* out1;
     int last_list;
-} State;
+};
 
-typedef union 
+typedef struct _State State;
+
+union _PtrList
 {
-    PtrList* next;
+    union _PtrList* next;
     State* s;
-} PtrList;
+};
+
+typedef union _PtrList PtrList;
 
 bool regex_compile(Regex* regex, const char* pattern)
 {
