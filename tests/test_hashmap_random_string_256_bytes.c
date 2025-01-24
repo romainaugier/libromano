@@ -38,9 +38,9 @@ int main(void)
 
     /* Insertion */
 
-    SCOPED_PROFILE_START_MILLISECONDS(_hashmap_insert);
+    SCOPED_PROFILE_MS_START(_hashmap_insert);
 
-    MEAN_PROFILE_INIT(_hashmap_insert);
+    MEAN_PROFILE_NS_INIT(_hashmap_insert);
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
@@ -49,34 +49,34 @@ int main(void)
 
         vector_push_back(keys, key);
 
-        MEAN_PROFILE_START(_hashmap_insert);
+        MEAN_PROFILE_NS_START(_hashmap_insert);
 
         hashmap_insert(hashmap, (const void*)key, STRING_SIZE, &i, sizeof(size_t));
 
-        MEAN_PROFILE_STOP(_hashmap_insert);
+        MEAN_PROFILE_NS_STOP(_hashmap_insert);
     }
 
     logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
 
-    MEAN_PROFILE_RELEASE(_hashmap_insert);
+    MEAN_PROFILE_NS_RELEASE(_hashmap_insert);
 
-    SCOPED_PROFILE_END_MILLISECONDS(_hashmap_insert);
+    SCOPED_PROFILE_MS_END(_hashmap_insert);
 
     /* Get */
 
-    SCOPED_PROFILE_START_MILLISECONDS(_hashmap_get);
+    SCOPED_PROFILE_MS_START(_hashmap_get);
 
-    MEAN_PROFILE_INIT(_hashmap_get);
+    MEAN_PROFILE_NS_INIT(_hashmap_get);
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         uint32_t size;
 
-        MEAN_PROFILE_START(_hashmap_get);
+        MEAN_PROFILE_NS_START(_hashmap_get);
 
         size_t* num_ptr = (size_t*)hashmap_get(hashmap, (const void*)vector_at(keys, i), STRING_SIZE, &size);
 
-        MEAN_PROFILE_STOP(_hashmap_get);
+        MEAN_PROFILE_NS_STOP(_hashmap_get);
 
         if(num_ptr == NULL)
         {
@@ -90,26 +90,26 @@ int main(void)
         }
     }
 
-    MEAN_PROFILE_RELEASE(_hashmap_get);
+    MEAN_PROFILE_NS_RELEASE(_hashmap_get);
 
-    SCOPED_PROFILE_END_MILLISECONDS(_hashmap_get);
+    SCOPED_PROFILE_MS_END(_hashmap_get);
 
     /* Delete */
 
-    SCOPED_PROFILE_START_MILLISECONDS(_hashmap_delete);
+    SCOPED_PROFILE_MS_START(_hashmap_delete);
 
-    MEAN_PROFILE_INIT(_hashmap_delete);
+    MEAN_PROFILE_NS_INIT(_hashmap_delete);
 
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
-        MEAN_PROFILE_START(_hashmap_delete);
+        MEAN_PROFILE_NS_START(_hashmap_delete);
 
         hashmap_remove(hashmap, (const void*)vector_at(keys, i), STRING_SIZE);
 
-        MEAN_PROFILE_STOP(_hashmap_delete);
+        MEAN_PROFILE_NS_STOP(_hashmap_delete);
     }
 
-    MEAN_PROFILE_RELEASE(_hashmap_delete);
+    MEAN_PROFILE_NS_RELEASE(_hashmap_delete);
 
     logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
 
@@ -119,7 +119,7 @@ int main(void)
         return 1;
     }
 
-    SCOPED_PROFILE_END_MILLISECONDS(_hashmap_delete);
+    SCOPED_PROFILE_MS_END(_hashmap_delete);
 
     hashmap_free(hashmap);
     vector_free(keys);

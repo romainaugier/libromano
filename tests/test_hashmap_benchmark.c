@@ -92,14 +92,14 @@ int main(int argc, char** argv)
         hashmap = hashmap_new(0);
         hashmap_set_hash_func(hashmap, hash_identity);
 
-        SCOPED_PROFILE_START_SECONDS(insert_random_shuffle_range);
+        SCOPED_PROFILE_MS_START(insert_random_shuffle_range);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_END_SECONDS(insert_random_shuffle_range);
+        SCOPED_PROFILE_MS_END(insert_random_shuffle_range);
     }
     else if(TEST_NAME(test_name, "read_random_shuffle_range"))
     {
@@ -117,14 +117,14 @@ int main(int argc, char** argv)
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_START_SECONDS(read_random_shuffle_range);
+        SCOPED_PROFILE_MS_START(read_random_shuffle_range);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_get(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), NULL);
         }
 
-        SCOPED_PROFILE_END_SECONDS(read_random_shuffle_range);
+        SCOPED_PROFILE_MS_END(read_random_shuffle_range);
     }
     else if(TEST_NAME(test_name, "insert_random_full"))
     {
@@ -135,14 +135,14 @@ int main(int argc, char** argv)
         hashmap = hashmap_new(0);
         hashmap_set_hash_func(hashmap, hash_identity);
 
-        SCOPED_PROFILE_START_SECONDS(insert_random_full);
+        SCOPED_PROFILE_MS_START(insert_random_full);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_END_SECONDS(insert_random_full);
+        SCOPED_PROFILE_MS_END(insert_random_full);
     }
     else if(TEST_NAME(test_name, "insert_random_full_reserve"))
     {
@@ -153,14 +153,14 @@ int main(int argc, char** argv)
         hashmap = hashmap_new(num_keys);
         hashmap_set_hash_func(hashmap, hash_identity);
 
-        SCOPED_PROFILE_START_SECONDS(insert_random_full_reserve);
+        SCOPED_PROFILE_MS_START(insert_random_full_reserve);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_END_SECONDS(insert_random_full_reserve);
+        SCOPED_PROFILE_MS_END(insert_random_full_reserve);
     }
     else if(TEST_NAME(test_name, "read_random_full"))
     {
@@ -178,14 +178,14 @@ int main(int argc, char** argv)
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_START_SECONDS(read_random_shuffle_range);
+        SCOPED_PROFILE_MS_START(read_random_shuffle_range);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_get(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), NULL);
         }
 
-        SCOPED_PROFILE_END_SECONDS(read_random_shuffle_range);
+        SCOPED_PROFILE_MS_END(read_random_shuffle_range);
     }
     else if(TEST_NAME(test_name, "read_miss_random_full"))
     {
@@ -206,14 +206,14 @@ int main(int argc, char** argv)
             hashmap_insert(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), &one, sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_START_SECONDS(read_miss_random_full);
+        SCOPED_PROFILE_MS_START(read_miss_random_full);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_get(hashmap, (const void*)vector_at(keys_read, i), sizeof(uint64_t), NULL);
         }
 
-        SCOPED_PROFILE_END_SECONDS(read_miss_random_full);
+        SCOPED_PROFILE_MS_END(read_miss_random_full);
     }
     else if(TEST_NAME(test_name, "read_random_full_after_delete"))
     {
@@ -238,14 +238,14 @@ int main(int argc, char** argv)
 
         vector_shuffle(keys_insert, random_next_uint64());
 
-        SCOPED_PROFILE_START_SECONDS(read_random_full_after_delete);
+        SCOPED_PROFILE_MS_START(read_random_full_after_delete);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_get(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t), NULL);
         }
 
-        SCOPED_PROFILE_END_SECONDS(read_random_full_after_delete);
+        SCOPED_PROFILE_MS_END(read_random_full_after_delete);
     }
     else if(TEST_NAME(test_name, "delete_random_full"))
     {
@@ -263,14 +263,14 @@ int main(int argc, char** argv)
 
         vector_shuffle(keys_insert, random_next_uint64());
 
-        SCOPED_PROFILE_START_SECONDS(read_random_full_after_delete);
+        SCOPED_PROFILE_MS_START(read_random_full_after_delete);
 
         for(i = 0; i < num_keys; i++)
         {
             hashmap_remove(hashmap, (const void*)vector_at(keys_insert, i), sizeof(uint64_t));
         }
 
-        SCOPED_PROFILE_END_SECONDS(read_random_full_after_delete);
+        SCOPED_PROFILE_MS_END(read_random_full_after_delete);
     }
 
     hashmap_free(hashmap);

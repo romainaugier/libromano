@@ -65,30 +65,30 @@ int main(void)
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
     simd_force_vectorization_mode(VectorizationMode_Scalar);
-    SCOPED_PROFILE_START_SECONDS(matrixf_scalar_mul);
+    SCOPED_PROFILE_MS_START(matrixf_scalar_mul);
 
     MatrixF C_scalar = matrix_null();
     matrixf_mul(&A, &B, &C_scalar);
 
-    SCOPED_PROFILE_END_SECONDS(matrixf_scalar_mul);
+    SCOPED_PROFILE_MS_END(matrixf_scalar_mul);
 
     matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
 
     simd_force_vectorization_mode(VectorizationMode_SSE);
-    SCOPED_PROFILE_START_SECONDS(matrixf_sse_mul);
+    SCOPED_PROFILE_MS_START(matrixf_sse_mul);
 
     MatrixF C_sse = matrix_null();
     matrixf_mul(&A, &B, &C_sse);
 
-    SCOPED_PROFILE_END_SECONDS(matrixf_sse_mul);
+    SCOPED_PROFILE_MS_END(matrixf_sse_mul);
 
     simd_force_vectorization_mode(VectorizationMode_AVX);
-    SCOPED_PROFILE_START_SECONDS(matrixf_avx_mul);
+    SCOPED_PROFILE_MS_START(matrixf_avx_mul);
 
     MatrixF C_avx = matrix_null();
     matrixf_mul(&A, &B, &C_avx);
 
-    SCOPED_PROFILE_END_SECONDS(matrixf_avx_mul);
+    SCOPED_PROFILE_MS_END(matrixf_avx_mul);
 
     float sse_err = 0.0f;
     float avx_err = 0.0f;   

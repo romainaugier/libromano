@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
 #define ROMANO_X64
@@ -143,7 +144,9 @@
 #define CONCAT_(prefix, suffix)     prefix##suffix
 #define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
 
-#define STATIC_ASSERT(expr)                             \
+#define ROMANO_ASSERT(expr, message) if(!(expr)) { fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); abort(); }
+
+#define ROMANO_STATIC_ASSERT(expr)                      \
     struct CONCAT(__outscope_assert_, __COUNTER__)      \
     {                                                   \
         char                                            \

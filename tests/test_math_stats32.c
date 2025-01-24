@@ -57,29 +57,29 @@ int main(void)
     /* SUM */
 
     simd_force_vectorization_mode(VectorizationMode_Scalar);
-    SCOPED_PROFILE_START(scalar_sum_profiling);
+    SCOPED_PROFILE_MS_START(scalar_sum_profiling);
 
     __sum = stats_sum(values, VALUES_SIZE);
 
-    SCOPED_PROFILE_END(scalar_sum_profiling);
+    SCOPED_PROFILE_MS_END(scalar_sum_profiling);
 
     logger_log(LogLevel_Info, "Scalar sum: %f", __sum);
 
     simd_force_vectorization_mode(VectorizationMode_SSE);
-    SCOPED_PROFILE_START(sse_sum_profiling);
+    SCOPED_PROFILE_MS_START(sse_sum_profiling);
 
     __sum = stats_sum(values, VALUES_SIZE);
 
-    SCOPED_PROFILE_END(sse_sum_profiling);
+    SCOPED_PROFILE_MS_END(sse_sum_profiling);
 
     logger_log(LogLevel_Info, "SSE sum: %f", __sum);
 
     simd_force_vectorization_mode(VectorizationMode_AVX);
-    SCOPED_PROFILE_START(avx2_sum_profiling);
+    SCOPED_PROFILE_MS_START(avx2_sum_profiling);
 
     __sum = stats_sum(values, VALUES_SIZE);
 
-    SCOPED_PROFILE_END(avx2_sum_profiling);
+    SCOPED_PROFILE_MS_END(avx2_sum_profiling);
 
     logger_log(LogLevel_Info, "AVX2 sum: %f", __sum);
 

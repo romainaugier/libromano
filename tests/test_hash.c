@@ -32,17 +32,9 @@ int main(void)
 {
     const size_t text_len = strlen(text_to_hash);
     
-    {
-        PROFILE_NANOSECONDS(hash_fnv1a(text_to_hash, text_len));
-    }
-
-    {
-        PROFILE_NANOSECONDS(hash_fnv1a_pippip(text_to_hash, text_len));
-    }
-
-    {
-        PROFILE_NANOSECONDS(hash_murmur3((const void*)text_to_hash, text_len, random_next_uint32()));
-    }
+    PROFILE_NS(hash_fnv1a(text_to_hash, text_len));
+    PROFILE_NS(hash_fnv1a_pippip(text_to_hash, text_len));
+    PROFILE_NS(hash_murmur3((const void*)text_to_hash, text_len, random_next_uint32()));
 
     return 0;
 }
