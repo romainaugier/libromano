@@ -5,7 +5,7 @@
 #include "libromano/socket.h"
 #include "libromano/logger.h"
 #include "libromano/hash.h"
-#include "libromano/str.h"
+#include "libromano/string.h"
 #include "libromano/thread.h"
 #include "libromano/error.h"
 
@@ -82,7 +82,7 @@ void socket_loop(void)
                 else
                 {
                     uint32_t count = 0;
-                    str* buffer_split = str_split(reception_buffer, "#", &count);
+                    String* buffer_split = string_splitc(reception_buffer, "#", &count);
 
                     size_t i;
 
@@ -92,7 +92,7 @@ void socket_loop(void)
                     }
 
                     if((count > 0) &&
-                       (hash_fnv1a(buffer_split[0], str_length(buffer_split[0])) == PASSWORD_HASH))
+                       (hash_fnv1a(buffer_split[0], string_length(buffer_split[0])) == PASSWORD_HASH))
                     {
                         logger_log(LogLevel_Info, "Password is verified");
                         logger_log(LogLevel_Info, "Executing command");
@@ -104,7 +104,7 @@ void socket_loop(void)
 
                     for(i = 0; i < count; i++)
                     {
-                        str_free(buffer_split[i]);
+                        string_free(buffer_split[i]);
                     }
 
                     free(buffer_split);

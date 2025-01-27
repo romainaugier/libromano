@@ -11,8 +11,8 @@
 #include "libromano/profiling.h"
 
 #if ROMANO_DEBUG
-#define MATMUL_SIZE_M 389
-#define MATMUL_SIZE_N 274
+#define MATMUL_SIZE_M 350
+#define MATMUL_SIZE_N 213
 #else
 #define MATMUL_SIZE_M 1578
 #define MATMUL_SIZE_N 1730
@@ -65,29 +65,26 @@ int main(void)
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
     simd_force_vectorization_mode(VectorizationMode_Scalar);
-    SCOPED_PROFILE_MS_START(matrixf_scalar_mul);
-
     MatrixF C_scalar = matrix_null();
-    matrixf_mul(&A, &B, &C_scalar);
 
+    SCOPED_PROFILE_MS_START(matrixf_scalar_mul);
+    matrixf_mul(&A, &B, &C_scalar);
     SCOPED_PROFILE_MS_END(matrixf_scalar_mul);
 
     matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
 
     simd_force_vectorization_mode(VectorizationMode_SSE);
-    SCOPED_PROFILE_MS_START(matrixf_sse_mul);
-
     MatrixF C_sse = matrix_null();
-    matrixf_mul(&A, &B, &C_sse);
 
+    SCOPED_PROFILE_MS_START(matrixf_sse_mul);
+    matrixf_mul(&A, &B, &C_sse);
     SCOPED_PROFILE_MS_END(matrixf_sse_mul);
 
     simd_force_vectorization_mode(VectorizationMode_AVX);
-    SCOPED_PROFILE_MS_START(matrixf_avx_mul);
-
     MatrixF C_avx = matrix_null();
-    matrixf_mul(&A, &B, &C_avx);
 
+    SCOPED_PROFILE_MS_START(matrixf_avx_mul);
+    matrixf_mul(&A, &B, &C_avx);
     SCOPED_PROFILE_MS_END(matrixf_avx_mul);
 
     float sse_err = 0.0f;

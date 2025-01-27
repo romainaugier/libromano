@@ -8,7 +8,6 @@ C99 utility library for projects and learning
 Roadmap (C library) :
 - :clock3: string
 - :clock3: stringview
-- :clock3: string algorithms
 - :heavy_check_mark: thread (threads, threadpool, mutexes...)
 - :heavy_check_mark: containers: vector, stack, hashmap
 - :x: regular expressions (regex)

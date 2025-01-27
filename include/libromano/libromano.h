@@ -155,7 +155,7 @@
                                                         \
     } CONCAT(__outscope_assert_, __COUNTER__)
 
-#define ROMANO_NOT_IMPLEMENTED "Function "ROMANO_FUNCTION" not implemented" 
+#define ROMANO_NOT_IMPLEMENTED do { fprintf(stderr, "Used function "ROMANO_FUNCTION" that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1); } while(0)
 
 #if defined(ROMANO_MSVC)
 #define ROMANO_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))

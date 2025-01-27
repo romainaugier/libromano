@@ -8,7 +8,7 @@
 #include "libromano/profiling.h"
 
 #include "libromano/logger.h"
-#include "libromano/str.h"
+#include "libromano/string.h"
 
 #if ROMANO_DEBUG
 #define HASHMAP_LOOP_COUNT 0xFFFF
@@ -34,15 +34,15 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        String key = string_newf(KEY_NAME"%zu", i);
 
         MEAN_PROFILE_NS_START(_hashmap_insert);
 
-        hashmap_insert(hashmap, (const void*)key, str_length(key), &num, sizeof(int));
+        hashmap_insert(hashmap, (const void*)key, string_length(key), &num, sizeof(int));
 
         MEAN_PROFILE_NS_STOP(_hashmap_insert);
 
-        str_free(key);
+        string_free(key);
     }
 
     logger_log(LogLevel_Info, "Hashmap size : %zu", hashmap_size(hashmap));
@@ -60,13 +60,13 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        String key = string_newf(KEY_NAME"%zu", i);
 
         uint32_t size;
 
         MEAN_PROFILE_NS_START(_hashmap_get);
 
-        int* num_ptr = (int*)hashmap_get(hashmap, (const void*)key, str_length(key), &size);
+        int* num_ptr = (int*)hashmap_get(hashmap, (const void*)key, string_length(key), &size);
 
         MEAN_PROFILE_NS_STOP(_hashmap_get);
 
@@ -81,7 +81,7 @@ int main(void)
             return 1;
         }
 
-        str_free(key);
+        string_free(key);
     }
 
     MEAN_PROFILE_NS_RELEASE(_hashmap_get);
@@ -97,15 +97,15 @@ int main(void)
     for(i = 0; i < HASHMAP_LOOP_COUNT; i++)
     {
         int num = (int)i;
-        str key = str_new_fmt(KEY_NAME"%zu", i);
+        String key = string_newf(KEY_NAME"%zu", i);
 
         MEAN_PROFILE_NS_START(_hashmap_delete);
 
-        hashmap_remove(hashmap, (const void*)key, str_length(key));
+        hashmap_remove(hashmap, (const void*)key, string_length(key));
 
         MEAN_PROFILE_NS_STOP(_hashmap_delete);
 
-        str_free(key);
+        string_free(key);
     }
 
     MEAN_PROFILE_NS_RELEASE(_hashmap_delete);

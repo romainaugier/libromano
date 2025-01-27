@@ -4,7 +4,7 @@
 
 #include "libromano/hashmap.h"
 #include "libromano/logger.h"
-#include "libromano/str.h"
+#include "libromano/string.h"
 #include "libromano/vector.h"
 #include "libromano/random.h"
 
@@ -36,7 +36,7 @@ int main(void)
 
     size_t i;
     HashMap* hashmap = hashmap_new(0);
-    Vector* keys = vector_new(HASHMAP_LOOP_COUNT, sizeof(str));
+    Vector* keys = vector_new(HASHMAP_LOOP_COUNT, sizeof(String));
 
     /* Insertion */
 
@@ -50,7 +50,7 @@ int main(void)
 
         const size_t string_size = random_next_uint32_range(STRING_MIN_SIZE, STRING_MAX_SIZE);
 
-        str key = str_new_zero(string_size);
+        String key = string_newz(string_size);
         set_random_string((char*)key, string_size);
 
         vector_push_back(keys, &key);
@@ -78,13 +78,13 @@ int main(void)
     {
         int num = (int)i;
 
-        str* key = (str*)vector_at(keys, i);
+        String* key = (String*)vector_at(keys, i);
 
         uint32_t size;
 
         MEAN_PROFILE_NS_START(_hashmap_get);
 
-        int* num_ptr = (int*)hashmap_get(hashmap, (const void*)*key, str_length(*key), &size);
+        int* num_ptr = (int*)hashmap_get(hashmap, (const void*)*key, string_length(*key), &size);
 
         MEAN_PROFILE_NS_STOP(_hashmap_get);
 
@@ -115,11 +115,11 @@ int main(void)
     {
         int num = (int)i;
 
-        str* key = (str*)vector_at(keys, i);
+        String* key = (String*)vector_at(keys, i);
 
         MEAN_PROFILE_NS_START(_hashmap_delete);
 
-        hashmap_remove(hashmap, (const void*)*key, str_length(*key));
+        hashmap_remove(hashmap, (const void*)*key, string_length(*key));
 
         MEAN_PROFILE_NS_STOP(_hashmap_delete);
     }
@@ -140,9 +140,9 @@ int main(void)
 
     for(i = 0; i < vector_size(keys); i++)
     {
-        str* key = (str*)vector_at(keys, i);
+        String* key = (String*)vector_at(keys, i);
 
-        str_free(*key);
+        string_free(*key);
     } 
 
     vector_free(keys);
