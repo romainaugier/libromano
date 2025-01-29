@@ -2,6 +2,8 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#if ROMANO_OPENCL 
+
 #include "libromano/opencl.h"
 #include "libromano/logger.h"
 
@@ -115,3 +117,5 @@ int32_t cl_build_program_from_file(cl_context context,
 
     return error;
 }
+
+#endif /* ROMANO_OPENCL */
