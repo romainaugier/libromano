@@ -48,4 +48,11 @@ int main(void)
     return 0;
 }
 
+#else
+
+int main(void)
+{
+    return 0;
+}
+
 #endif /* ROMANO_OPENCL */
