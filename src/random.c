@@ -12,6 +12,7 @@ uint64_t random_wyhash_64()
 {
 #if defined(ROMANO_MSVC)
 #pragma message("[WARNING]: uint128_t is not supported by MSVC, disabling random_wyhash_64")
+    ROMANO_NOT_IMPLEMENTED;
     return 0;
 #else
     wyhash64_x += 0x60bee2bee120fc15;
@@ -32,6 +33,7 @@ uint64_t random_lehmer_64()
 {
 #if defined(ROMANO_MSVC)
 #pragma message("[WARNING]: uint128_t is not supported by MSVC, disabling random_lehmer_64")
+    ROMANO_NOT_IMPLEMENTED;
     return 0;
 #else
     g_lehmer64_state *= 0xda942042e4dd58b5;

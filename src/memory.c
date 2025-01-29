@@ -13,13 +13,33 @@ void* debug_malloc_override(size_t size,
 {
     void* ptr;
     
-    logger_log(LogLevel_Debug, "Allocating %lu bytes of memory at L.%s in file \"%s\"", size, line, file);
+    logger_log(LogLevel_Debug, "Allocating %lu bytes of memory (%s:%s)", size, file, line);
 
     ptr = malloc(size);
 
     if(ptr == NULL)
     {
-        logger_log(LogLevel_Error, "Allocation failed (L.%s in F:%s)", line, file);
+        logger_log(LogLevel_Error, "Allocation failed (%s:%s)", file, line);
+        return NULL;
+    }
+
+    return ptr;
+}
+
+void* debug_calloc_override(size_t size,
+                            size_t element_size,
+                            const char* line,
+                            const char* file)
+{
+    void* ptr;
+    
+    logger_log(LogLevel_Debug, "Allocating %lu bytes of memory (%s:%s)", size, file, line);
+
+    ptr = calloc(size, element_size);
+
+    if(ptr == NULL)
+    {
+        logger_log(LogLevel_Error, "Allocation failed (%s:%s)", file, line);
         return NULL;
     }
 
@@ -30,7 +50,7 @@ void debug_free_override(void* ptr,
                          const char* line,
                          const char* file)
 {
-    logger_log(LogLevel_Debug, "Freeing memory at L.%s in file \"%s\"", line, file);
+    logger_log(LogLevel_Debug, "Freeing memory (%s:%s)", file, line);
     free(ptr);
 }
 

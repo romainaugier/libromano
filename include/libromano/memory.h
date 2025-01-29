@@ -24,12 +24,19 @@ ROMANOAPI void* debug_malloc_override(size_t size,
                                       const char* line,
                                       const char* file);
 
+/* Memory debug utility function, just calloc with a log of where it happens */
+ROMANOAPI void* debug_calloc_override(size_t size,
+                                      size_t element_size,
+                                      const char* line,
+                                      const char* file);
+
 /* Memory debug utility function, just free with a log of where it happens */
 ROMANOAPI void debug_free_override(void* ptr,
                                    const char* line,
                                    const char* file);
 
 #define malloc(size) debug_malloc_override(size, __LINE__, __FILE__)
+#define calloc(size, element_size) debug_calloc_override(size, element_size, __LINE__, __FILE__)
 #define free(ptr) debug_free_override(ptr, __LINE__, __FILE__)
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */

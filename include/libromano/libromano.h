@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
 #define ROMANO_X64
@@ -155,7 +156,7 @@
                                                         \
     } CONCAT(__outscope_assert_, __COUNTER__)
 
-#define ROMANO_NOT_IMPLEMENTED do { fprintf(stderr, "Used function "ROMANO_FUNCTION" that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1); } while(0)
+#define ROMANO_NOT_IMPLEMENTED fprintf(stderr, "Called function " ROMANO_FUNCTION " that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1)
 
 #if defined(ROMANO_MSVC)
 #define ROMANO_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))

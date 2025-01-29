@@ -44,6 +44,13 @@ ROMANO_API void logger_disable_file(void);
 /* Logs a message */
 ROMANO_API void logger_log(log_level level, const char* format, ...);
 
+/* Macro to avoir typing the level each time */
+#define logger_log_fatal(...) logger_log(LogLevel_Fatal, __VA_ARGS__)
+#define logger_log_error(...) logger_log(LogLevel_Error, __VA_ARGS__)
+#define logger_log_warning(...) logger_log(LogLevel_Warning, __VA_ARGS__)
+#define logger_log_info(...) logger_log(LogLevel_Info, __VA_ARGS__)
+#define logger_log_debug(...) logger_log(LogLevel_Debug, __VA_ARGS__)
+
 /* Releases the logger */
 ROMANO_API void logger_release(void);
 

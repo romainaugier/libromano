@@ -103,12 +103,16 @@ ROMANO_FORCE_INLINE int128_t int128_add(int128_t a, int128_t b)
 {
     int128_t res;
 
+    ROMANO_NOT_IMPLEMENTED;
+
     return res;
 }
 
 ROMANO_FORCE_INLINE int128_t int128_add_int64(int128_t a, int64_t b)
 {
     int128_t res;
+
+    ROMANO_NOT_IMPLEMENTED;
 
     return res;
 }
@@ -117,12 +121,16 @@ ROMANO_FORCE_INLINE int128_t int128_mul(int128_t a, int128_t b)
 {
     int128_t res;
 
+    ROMANO_NOT_IMPLEMENTED;
+
     return res;
 }
 
 ROMANO_FORCE_INLINE int128_t int128_mul_int64(int128_t a, int64_t b)
 {
     int128_t res;
+
+    ROMANO_NOT_IMPLEMENTED;
 
     return res;
 }
@@ -131,12 +139,16 @@ ROMANO_FORCE_INLINE int128_t int128_sub(int128_t a, int128_t b)
 {
     int128_t res;
 
+    ROMANO_NOT_IMPLEMENTED;
+
     return res;
 }
 
 ROMANO_FORCE_INLINE int128_t int128_sub_int64(int128_t a, int64_t b)
 {
     int128_t res;
+
+    ROMANO_NOT_IMPLEMENTED;
 
     return res;
 }
@@ -145,12 +157,16 @@ ROMANO_FORCE_INLINE int128_t int128_div(int128_t a, int128_t b)
 {
     int128_t res;
 
+    ROMANO_NOT_IMPLEMENTED;
+
     return res;
 }
 
 ROMANO_FORCE_INLINE int128_t int128_div_int64(int128_t a, int64_t b)
 {
     int128_t res;
+
+    ROMANO_NOT_IMPLEMENTED;
 
     return res;
 }
