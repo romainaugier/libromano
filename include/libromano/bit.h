@@ -38,6 +38,8 @@ ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
 
 #if defined(ROMANO_WIN)
 #include <intrin.h>
+#else
+#include <immintrin.h>
 #endif /* defined(ROMANO_WIN) */
 
 ROMANO_FORCE_INLINE uint64_t popcount_u32(const uint32_t x)
