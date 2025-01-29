@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 /* https://swtch.com/~rsc/regexp/regexp1.html */
+/* https://dl.acm.org/doi/pdf/10.1145/363347.363387 */
 
 #include "libromano/regex.h"
 #include "libromano/memory.h"
@@ -15,7 +16,7 @@ bool regex_to_postfix(const char *re_string,
                       size_t max_out_buffer_size) 
 {
     int nalt, natom;
-	char* dst;
+    char* dst;
     char* re;
 
 	struct 
