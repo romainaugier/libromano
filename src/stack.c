@@ -5,7 +5,6 @@
 #include "libromano/stack.h"
 
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 
 #define GET_STACK_PTR(ptr) ((char*)(ptr) + 3 * sizeof(size_t))
@@ -38,6 +37,11 @@ Stack* stack_init(const size_t initial_capacity, const size_t element_size)
 ROMANO_FORCE_INLINE size_t stack_get_size(Stack* stack)
 {
     return ((size_t*)stack->data)[0];
+}
+
+size_t stack_size(Stack* stack)
+{
+    return stack_get_size(stack);
 }
 
 ROMANO_FORCE_INLINE void stack_set_size(Stack* stack, const size_t size)
@@ -80,11 +84,12 @@ void stack_grow(Stack* stack)
     size_t new_capacity;
     void* new_data_ptr;
 
-    assert(stack != NULL && "stack_grow() failed: Stack is NULL");
+    ROMANO_ASSERT(stack != NULL, "stack_grow() failed: Stack is NULL");
 
     new_capacity = (size_t)((float)stack_get_capacity(stack) * GOLDEN_RATIO);
 
-    new_data_ptr = realloc(stack->data, new_capacity + HEADER_SIZE * sizeof(size_t));
+    new_data_ptr = realloc(stack->data, 
+                           new_capacity * stack_get_element_size(stack) + HEADER_SIZE * sizeof(size_t));
 
     stack->data = new_data_ptr;
     stack_set_capacity(stack, new_capacity);
@@ -92,7 +97,7 @@ void stack_grow(Stack* stack)
 
 void stack_push(Stack* stack, void* element)
 {
-    assert(stack != NULL && "stack_push() failed: Stack is NULL");
+    ROMANO_ASSERT(stack != NULL, "stack_push() failed: Stack is NULL");
 
     stack_increment_size(stack);
 
@@ -101,18 +106,26 @@ void stack_push(Stack* stack, void* element)
 
 void* stack_top(Stack* stack)
 {
-    assert(stack != NULL && "stack_top() failed: Stack is NULL");
-    assert(stack_get_size(stack) > 0 && "stack_top() failed: Stack is empty");
+    ROMANO_ASSERT(stack != NULL, "stack_top() failed: Stack is NULL");
 
-    return (void*)((char*)stack_get_data_ptr(stack) + (stack_get_size(stack) - 1) * stack_get_element_size(stack));
+    return stack_size(stack) == 0 ? 
+           NULL :
+           (void*)((char*)stack_get_data_ptr(stack) + (stack_get_size(stack) - 1) * stack_get_element_size(stack));
 }
 
 void stack_pop(Stack* stack, void* element)
 {
-    assert(stack != NULL && "stack_pop() failed: Stack is NULL");
-    assert(stack_get_size(stack) > 0 && "stack_pop() failed: Stack is empty");
+    ROMANO_ASSERT(stack != NULL, "stack_pop() failed: Stack is NULL");
 
-    memcpy(element, stack_top(stack), stack_get_element_size(stack));
+    if(stack_size(stack) == 0)
+    {
+        return;
+    }
+
+    if(element != NULL)
+    {
+        memcpy(element, stack_top(stack), stack_get_element_size(stack));
+    }
 
     stack_decrement_size(stack);
 }

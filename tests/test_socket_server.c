@@ -35,7 +35,7 @@ int main(void)
     char client_msg[CLIENT_MSG_SIZE];
     char client_buffer[CLIENT_BUFFER_SIZE];
 
-    uint8_t i;
+    uint32_t i;
 
     logger_init();
     logger_set_level(LogLevel_Debug),

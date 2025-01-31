@@ -301,10 +301,10 @@ struct threadpool
     
     mutex_t* work_mutex;
 
-    uint8_t working_threads_count;
-    uint8_t workers_count;
+    uint32_t working_threads_count;
+    uint32_t workers_count;
 
-    uint8_t stop : 1;
+    uint32_t stop : 1;
 };
 
 work_t* work_new(thread_func func, void* arg)

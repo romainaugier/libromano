@@ -17,6 +17,8 @@ typedef struct _Stack Stack;
 
 ROMANO_API Stack* stack_init(const size_t initial_capacity, const size_t element_size);
 
+ROMANO_API size_t stack_size(Stack* stack);
+
 ROMANO_API void stack_push(Stack* stack, void* element);
 
 ROMANO_API void* stack_top(Stack* stack);

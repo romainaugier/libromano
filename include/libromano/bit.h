@@ -11,7 +11,18 @@
 
 ROMANO_CPP_ENTER
 
-#define BIT(bit) (size_t)1 << bit
+#define BIT(bit) (size_t)1ULL << bit
+#define BIT32(bit) ((uint32_t)1UL << (bit))
+#define HAS_BIT32(i, b) ((i) & BIT32((b)))
+#define SET_BIT32(i, b) ((i) |= BIT32((b)))
+#define UNSET_BIT32(i, b) ((i) &= ~BIT32((b)))
+#define TOGGLE_BIT32(i, b) ((i) ^= BIT32((b)))
+
+#define BIT64(bit) ((uint64_t)1ULL << (bit))
+#define HAS_BIT64(i, b) ((i) & BIT64((b)))
+#define SET_BIT64(i, b) ((i) |= BIT64((b)))
+#define UNSET_BIT64(i, b) ((i) &= ~BIT64((b)))
+#define TOGGLE_BIT64(i, b) ((i) ^= BIT64((b)))
 
 ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
 {

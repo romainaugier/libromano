@@ -13,7 +13,7 @@
 uint32_t hash_fnv1a(const char* str, const size_t n)
 {
     uint32_t result = EMPTY_HASH;
-    uint8_t* s = (uint8_t*)str;
+    char* s = (char*)str;
     size_t i;
 
 #if defined(ROMANO_CLANG) || defined(ROMANO_GCC)
@@ -22,8 +22,8 @@ uint32_t hash_fnv1a(const char* str, const size_t n)
 
     for(i = 0; i < n; i++)
     {
-        result ^= (uint32_t)tolower(s[i]);
-        result *= (uint32_t)0x01000193u;
+        result ^= (uint32_t)s[i];
+        result *= (uint32_t)0x01000193UL;
     }
 
     return result;
@@ -80,9 +80,9 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 	const size_t orig_len = len;
 	uint32_t h = seed;
 
-	if (ROMANO_LIKELY(((uintptr_t)key & 3) == 0)) 
+	if(ROMANO_LIKELY(((uintptr_t)key & 3) == 0)) 
     {
-		while (len2 >= sizeof(uint32_t)) 
+		while(len2 >= sizeof(uint32_t)) 
         {
 			uint32_t k = *(const uint32_t *)(const void *)data;
 
@@ -102,7 +102,7 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 	} 
     else 
     {
-		while (len2 >= sizeof(uint32_t)) 
+		while(len2 >= sizeof(uint32_t)) 
         {
 			uint32_t k;
 
@@ -129,7 +129,7 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 	 */
 	uint32_t k = 0;
 
-	switch (len2) 
+	switch(len2) 
     {
         case 3:
             k ^= data[2] << 16;
