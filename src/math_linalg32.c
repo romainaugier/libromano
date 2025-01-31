@@ -755,12 +755,12 @@ bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
     {
         for(j = 0; j < N; j++)
         {
-            tmp = GET_AT_WITH_N((*b), b_n, i, j);
+            tmp = GET_AT_WITH_N((*b), b_n, j, i);
             SET_AT_WITH_N(y, b_n, tmp, j, i);
 
             for(k = 0; k < j; k++)
             {
-                value = GET_AT_WITH_N(y, b_n, j, i) - GET_AT_WITH_N(L, N, i, j) * GET_AT_WITH_N(y, b_n, k, i);
+                value = GET_AT_WITH_N(y, b_n, j, i) - GET_AT_WITH_N(L, N, j, k) * GET_AT_WITH_N(y, b_n, k, i);
                 SET_AT_WITH_N(y, b_n, value, j, i);
             }
 
