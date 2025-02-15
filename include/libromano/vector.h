@@ -57,6 +57,9 @@ ROMANO_API void vector_pop(Vector* vector);
 /* Returns the address to the element at the given index */
 ROMANO_API void* vector_at(Vector* vector, const size_t index);
 
+/* Returns the address to the last element */
+ROMANO_API void* vector_back(Vector* vector);
+
 /* Fits the vector to its size (if the capacity is greater than the size) */
 ROMANO_API void vector_shrink_to_fit(Vector* vector);
 

@@ -199,6 +199,13 @@ void* vector_at(Vector* vector, const size_t index)
     return (void*)((char*)((size_t*)vector->data + 3) + index * element_size);
 }
 
+void* vector_back(Vector* vector)
+{
+    assert(vector != NULL);
+
+    return vector_at(vector, vector_size(vector) - 1);
+}
+
 void vector_shrink_to_fit(Vector* vector)
 {
     size_t vec_size;

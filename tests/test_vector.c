@@ -95,6 +95,8 @@ int main(void)
         logger_log(LogLevel_Info, "Vector at %d: %f", i, *(float*)vector_at(float_vec, i));
     }
 
+    logger_log(LogLevel_Info, "Vector back: %f", *(float*)vector_back(float_vec));
+
     logger_log(LogLevel_Info, "Freeing vector");
     vector_free(float_vec);
 
