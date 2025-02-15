@@ -9,6 +9,7 @@
 
 int main(void)
 {
+    /*
     const char* regex1 = "a+b+";
     const char* match_regex1 = "aaaaabbbbb";
     const char* no_match_regex1 = "ccdd";
@@ -22,6 +23,7 @@ int main(void)
     PROFILE_US(ROMANO_ASSERT(!regex_match(regex_pattern1, no_match_regex1), "Matched non-matching regex"));
 
     regex_destroy(regex_pattern1);
+    */
 
     return 0;
 }

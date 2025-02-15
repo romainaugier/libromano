@@ -144,7 +144,7 @@ void vector_insert(Vector* vector, void* element, const size_t position)
     vec_capacity = vector_capacity(vector);
     elem_size = vector_element_size(vector);
 
-    assert(position < vec_size);
+    assert(position <= vec_size);
 
     if(vec_capacity == vec_size)
     {
