@@ -50,8 +50,14 @@ int main(void)
     logger_log(LogLevel_Info, "Vector element 65438 : %f", *(float*)vector_at(float_vec, 65438));
 
     logger_log(LogLevel_Info, "Inserting at position 3500");
-    float f = 12.0f;
+    int f = 12;
     vector_insert(float_vec, &f, 3500);
+
+    if(vector_find(float_vec, &f) != 3500)
+    {
+        logger_log_error("Cannot find %d in vector", f);
+        return 1;
+    }
     
     logger_log(LogLevel_Info, "Vector size : %d", vector_size(float_vec));
     logger_log(LogLevel_Info, "Vector capacity : %d", vector_capacity(float_vec));

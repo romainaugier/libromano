@@ -700,6 +700,35 @@ void hashmap_remove(HashMap* hashmap,
     }
 }
 
+bool hashmap_iterate(HashMap* hashmap,
+                     HashMapIterator* it,
+                     void** key,
+                     uint32_t* key_size,
+                     void** value,
+                     uint32_t* value_size)
+{
+    uint32_t i;
+
+    for(i = *it; i < hashmap->capacity; i++)
+    {
+        if(bucket_is_empty(&hashmap->buckets[i]))
+        {
+            continue;
+        }
+
+        *key = bucket_get_key(&hashmap->buckets[i]);
+        *key_size = bucket_get_key_size(&hashmap->buckets[i]);
+        *value = bucket_get_value(&hashmap->buckets[i]);
+        *value_size = bucket_get_value_size(&hashmap->buckets[i]);
+
+        *it = i + 1;
+
+        return true;
+    }
+
+    return false;
+}
+
 void hashmap_free(HashMap* hashmap)
 {
     size_t i;

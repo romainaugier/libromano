@@ -248,6 +248,21 @@ void vector_shuffle(Vector* vector, const uint64_t seed)
     }
 }
 
+size_t vector_find(Vector* vector, void* value)
+{
+    size_t i;
+
+    for(i = 0; i < vector_size(vector); i++)
+    {
+        if(memcmp(value, vector_at(vector, i), vector_element_size(vector)) == 0)
+        {
+            return i;
+        }
+    }
+
+    return VECTOR_NOT_FOUND;
+}
+
 void vector_free(Vector* vector)
 {
     if(vector != NULL)

@@ -88,6 +88,21 @@ int main(void)
 
     SCOPED_PROFILE_MS_END(_hashmap_get);
 
+    /* Iterate */
+    HashMapIterator it = 0;
+    void* key = NULL;
+    uint32_t key_size = 0;
+    void* value = NULL;
+    uint32_t value_size = 0;
+    
+    while(hashmap_iterate(hashmap, &it, &key, &key_size, &value, &value_size))
+    {
+        if(it % 1000 == 0)
+        {
+            logger_log_info("Iteration %u: %.*s", it, key_size, (char*)key);
+        }
+    }
+
     /* Delete */
 
     SCOPED_PROFILE_MS_START(_hashmap_delete);

@@ -69,6 +69,10 @@ ROMANO_API void vector_sort(Vector* vector, vector_sort_cmp_function cmp);
 
 ROMANO_API void vector_shuffle(Vector* vector, const uint64_t seed);
 
+#define VECTOR_NOT_FOUND 0xFFFFFFFFFFFFFFFF
+
+ROMANO_API size_t vector_find(Vector* vector, void* value);
+
 /* Frees the given vector and releases it */
 ROMANO_API void vector_free(Vector* vector);
 

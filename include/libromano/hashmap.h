@@ -26,6 +26,8 @@ struct _HashMap;
 
 typedef struct _HashMap HashMap;
 
+typedef uint32_t HashMapIterator;
+
 typedef uint32_t (*hashmap_hash_func)(const void*, const size_t, const uint32_t);
 
 ROMANO_API HashMap* hashmap_new(size_t initial_capacity);
@@ -57,6 +59,13 @@ ROMANO_API void* hashmap_get(HashMap* hashmap,
 ROMANO_API void hashmap_remove(HashMap* hashmap,
                                const void* key,
                                const uint32_t key_size);
+
+ROMANO_API bool hashmap_iterate(HashMap* hashmap,
+                                HashMapIterator* it,
+                                void** key,
+                                uint32_t* key_size,
+                                void** value,
+                                uint32_t* value_size);
 
 ROMANO_API void hashmap_free(HashMap* hashmap);
 
