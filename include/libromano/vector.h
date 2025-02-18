@@ -28,13 +28,13 @@ ROMANO_API Vector* vector_new(const size_t initial_capacity, const size_t elemen
 ROMANO_API void vector_init(Vector* vector, const size_t initial_capacity, const size_t element_size);
 
 /* Returns the size of the given vector */
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[0]; }
+ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[0]; }
 
 /* Returns the capacity of the given vector */
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[1]; }
+ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[1]; }
 
 /* Returns the element size of the given vector */
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[2]; }
+ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { assert(vector != NULL); return ((size_t*)vector->data)[2]; }
 
 /* Resizes the vector to the given capacity */
 ROMANO_API void vector_resize(Vector* vector, const size_t new_capacity);
