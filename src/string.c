@@ -280,7 +280,7 @@ void string_appendf(String* string, const char* format, ...)
 
     memcpy((*string) + string_size, buffer, format_size);
 
-    GET_SIZE_FROM_STR(*string) = string_size + format_size;
+    GET_SIZE_FROM_STR(*string) = string_size + format_size - 1;
     SET_NULL_TERMINATOR(*string);
 }
 
