@@ -19,6 +19,43 @@
 #include <string.h>
 #endif /* ROMANO_WIN */
 
+bool fs_file_content_new(const char* path,
+                         FileContent* content)
+{
+    FILE* file_handle;
+
+    ROMANO_ASSERT(content != NULL, "NULL file content");
+
+    content->content = NULL;
+    content->content_length = 0;
+
+    file_handle = fopen(path, "r");
+
+    if(file_handle == NULL)
+    {
+        return false;
+    }
+
+    fseek(file_handle, 0, SEEK_END);
+    content->content_length = ftell(file_handle);
+    rewind(file_handle);
+    content->content = (char*)calloc(content->content_length + 1, sizeof(char));
+    fread(content->content, sizeof(char), content->content_length, file_handle);
+    fclose(file_handle);
+}
+
+void fs_file_content_free(FileContent* content)
+{
+    ROMANO_ASSERT(content != NULL, "NULL file content");
+
+    if(content->content != NULL)
+    {
+        free(content->content);
+        content->content = NULL;
+        content->content_length = 0;
+    }
+}
+
 int fs_path_exists(const char *path)
 {
 #if defined(ROMANO_WIN)

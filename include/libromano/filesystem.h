@@ -17,6 +17,16 @@
 
 ROMANO_CPP_ENTER
 
+typedef struct {
+    char* content;
+    size_t content_length;
+} FileContent;
+
+ROMANO_API bool fs_file_content_new(const char* path,
+                                    FileContent* content);
+
+ROMANO_API void fs_file_content_free(FileContent* content);
+
 ROMANO_API int fs_path_exists(const char* path);
 
 ROMANO_API void fs_makedirs(const char* path);
