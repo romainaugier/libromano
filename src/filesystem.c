@@ -42,6 +42,8 @@ bool fs_file_content_new(const char* path,
     content->content = (char*)calloc(content->content_length + 1, sizeof(char));
     fread(content->content, sizeof(char), content->content_length, file_handle);
     fclose(file_handle);
+
+    return true;
 }
 
 void fs_file_content_free(FileContent* content)
