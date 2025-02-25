@@ -21,7 +21,7 @@ jobs:
       - name: Build concurrentqueue
         run: |
           cd concurrentqueue
-          cmake -S . -B cqbuild
+          cmake -S . -B cqbuild -DC_API=1
           cd cqbuild
           cmake --build . --config Debug
           cmake --build . --config Release
