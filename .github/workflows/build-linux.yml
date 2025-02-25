@@ -18,6 +18,16 @@ jobs:
           git submodule update --init --recursive
           git submodule update --recursive --remote
 
+      - name: Build concurrentqueue
+        run: |
+          cd concurrentqueue
+          cmake -S . -B cqbuild
+          cd cqbuild
+          cmake --build . --config Debug
+          cmake --build . --config Release
+          cmake --install . --prefix ../cqinstall
+          cd ..
+
       - name: get-cmake
         uses: lukka/get-cmake@v3.21.1
 
