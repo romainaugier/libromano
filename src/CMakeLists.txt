@@ -23,12 +23,6 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_BUILD_SHARED)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_OPENCL=${ROMANO_HAS_OPENCL})
 
-if(UNIX)
-    target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
-elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf)
-endif()
 
 target_include_directories(${PROJECT_NAME}
                            PUBLIC
@@ -36,6 +30,17 @@ target_include_directories(${PROJECT_NAME}
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/stb")
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${concurrentqueue_c_api_INCLUDE_DIR})
+
+if(UNIX)
+    target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
+elseif(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE concurrentqueue::concurrentqueue_c_api)
 
 if(ROMANO_HAS_OPENCL EQUAL 1)
     target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})

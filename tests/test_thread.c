@@ -50,8 +50,6 @@ void* tpool_func(void* data)
 
 int main(void)
 {
-    return 0;
-
     size_t i = 0;
 
     logger_init();

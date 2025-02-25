@@ -39,6 +39,10 @@ else()
     set(ROMANO_HAS_OPENCL 0)
 endif()
 
+# Concurrent queue c api
+set(concurrentqueue_c_api_ROOT "${CMAKE_SOURCE_DIR}/concurrentqueue/cqinstall/cmake")
+find_package(concurrentqueue_c_api REQUIRED)
+
 add_subdirectory(src)
 
 if(RUN_TESTS EQUAL 1)

@@ -22,7 +22,7 @@ int main(void)
     FileContent content;
     fs_file_content_new(__FILE__, &content);
 
-    printf(__FILE__"\ncontent:\n%.*s\n", content.content_length, content.content);
+    printf(__FILE__"\ncontent:\n%.*s\n", (int)content.content_length, content.content);
 
     fs_file_content_free(&content);
 

@@ -34,6 +34,7 @@ function(set_target_options target_name)
 
         # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
         set_target_properties(${target_name} PROPERTIES LINK_FLAGS "/ignore:4300")
+        set_target_properties(${target_name} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:library")
     endif()
 
     # Provides the macro definition DEBUG_BUILD

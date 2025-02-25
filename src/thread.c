@@ -6,6 +6,8 @@
 #include "libromano/atomic.h"
 #include "libromano/vector.h"
 
+#include "concurrentqueue/concurrentqueue.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -297,14 +299,11 @@ typedef struct work work_t;
 
 struct threadpool
 {
-    Vector* work_vector;
-    
-    mutex_t* work_mutex;
+    MoodycamelCQHandle work_queue;
 
     uint32_t working_threads_count;
     uint32_t workers_count;
-
-    uint32_t stop : 1;
+    uint32_t stop;
 };
 
 work_t* work_new(thread_func func, void* arg)
@@ -331,47 +330,28 @@ void work_free(work_t* work)
 void* threadpool_worker_func(void* arg)
 {
     threadpool_t* threadpool = (threadpool_t*)arg;
-    work_t work;
-    size_t work_id = 0;
+    work_t* work;
 
     while(1)
     {
-        assert(threadpool->work_mutex != NULL);
-
-        mutex_lock(threadpool->work_mutex);
-
-        if(threadpool->stop == 1)
+        if(atomic_load_32((atomic32_t*)&threadpool->stop))
         {
             break;
         }
 
-        if(vector_size(threadpool->work_vector) > 0)
+        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
         {
-            work_id = vector_size(threadpool->work_vector) - 1;
+            atomic_add_32((atomic32_t*)&threadpool->working_threads_count, 1);
 
-            memmove(&work, vector_at(threadpool->work_vector, work_id), sizeof(work_t));
+            work->func(work->arg);
 
-            vector_pop(threadpool->work_vector);
+            atomic_sub_32((atomic32_t*)&threadpool->working_threads_count, 1);
 
-            threadpool->working_threads_count++;
-
-            mutex_unlock(threadpool->work_mutex);
-
-            work.func(work.arg);
-
-            mutex_lock(threadpool->work_mutex);
-            threadpool->working_threads_count--;
-            mutex_unlock(threadpool->work_mutex);
-        }
-        else
-        {
-            mutex_unlock(threadpool->work_mutex);
+            work_free(work);
         }
     }
 
-    threadpool->workers_count--;
-
-    mutex_unlock(threadpool->work_mutex);
+    atomic_sub_32((atomic32_t*)&threadpool->workers_count, 1);
 
     return NULL;
 }
@@ -387,10 +367,12 @@ threadpool_t* threadpool_init(size_t workers_count)
 
     threadpool->workers_count = workers_count;
     threadpool->working_threads_count = 0;
+    threadpool->stop = 0;
 
-    threadpool->work_vector = vector_new(256, sizeof(work_t));
-
-    threadpool->work_mutex = mutex_new();
+    if(!moodycamel_cq_create(&threadpool->work_queue))
+    {
+        return NULL;
+    }
 
     for(i = 0; i < workers_count; i++)
     {
@@ -407,18 +389,13 @@ threadpool_t* threadpool_init(size_t workers_count)
 
 int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 {
-    work_t work;
+    work_t* work;
 
     assert(threadpool != NULL);
-    
-    work.func = func;
-    work.arg = arg;
 
-    mutex_lock(threadpool->work_mutex);
+    work = work_new(func, arg);
 
-    vector_push_back(threadpool->work_vector, &work);
-
-    mutex_unlock(threadpool->work_mutex);
+    moodycamel_cq_enqueue(threadpool->work_queue, work);
 
     return 1;
 }
@@ -429,15 +406,11 @@ void threadpool_wait(threadpool_t* threadpool)
 
     while(1)
     {
-        mutex_lock(threadpool->work_mutex);
-
-        if(threadpool->working_threads_count == 0 && vector_size(threadpool->work_vector) == 0)
+        if(atomic_load_32((atomic32_t*)&threadpool->working_threads_count) == 0 && 
+           moodycamel_cq_size_approx(threadpool->work_queue) == 0)
         {
-            mutex_unlock(threadpool->work_mutex);
             break;
         }
-
-        mutex_unlock(threadpool->work_mutex);
     }
 }
 
@@ -448,39 +421,21 @@ void threadpool_release(threadpool_t* threadpool)
     
     assert(threadpool != NULL);
 
-    mutex_lock(threadpool->work_mutex);
+    atomic_store_32((atomic32_t*)&threadpool->stop, 1);
 
     threadpool->stop = 1;
 
-    for(i = 0; i < vector_size(threadpool->work_vector); i++)
+    while(moodycamel_cq_size_approx(threadpool->work_queue) > 0)
     {
-        vector_pop(threadpool->work_vector);
+        if(moodycamel_cq_try_dequeue(threadpool->work_queue, &work))
+        {
+            work_free(work);
+        }
     }
-
-    mutex_unlock(threadpool->work_mutex);
 
     threadpool_wait(threadpool);
 
-    while(1)
-    {
-        mutex_lock(threadpool->work_mutex);
-
-        if(threadpool->workers_count == 0)
-        {
-            mutex_unlock(threadpool->work_mutex);
-            break;
-        }
-
-        mutex_unlock(threadpool->work_mutex);
-
-        thread_sleep(100);
-    }
-
-    mutex_free(threadpool->work_mutex);
-    threadpool->work_mutex = NULL;
-
-    vector_free(threadpool->work_vector);
-    threadpool->work_vector = NULL;
+    moodycamel_cq_destroy(threadpool->work_queue);
 
     free(threadpool);
     threadpool = NULL;
