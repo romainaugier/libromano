@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WORK_COUNT 1000
+#define WORK_COUNT 100
 
 void* t1_func(void* data)
 {
@@ -78,7 +78,7 @@ int main(void)
     {
         work_data[i] = (int)i;
 
-        threadpool_work_add(tp, &tpool_func, (void*)&work_data[i]);
+        threadpool_work_add(tp, tpool_func, (void*)&work_data[i]);
     }
 
     logger_log(LogLevel_Info, "Waiting for threadpool to complete work");

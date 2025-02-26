@@ -395,7 +395,7 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 
     work = work_new(func, arg);
 
-    moodycamel_cq_enqueue(threadpool->work_queue, work);
+    moodycamel_cq_enqueue(threadpool->work_queue, (MoodycamelValue)work);
 
     return 1;
 }
@@ -427,7 +427,7 @@ void threadpool_release(threadpool_t* threadpool)
 
     while(moodycamel_cq_size_approx(threadpool->work_queue) > 0)
     {
-        if(moodycamel_cq_try_dequeue(threadpool->work_queue, &work))
+        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
         {
             work_free(work);
         }
