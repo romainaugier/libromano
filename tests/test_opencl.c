@@ -23,6 +23,8 @@ int main(void)
 
     error = cl_create_device(&device);
 
+    logger_log_info("%d = cl_create_device", error);
+
     if(error != 0)
     {
         return 1;
@@ -32,6 +34,8 @@ int main(void)
 
     error = cl_create_context(&context, &device);
 
+    logger_log_info("%d = cl_create_context", error);
+
     if(error != 0)
     {
         return 1;
@@ -40,6 +44,8 @@ int main(void)
     cl_program program;
 
     error = cl_build_program_from_text(context, device, kernel, strlen(kernel), &program);
+
+    logger_log_info("%d = cl_build_program_from_text", error);
 
     logger_log_info("Finished OpenCL test");
 
