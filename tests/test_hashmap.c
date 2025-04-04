@@ -89,6 +89,8 @@ int main(void)
     SCOPED_PROFILE_MS_END(_hashmap_get);
 
     /* Iterate */
+    uint64_t noop_res;
+
     HashMapIterator it = 0;
     void* key = NULL;
     uint32_t key_size = 0;
@@ -97,11 +99,10 @@ int main(void)
     
     while(hashmap_iterate(hashmap, &it, &key, &key_size, &value, &value_size))
     {
-        if(it % 1000 == 0)
-        {
-            logger_log_info("Iteration %u: %.*s", it, key_size, (char*)key);
-        }
+        noop_res = cpu_rdtsc();
     }
+
+    uint64_t noop_res2 = noop_res;
 
     /* Delete */
 

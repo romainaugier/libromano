@@ -8,6 +8,8 @@
 #include "libromano/random.h"
 #include "libromano/logger.h"
 
+/* HashMap */
+
 #define INTERNED_SIZE ((sizeof(size_t) - 1) + 4)
 
 typedef enum
@@ -750,5 +752,842 @@ void hashmap_free(HashMap* hashmap)
         free(hashmap->buckets);
     }
 
+    free(hashmap);
+}
+
+/* SimdHashMap */
+
+#define SIMD_INTERNED_SIZE ((sizeof(size_t) - 1) + ROMANO_SIZEOF_PTR)
+
+#define BUCKET_KEY_CAN_BE_INTERNED(__key_size) (__key_size <= (SIMD_INTERNED_SIZE))
+#define BUCKET_KEY_INTERNED_SIZE(entry) (((char*)entry)[SIMD_INTERNED_SIZE] & 0xFF)
+#define BUCKET_KEY_INTERNED(entry) (BUCKET_KEY_INTERNED_SIZE(entry) <= (SIMD_INTERNED_SIZE))
+
+#define BUCKET_VALUE_CAN_BE_INTERNED(__value_size) (__value_size <= SIMD_INTERNED_SIZE)
+#define BUCKET_VALUE_INTERNED_SIZE(entry) (((char*)entry)[SIMD_INTERNED_SIZE * 2] & 0xFF)
+#define BUCKET_VALUE_INTERNED(entry) (BUCKET_VALUE_INTERNED_SIZE(entry) <= SIMD_INTERNED_SIZE)
+
+#define __ROMANO_HASHMAP_INTERN_SMALL_VALUES 1
+
+ROMANO_PACKED_STRUCT(struct _SimdBucket 
+{ 
+    void* key;
+    uint64_t key_size;
+    void* value;
+    uint64_t value_size;
+});
+
+typedef struct _SimdBucket SimdBucket;
+
+void simdbucket_new(SimdBucket* simdbucket,
+                    const void* key, 
+                    const uint64_t key_size,
+                    void* value,
+                    const uint64_t value_size)
+{
+    char* simdbucket_cast;
+
+    assert(simdbucket != NULL);
+
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES 
+    if(BUCKET_KEY_CAN_BE_INTERNED(key_size))
+    {
+        simdbucket_cast = (char*)&(*simdbucket);
+        memcpy(&simdbucket_cast[0], key, key_size * sizeof(char));
+        simdbucket_cast[SIMD_INTERNED_SIZE] = (key_size & 0xFF);
+    }
+    else
+    {
+        simdbucket->key = malloc(key_size * sizeof(char));
+        memcpy(simdbucket->key, key, key_size);
+        simdbucket->key_size = key_size;
+    }
+
+    if(BUCKET_VALUE_CAN_BE_INTERNED(value_size))
+    {
+        simdbucket_cast = (char*)&(*simdbucket);
+        memcpy(&simdbucket_cast[SIMD_INTERNED_SIZE + 1], value, value_size);
+        simdbucket_cast[SIMD_INTERNED_SIZE * 2] = (value_size & 0xFF);
+    }
+    else
+    {
+        simdbucket->value = malloc(value_size);
+        memcpy(simdbucket->value, value, value_size);
+        simdbucket->value_size = value_size;
+    }
+
+#else
+    simdbucket->key = malloc(key_size);
+    memcpy(simdbucket->key, key, key_size);
+    simdbucket->key_size = key_size;
+
+    simdbucket->value = malloc(value_size);
+    memcpy(simdbucket->value, value, value_size);
+    simdbucket->value_size = value_size;
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+}
+
+size_t simdbucket_get_value_size(const SimdBucket* simdbucket)
+{
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+    size_t value_size;
+
+    value_size = (size_t)(((char*)simdbucket)[SIMD_INTERNED_SIZE * 2]);
+
+    if(value_size <= SIMD_INTERNED_SIZE)
+    {
+        return value_size;
+    }
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+    return simdbucket->value_size;
+}
+
+void* simdbucket_get_value(SimdBucket* simdbucket)
+{
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+    if(simdbucket_get_value_size(simdbucket) <= SIMD_INTERNED_SIZE)
+    {
+        return &(simdbucket->value);
+    }
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+    return simdbucket->value;
+}
+
+size_t simdbucket_get_key_size(const SimdBucket* simdbucket)
+{
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+    size_t simdbucket_size;
+
+    simdbucket_size = (size_t)(((char*)simdbucket)[SIMD_INTERNED_SIZE]);
+
+    if(simdbucket_size <= SIMD_INTERNED_SIZE)
+    {
+        return simdbucket_size;
+    }
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+    return simdbucket->key_size;
+}
+
+const void* simdbucket_get_key(const SimdBucket* simdbucket)
+{
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+    if(simdbucket_get_key_size(simdbucket) <= SIMD_INTERNED_SIZE)
+    {
+        return (const void*)simdbucket;
+    }
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+    return (const void*)simdbucket->key;
+}
+
+void simdbucket_free(SimdBucket* simdbucket)
+{
+    assert(simdbucket != NULL);
+    
+#if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
+    if(!BUCKET_KEY_INTERNED(simdbucket))
+    {
+        free(simdbucket->key);
+    }
+
+    if(!BUCKET_VALUE_INTERNED(simdbucket))
+    {
+        free(simdbucket->value);
+    }
+#else
+    free(simdbucket->key);
+    free(simdbucket->value);
+#endif /* __ROMANO_HASHMAP_INTERN_SMALL_VALUES */
+
+    simdbucket->key = NULL;
+    simdbucket->key_size = 0;
+    simdbucket->value = NULL;
+    simdbucket->value_size = 0;
+}
+
+#if defined(__AVX2__)
+#pragma message("Compiling SimdHashMap with AVX2")
+#include <immintrin.h>
+#define SIMD_WIDTH 32
+#define SIMD_TARGET_NAME "AVX2"
+typedef __m256i SimdRegister;
+#define SIMD_SET1_EPI8(x) _mm256_set1_epi8(x)
+#define SIMD_LOADU(ptr) _mm256_loadu_si256((__m256i const*)(ptr))
+#define SIMD_CMPEQ_EPI8(a, b) _mm256_cmpeq_epi8(a, b)
+#define SIMD_MOVEMASK_EPI8(a) _mm256_movemask_epi8(a)
+typedef uint32_t SimdMaskType;
+#elif defined(__SSE2__)
+#pragma message("Compiling SimdHashMap with SSE2")
+#include <emmintrin.h>
+#define SIMD_WIDTH 16
+#define SIMD_TARGET_NAME "SSE2"
+typedef __m128i SimdRegister;
+#define SIMD_SET1_EPI8(x) _mm_set1_epi8(x)
+#define SIMD_LOADU(ptr) _mm_loadu_si128((__m128i const*)(ptr))
+#define SIMD_CMPEQ_EPI8(a, b) _mm_cmpeq_epi8(a, b)
+#define SIMD_MOVEMASK_EPI8(a) _mm_movemask_epi8(a)
+typedef uint16_t SimdMaskType;
+#else
+#pragma message("Compiling SimdHashMap with Scalar")
+#define SIMD_WIDTH 8
+#define SIMD_TARGET_NAME "Scalar"
+typedef struct { int8_t bytes[SIMD_WIDTH]; } SimdRegister;
+
+inline SimdRegister SIMD_SET1_EPI8(int8_t x) {
+    SimdRegister reg;
+    for(int i=0; i<SIMD_WIDTH; ++i) reg.bytes[i] = x;
+    return reg;
+}
+
+inline SimdRegister SIMD_LOADU(const int8_t* ptr) {
+    SimdRegister reg;
+    memcpy(reg.bytes, ptr, SIMD_WIDTH);
+    return reg;
+}
+
+inline SimdRegister SIMD_CMPEQ_EPI8(SimdRegister a, SimdRegister b) {
+    SimdRegister res;
+    for(int i=0; i<SIMD_WIDTH; ++i) res.bytes[i] = (a.bytes[i] == b.bytes[i]) ? (int8_t)0xFF : 0;
+    return res;
+}
+
+typedef uint32_t SimdMaskType;
+inline SimdMaskType SIMD_MOVEMASK_EPI8(SimdRegister a) {
+    SimdMaskType mask = 0;
+    for(int i=0; i<SIMD_WIDTH; ++i) {
+        if (a.bytes[i] < 0) { 
+                mask |= (1u << i);
+        }
+    }
+    return mask;
+}
+#endif /* defined(__AVX2__) */
+
+#ifdef _MSC_VER
+#include <intrin.h>
+inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+    unsigned long index;
+    if (mask == 0) return sizeof(SimdMaskType) * 8;
+    #if defined(__AVX2__) || defined(__clang__) || defined(__GNUC__)
+     _BitScanForward(&index, (uint32_t)mask);
+    #else
+     _BitScanForward(&index, (uint16_t)mask);
+    #endif
+    return (uint32_t)index;
+}
+#elif defined(__GNUC__) || defined(__clang__)
+inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+    if (mask == 0) return sizeof(SimdMaskType) * 8;
+    #if defined(__AVX2__) || !defined(__SSE2__)
+        return (uint32_t)__builtin_ctz((uint32_t)mask);
+    #else
+        return (uint32_t)__builtin_ctz((uint16_t)mask);
+    #endif
+}
+#else
+inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+    if (mask == 0) return sizeof(SimdMaskType) * 8;
+    uint32_t count = 0;
+    while ((mask & 1) == 0) {
+        mask >>= 1;
+        count++;
+    }
+    return count;
+}
+#endif
+
+typedef int8_t ctrl_t;
+const ctrl_t CTRL_EMPTY = -128; /* 10000000 */
+const ctrl_t CTRL_DELETED = -2; /* 11111110 */
+/* Any value >= 0 represents a FULL bucket with H2 hash stored (0-127) */
+
+ROMANO_FORCE_INLINE bool ctrl_is_full(ctrl_t c) { return c >= 0; }
+ROMANO_FORCE_INLINE bool ctrl_is_empty(ctrl_t c) { return c == CTRL_EMPTY; }
+ROMANO_FORCE_INLINE bool ctrl_is_deleted(ctrl_t c) { return c == CTRL_DELETED; }
+ROMANO_FORCE_INLINE bool ctrl_is_empty_or_deleted(ctrl_t c) { return c < 0; }
+
+/* Get H2 hash (top 7 bits) from full hash */
+ROMANO_FORCE_INLINE ctrl_t hash_to_h2(uint32_t hash) 
+{
+    /* Shift right by (32 - 7) = 25 bits */
+    return (ctrl_t)(hash >> 25);
+}
+
+#define SIMDHASHMAP_MAX_LOAD 0.6f
+#define SIMDHASHMAP_INITIAL_CAPACITY 128
+
+const size_t GROUP_WIDTH = SIMD_WIDTH;
+
+struct _SimdHashMap 
+{
+   ctrl_t* ctrl;
+   SimdBucket* buckets;
+   size_t size;
+   size_t capacity;
+   size_t growth_left;
+   hashmap_hash_func hash_func;
+   uint32_t hash_seed;
+};
+
+ROMANO_FORCE_INLINE size_t simdhashmap_capacity_with_padding(size_t cap) 
+{
+    return cap > 0 ? cap + GROUP_WIDTH - 1 : 0;
+}
+
+ROMANO_FORCE_INLINE size_t simdhashmap_index_from_hash(size_t capacity, uint32_t hash) 
+{
+    return (size_t)hash & (capacity - 1);
+}
+
+void simdhashmap_clear_internal(SimdHashMap* hashmap) 
+{
+    if(!hashmap || hashmap->capacity == 0) 
+    {
+        return;
+    }
+
+    for(size_t i = 0; i < hashmap->capacity; ++i) 
+    {
+        if (ctrl_is_full(hashmap->ctrl[i])) 
+        {
+            simdbucket_free(&hashmap->buckets[i]);
+        }
+    }
+
+    memset(hashmap->ctrl, CTRL_EMPTY, hashmap->capacity);
+    memcpy(hashmap->ctrl + hashmap->capacity, hashmap->ctrl, GROUP_WIDTH - 1);
+
+    hashmap->size = 0;
+    size_t threshold = (size_t)(hashmap->capacity * SIMDHASHMAP_MAX_LOAD);
+    hashmap->growth_left = (threshold > hashmap->size) ? (threshold - hashmap->size) : 0;
+}
+
+typedef struct {
+    size_t index;
+    bool found;
+    bool found_insert_slot;
+} FindResult;
+
+FindResult simdhashmap_find_internal(const SimdHashMap* hashmap,
+                                     const void* key,
+                                     const uint64_t key_size,
+                                     const uint32_t hash)
+{
+    size_t start_index = simdhashmap_index_from_hash(hashmap->capacity, hash);
+    ctrl_t target_h2 = hash_to_h2(hash);
+    size_t current_offset = 0;
+    FindResult result = { hashmap->capacity, false, false };
+
+    size_t first_deleted_slot = hashmap->capacity;
+
+    while(current_offset < hashmap->capacity) 
+    {
+        size_t group_start_index = (start_index + current_offset) & (hashmap->capacity - 1);
+        const ctrl_t* group_ptr = hashmap->ctrl + group_start_index;
+
+        SimdRegister group_ctrl = SIMD_LOADU(group_ptr);
+
+        SimdRegister match_h2_vec = SIMD_CMPEQ_EPI8(group_ctrl, SIMD_SET1_EPI8(target_h2));
+        SimdMaskType h2_mask = SIMD_MOVEMASK_EPI8(match_h2_vec);
+
+        SimdRegister match_empty_vec = SIMD_CMPEQ_EPI8(group_ctrl, SIMD_SET1_EPI8(CTRL_EMPTY));
+        SimdMaskType empty_mask = SIMD_MOVEMASK_EPI8(match_empty_vec);
+
+        SimdRegister match_deleted_vec = SIMD_CMPEQ_EPI8(group_ctrl, SIMD_SET1_EPI8(CTRL_DELETED));
+        SimdMaskType deleted_mask = SIMD_MOVEMASK_EPI8(match_deleted_vec);
+
+        SimdMaskType h2_probe_mask = h2_mask;
+
+        while(h2_probe_mask != 0) 
+        {
+            uint32_t bit_pos = count_trailing_zeros(h2_probe_mask);
+            size_t probe_index = (group_start_index + bit_pos) & (hashmap->capacity - 1);
+
+            const SimdBucket* bucket = &hashmap->buckets[probe_index];
+
+            if(simdbucket_get_key_size(bucket) == key_size && memcmp(simdbucket_get_key(bucket), key, key_size) == 0) 
+            {
+                result.index = probe_index;
+                result.found = true;
+                result.found_insert_slot = true;
+                return result;
+            }
+
+            h2_probe_mask &= (h2_probe_mask - 1);
+        }
+
+        if(empty_mask != 0) 
+        {
+            result.found = false;
+            result.found_insert_slot = true;
+
+            if(first_deleted_slot < hashmap->capacity) 
+            {
+                result.index = first_deleted_slot;
+            } 
+            else 
+            {
+                const uint32_t empty_bit_pos = count_trailing_zeros(empty_mask);
+                result.index = (group_start_index + empty_bit_pos) & (hashmap->capacity - 1);
+            }
+
+            return result;
+        }
+
+        if(deleted_mask != 0 && first_deleted_slot == hashmap->capacity) 
+        {
+            const uint32_t deleted_bit_pos = count_trailing_zeros(deleted_mask);
+            first_deleted_slot = (group_start_index + deleted_bit_pos) & (hashmap->capacity - 1);
+        }
+
+        current_offset += GROUP_WIDTH;
+    }
+
+    result.found = false;
+
+    if(first_deleted_slot < hashmap->capacity) 
+    {
+        result.index = first_deleted_slot;
+        result.found_insert_slot = true;
+    } 
+    else
+    {
+        result.index = hashmap->capacity;
+        result.found_insert_slot = false;
+    }
+
+    return result;
+}
+
+size_t simdhashmap_find_first_non_full(const SimdHashMap* hashmap, uint32_t hash) 
+{
+    const size_t start_index = simdhashmap_index_from_hash(hashmap->capacity, hash);
+
+    for(size_t i = 0; i < hashmap->capacity; ++i) 
+    {
+        const size_t probe_index = (start_index + i) & (hashmap->capacity - 1);
+
+        if(!ctrl_is_full(hashmap->ctrl[probe_index])) 
+        {
+            return probe_index;
+        }
+    }
+
+    /* Should never happen */
+    ROMANO_ASSERT(false, "No non-full bucket found during rehash");
+
+    return hashmap->capacity;
+}
+
+bool simdhashmap_rehash_and_grow(SimdHashMap* hashmap, const size_t new_min_capacity) 
+{
+    size_t old_capacity = hashmap->capacity;
+    ctrl_t* old_ctrl = hashmap->ctrl;
+    SimdBucket* old_buckets = hashmap->buckets;
+
+    size_t new_capacity = (old_capacity == 0) ? GROUP_WIDTH : old_capacity;
+
+    if(new_capacity < GROUP_WIDTH) 
+    {
+        new_capacity = GROUP_WIDTH;
+    }
+
+    /* Power of two */
+    while(new_capacity < new_min_capacity) 
+    {
+        new_capacity *= 2;
+
+        /* Happens if the capacity overflows */
+        if(new_capacity == 0)
+        {
+            ROMANO_ASSERT(false, "capacity overflow");
+            hashmap->ctrl = old_ctrl;
+            hashmap->buckets = old_buckets;
+            hashmap->capacity = old_capacity;
+            return false;
+        }
+    }
+
+    size_t ctrl_alloc_size = simdhashmap_capacity_with_padding(new_capacity);
+    ctrl_t* new_ctrl = (ctrl_t*)malloc(ctrl_alloc_size);
+
+    if(!new_ctrl) 
+    {
+        return false;
+    }
+
+    SimdBucket* new_buckets = (SimdBucket*)calloc(new_capacity, sizeof(SimdBucket));
+
+    if(!new_buckets) 
+    {
+        free(new_ctrl);
+        return false;
+    }
+
+    memset(new_ctrl, CTRL_EMPTY, new_capacity);
+    memcpy(new_ctrl + new_capacity, new_ctrl, GROUP_WIDTH - 1);
+
+    hashmap->ctrl = new_ctrl;
+    hashmap->buckets = new_buckets;
+    hashmap->capacity = new_capacity;
+    hashmap->size = 0;
+
+    if(old_buckets != NULL) 
+    {
+        for(size_t i = 0; i < old_capacity; ++i) 
+        {
+            if(ctrl_is_full(old_ctrl[i])) 
+            {
+                SimdBucket* old_bucket = &old_buckets[i];
+
+                const uint32_t hash = hashmap->hash_func(simdbucket_get_key(old_bucket), 
+                                                         simdbucket_get_key_size(old_bucket),
+                                                         hashmap->hash_seed);
+                const ctrl_t h2 = hash_to_h2(hash);
+
+                const size_t insert_idx = simdhashmap_find_first_non_full(hashmap, hash);
+
+                ROMANO_ASSERT(insert_idx < new_capacity, "Failed to find insertion bucket during rehash");
+
+                hashmap->buckets[insert_idx] = *old_bucket;
+
+                hashmap->ctrl[insert_idx] = h2;
+
+                if(insert_idx < GROUP_WIDTH - 1) 
+                {
+                    hashmap->ctrl[hashmap->capacity + insert_idx] = h2;
+                }
+
+                hashmap->size++;
+            }
+        }
+    }
+
+    const size_t threshold = (size_t)(hashmap->capacity * SIMDHASHMAP_MAX_LOAD);
+    hashmap->growth_left = (threshold > hashmap->size) ? (threshold - hashmap->size) : 0;
+
+    if(old_ctrl != NULL) 
+    {
+        free(old_ctrl);
+    }
+
+    if(old_buckets != NULL) 
+    {
+        free(old_buckets);
+    }
+
+    return true;
+}
+
+
+bool simdhashmap_reserve_for_insert(SimdHashMap* hashmap) 
+{
+    if(hashmap->growth_left == 0) 
+    {
+        return simdhashmap_rehash_and_grow(hashmap, hashmap->capacity + 1);
+    }
+
+    return true;
+}
+
+SimdHashMap* simdhashmap_new(size_t initial_capacity) 
+{
+    SimdHashMap* hashmap = (SimdHashMap*)calloc(1, sizeof(SimdHashMap));
+
+    if(hashmap == NULL) 
+    {
+        return NULL;
+    }
+
+    hashmap->size = 0;
+    hashmap->capacity = 0;
+    hashmap->ctrl = NULL;
+    hashmap->buckets = NULL;
+    hashmap->hash_func = hash_murmur3;
+    hashmap->hash_seed = random_next_uint32();
+
+    if(initial_capacity > 0 && initial_capacity < GROUP_WIDTH) 
+    {
+        initial_capacity = GROUP_WIDTH;
+    }
+
+    size_t required_capacity = 0;
+
+    if(initial_capacity > 0) 
+    {
+        required_capacity = (size_t)((float)initial_capacity / SIMDHASHMAP_MAX_LOAD);
+
+        if((float)initial_capacity / SIMDHASHMAP_MAX_LOAD > (float)required_capacity) 
+        {
+           required_capacity++;
+        }
+    }
+
+    if(required_capacity > 0) 
+    {
+        if(!simdhashmap_rehash_and_grow(hashmap, required_capacity)) 
+        {
+            free(hashmap);
+            return NULL;
+        }
+    } 
+    else 
+    {
+        hashmap->growth_left = 0;
+    }
+
+    return hashmap;
+}
+
+ROMANO_API size_t simdhashmap_size(const SimdHashMap* hashmap) {
+    return hashmap ? hashmap->size : 0;
+}
+
+size_t simdhashmap_capacity(const SimdHashMap* hashmap) 
+{
+    return hashmap ? hashmap->capacity : 0;
+}
+
+float simdhashmap_load_factor(const SimdHashMap* hashmap) 
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+
+    if(hashmap->capacity == 0) 
+    {
+        return 0.0f;
+    }
+
+    return (float)hashmap->size / (float)hashmap->capacity;
+}
+
+void simdhashmap_set_hash_func(SimdHashMap* hashmap, hashmap_hash_func func) 
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(func != NULL, "func is null");
+    ROMANO_ASSERT(hashmap->size == 0, "Cannot set hash function if hashmap is not empty");
+    
+    hashmap->hash_func = func;
+}
+
+void simdhashmap_clear(SimdHashMap* hashmap) 
+{
+    simdhashmap_clear_internal(hashmap);
+}
+
+bool simdhashmap_reserve(SimdHashMap* hashmap, const size_t count) 
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+
+    if(count == 0)
+    {
+        return true;
+    }
+
+    size_t required_capacity = 0;
+
+    required_capacity = (size_t)((float)count / SIMDHASHMAP_MAX_LOAD);
+
+    if((float)count / SIMDHASHMAP_MAX_LOAD > (float)required_capacity) 
+    {
+        required_capacity++;
+    }
+
+    if(required_capacity > hashmap->capacity) 
+    {
+        return simdhashmap_rehash_and_grow(hashmap, required_capacity);
+    }
+
+    return true;
+}
+
+bool simdhashmap_set(SimdHashMap* hashmap,
+                     const void* key,
+                     const uint64_t key_size,
+                     void* value,
+                     const uint64_t value_size)
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(key != NULL, "key is null");
+    ROMANO_ASSERT(key_size > 0, "key_size == 0");
+
+    if(!simdhashmap_reserve_for_insert(hashmap)) 
+    {
+        return false;
+    }
+
+    uint32_t hash = hashmap->hash_func(key, key_size, hashmap->hash_seed);
+    FindResult result = simdhashmap_find_internal(hashmap, key, key_size, hash);
+
+    if(result.found) 
+    {
+        SimdBucket* bucket = &hashmap->buckets[result.index];
+
+        simdbucket_free(bucket);
+        simdbucket_new(bucket, key, key_size, value, value_size);
+
+        return true;
+
+    } 
+    else if (result.found_insert_slot) 
+    {
+        size_t insert_idx = result.index;
+        SimdBucket* bucket = &hashmap->buckets[insert_idx];
+
+        const bool was_deleted = ctrl_is_deleted(hashmap->ctrl[insert_idx]);
+
+        simdbucket_new(bucket, key, key_size, value, value_size);
+
+        const ctrl_t h2 = hash_to_h2(hash);
+        hashmap->ctrl[insert_idx] = h2;
+
+        if(insert_idx < GROUP_WIDTH - 1) 
+        {
+            hashmap->ctrl[hashmap->capacity + insert_idx] = h2;
+        }
+
+        hashmap->size++;
+
+        if(!was_deleted) 
+        {
+            hashmap->growth_left--;
+        }
+
+        return true;
+
+    } 
+    else 
+    {
+        return false;
+    }
+}
+
+void* simdhashmap_get(const SimdHashMap* hashmap,
+                      const void* key,
+                      const uint64_t key_size,
+                      uint64_t* out_value_size)
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(key != NULL, "key is null");
+    ROMANO_ASSERT(key_size > 0, "key_size == 0");
+    ROMANO_ASSERT(hashmap->capacity > 0, "Hashmap is empty");
+
+    const uint32_t hash = hashmap->hash_func(key, key_size, hashmap->hash_seed);
+
+    const FindResult result = simdhashmap_find_internal(hashmap, key, key_size, hash);
+
+    if(result.found) 
+    {
+        if(out_value_size != NULL) 
+        {
+            *out_value_size = simdbucket_get_value_size(&hashmap->buckets[result.index]);
+        }
+
+        return simdbucket_get_value(&hashmap->buckets[result.index]);
+    } 
+    else 
+    {
+        if(out_value_size != NULL)
+        {
+            *out_value_size = 0;
+        }
+
+        return NULL;
+    }
+}
+
+bool simdhashmap_contains(const SimdHashMap* hashmap,
+                          const void* key,
+                          const uint64_t key_size)
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(key != NULL, "key is null");
+    ROMANO_ASSERT(key_size > 0, "key_size == 0");
+    ROMANO_ASSERT(hashmap->capacity > 0, "Hashmap is empty");
+
+    const uint32_t hash = hashmap->hash_func(key, key_size, hashmap->hash_seed);
+
+    const FindResult result = simdhashmap_find_internal(hashmap, key, key_size, hash);
+
+    return result.found;
+}
+
+
+bool simdhashmap_remove(SimdHashMap* hashmap,
+                        const void* key,
+                        const uint64_t key_size)
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(key != NULL, "key is null");
+    ROMANO_ASSERT(key_size > 0, "key_size == 0");
+    ROMANO_ASSERT(hashmap->capacity > 0, "Hashmap is empty");
+
+    const uint32_t hash = hashmap->hash_func(key, key_size, hashmap->hash_seed);
+    const FindResult result = simdhashmap_find_internal(hashmap, key, key_size, hash);
+
+    if(result.found) 
+    {
+        const size_t index = result.index;
+
+        simdbucket_free(&hashmap->buckets[index]);
+
+        hashmap->ctrl[index] = CTRL_DELETED;
+
+        if(index < GROUP_WIDTH - 1)
+        {
+            hashmap->ctrl[hashmap->capacity + index] = CTRL_DELETED;
+        }
+
+        hashmap->size--;
+
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+
+bool simdhashmap_iterate(const SimdHashMap* hashmap,
+                         SimdHashMapIterator* it,
+                         void** out_key,
+                         uint64_t* out_key_size,
+                         void** out_value,
+                         uint64_t* out_value_size)
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+    ROMANO_ASSERT(hashmap->capacity > 0, "Hashmap is empty");
+    ROMANO_ASSERT(it != NULL, "it is null");
+
+    if(!out_key || !out_key_size || !out_value || !out_value_size) 
+    {
+        return false;
+    }
+
+    for(size_t i = *it; i < hashmap->capacity; ++i) 
+    {
+        if(ctrl_is_full(hashmap->ctrl[i])) 
+        {
+            const SimdBucket* bucket = &hashmap->buckets[i];
+            *out_key = (void*)simdbucket_get_key(bucket);
+            *out_key_size = simdbucket_get_key_size(bucket);
+            *out_value = simdbucket_get_value((SimdBucket*)bucket);
+            *out_value_size = simdbucket_get_value_size(bucket);
+            *it = i + 1;
+            return true;
+        }
+    }
+
+    *it = hashmap->capacity;
+
+    return false;
+}
+
+void simdhashmap_free(SimdHashMap* hashmap) 
+{
+    ROMANO_ASSERT(hashmap != NULL, "Hashmap is null");
+
+    simdhashmap_clear_internal(hashmap);
+
+    free(hashmap->ctrl);
+    free(hashmap->buckets);
     free(hashmap);
 }
