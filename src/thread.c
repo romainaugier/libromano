@@ -57,7 +57,7 @@ void mutex_init(mutex_t* mutex)
 
 void mutex_lock(mutex_t* mutex)
 {
-    assert(mutex != NULL);
+    ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
 #if defined(ROMANO_WIN)
     EnterCriticalSection(mutex);
@@ -68,7 +68,7 @@ void mutex_lock(mutex_t* mutex)
 
 void mutex_unlock(mutex_t* mutex)
 {
-    assert(mutex != NULL);
+    ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
 #if defined(ROMANO_WIN)
     LeaveCriticalSection(mutex);
@@ -79,7 +79,7 @@ void mutex_unlock(mutex_t* mutex)
 
 void mutex_release(mutex_t* mutex)
 {
-    assert(mutex != NULL);
+    ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
@@ -90,7 +90,7 @@ void mutex_release(mutex_t* mutex)
 
 void mutex_free(mutex_t* mutex)
 {
-    assert(mutex != NULL);
+    ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
@@ -116,7 +116,7 @@ conditional_variable* conditional_variable_new(void)
 
 void conditional_variable_init(conditional_variable* cond_var)
 {
-    assert(cond_var != NULL);
+    ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(cond_var);
@@ -127,7 +127,7 @@ void conditional_variable_init(conditional_variable* cond_var)
 
 void conditional_variable_wait(conditional_variable* cond_var, mutex_t* mtx, uint32_t wait_duration_ms)
 {
-    assert(cond_var != NULL && mtx != NULL);
+    ROMANO_ASSERT(cond_var != NULL && mtx != NULL, "");
 
 #if defined(ROMANO_WIN)
     if(wait_duration_ms == 0)
@@ -154,7 +154,7 @@ void conditional_variable_wait(conditional_variable* cond_var, mutex_t* mtx, uin
 
 void conditional_variable_signal(conditional_variable* cond_var)
 {
-    assert(cond_var != NULL);
+    ROMANO_ASSERT(cond_var != NULL, "");
 #if defined(ROMANO_WIN)
     WakeConditionVariable(cond_var);
 #elif defined(ROMANO_LINUX)
@@ -164,7 +164,7 @@ void conditional_variable_signal(conditional_variable* cond_var)
 
 void conditional_variable_broadcast(conditional_variable* cond_var)
 {
-    assert(cond_var != NULL);
+    ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_WIN)
     WakeAllConditionVariable(cond_var);
@@ -175,7 +175,7 @@ void conditional_variable_broadcast(conditional_variable* cond_var)
 
 void conditional_variable_release(conditional_variable* cond_var)
 {
-    assert(cond_var != NULL);
+    ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_LINUX)
     pthread_cond_destroy(cond_var);
@@ -184,7 +184,7 @@ void conditional_variable_release(conditional_variable* cond_var)
 
 void conditional_variable_free(conditional_variable* cond_var)
 {
-    assert(cond_var != NULL);
+    ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_LINUX)
     pthread_cond_destroy(cond_var);
@@ -225,7 +225,7 @@ thread_t* thread_create(thread_func func, void* arg)
 
 void thread_start(thread_t* thread)
 {
-    assert(thread != NULL);
+    ROMANO_ASSERT(thread != NULL, "thread has not been initialized");
 
 #if defined(ROMANO_WIN)
     ResumeThread(thread->_thread_handle);
@@ -261,7 +261,7 @@ size_t thread_get_id(void)
 
 void thread_detach(thread_t* thread)
 {
-    assert(thread != NULL);
+    ROMANO_ASSERT(thread != NULL, "");
 
 #if defined(ROMANO_WIN)
     CloseHandle(thread->_thread_handle);
@@ -310,7 +310,7 @@ work_t* work_new(thread_func func, void* arg)
 {
     work_t* new_work;
     
-    assert(func != NULL);
+    ROMANO_ASSERT(func != NULL, "");
 
     new_work = malloc(sizeof(work_t));
     
@@ -322,7 +322,7 @@ work_t* work_new(thread_func func, void* arg)
 
 void work_free(work_t* work)
 {
-    assert(work != NULL);
+    ROMANO_ASSERT(work != NULL, "");
 
     free(work);
 }
@@ -391,7 +391,7 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 {
     work_t* work;
 
-    assert(threadpool != NULL);
+    ROMANO_ASSERT(threadpool != NULL, "");
 
     work = work_new(func, arg);
 
@@ -402,7 +402,7 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
 
 void threadpool_wait(threadpool_t* threadpool)
 {
-    assert(threadpool != NULL);
+    ROMANO_ASSERT(threadpool != NULL, "");
 
     while(1)
     {
@@ -419,7 +419,7 @@ void threadpool_release(threadpool_t* threadpool)
     work_t* work;
     size_t i;
     
-    assert(threadpool != NULL);
+    ROMANO_ASSERT(threadpool != NULL, "");
 
     atomic_store_32((atomic32_t*)&threadpool->stop, 1);
 

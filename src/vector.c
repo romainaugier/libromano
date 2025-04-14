@@ -53,7 +53,7 @@ void vector_resize(Vector* vector, const size_t new_capacity)
     size_t new_size;
     void* new_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     old_capacity = vector_capacity(vector);
     element_size = vector_element_size(vector);
@@ -76,7 +76,7 @@ void _vector_grow(Vector* vector)
 {
     size_t new_capacity;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
     
     new_capacity = (size_t)round((float)vector_capacity(vector) * GOLDEN_RATIO);
 
@@ -90,7 +90,7 @@ void vector_push_back(Vector* vector, void* element)
     size_t elem_size;
     void* element_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     vec_size = vector_size(vector);
     vec_capacity = vector_capacity(vector);
@@ -114,7 +114,7 @@ void vector_emplace_back(Vector* vector, void* element)
     size_t elem_size;
     void* element_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     vec_size = vector_size(vector);
     vec_capacity = vector_capacity(vector);
@@ -138,13 +138,13 @@ void vector_insert(Vector* vector, void* element, const size_t position)
     size_t elem_size;
     void* element_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     vec_size = vector_size(vector);
     vec_capacity = vector_capacity(vector);
     elem_size = vector_element_size(vector);
 
-    assert(position <= vec_size);
+    ROMANO_ASSERT(position <= vec_size, "Out of bounds access");
 
     if(vec_capacity == vec_size)
     {
@@ -164,7 +164,7 @@ void vector_remove(Vector* vector, const size_t position)
     size_t elem_size;
     void* element_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
     
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);
@@ -179,11 +179,11 @@ void vector_pop(Vector* vector)
 {
     size_t vec_size;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     vec_size = vector_size(vector);
 
-    assert(vec_size > 0);
+    ROMANO_ASSERT(vec_size > 0, "Vector does not contain any element");
 
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
@@ -192,7 +192,7 @@ void* vector_at(Vector* vector, const size_t index)
 {
     size_t element_size;
     
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
     
     element_size = vector_element_size(vector);
     
@@ -201,7 +201,7 @@ void* vector_at(Vector* vector, const size_t index)
 
 void* vector_back(Vector* vector)
 {
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
 
     return vector_at(vector, vector_size(vector) - 1);
 }
@@ -212,7 +212,7 @@ void vector_shrink_to_fit(Vector* vector)
     size_t elem_size;
     void* new_address;
 
-    assert(vector != NULL);
+    ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
     
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);

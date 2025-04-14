@@ -71,7 +71,7 @@ void logger_disable_file(void)
 
 void logger_log(log_level level, const char* format, ...)
 {
-    assert(_logger_initialized);
+    ROMANO_ASSERT(_logger_initialized, "Logger has not been initialized");
 
     level = level < 5 ? level : 4;
 
@@ -116,7 +116,7 @@ void logger_log(log_level level, const char* format, ...)
         {
             _log_file = fopen(_log_file_path, "a");
 
-            assert(_log_file != NULL);
+            ROMANO_ASSERT(_log_file != NULL, "Log file has not been created");
 
             fprintf(_log_file,
                     "[%s] %02d:%02d:%02d:%03ld : %s\n",

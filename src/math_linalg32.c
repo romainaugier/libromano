@@ -434,7 +434,7 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 
     float sum;
 
-    assert(SIZE_N((*A)) == SIZE_M((*B)));    
+    ROMANO_ASSERT(SIZE_N((*A)) == SIZE_M((*B)), "");    
 
     M = SIZE_M((*A));
     N = SIZE_N((*A));

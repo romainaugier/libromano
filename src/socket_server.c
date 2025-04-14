@@ -63,7 +63,7 @@ socket_server_t* socket_server_init(const uint16_t port,
 void socket_server_set_log_callback(socket_server_t* socket_server,
                                                socket_server_log_callback callback)
 {
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     socket_server->m_log_callback = callback;
 }
@@ -115,7 +115,7 @@ void* socket_server_main_loop(void* _socket_server)
 
     socket_server_t* socket_server = (socket_server_t*)_socket_server;
     
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
     
     sock = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -272,7 +272,7 @@ void* socket_server_main_loop(void* _socket_server)
 
 void socket_server_start(socket_server_t* socket_server)
 {
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     if(HAS_FLAG(socket_server->m_flags, SocketServer_IsRunning))
     {
@@ -296,7 +296,7 @@ void socket_server_push_callback(socket_server_t* socket_server,
     size_t callbacks_count;
     size_t alloc_size;
 
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     if(socket_server->m_callbacks == NULL)
     {
@@ -325,7 +325,7 @@ int32_t socket_server_get_last_error(socket_server_t* socket_server)
 {
     int32_t error;
 
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     error = socket_server->m_error;
     socket_server->m_error = 0;
@@ -334,14 +334,14 @@ int32_t socket_server_get_last_error(socket_server_t* socket_server)
 
 int32_t socket_server_is_running(socket_server_t* socket_server)
 { 
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
     
     return HAS_FLAG(socket_server->m_flags, SocketServer_IsRunning);
 }
 
 void socket_server_stop(socket_server_t* socket_server)
 {
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     mutex_lock(socket_server->m_mutex);
     SET_FLAG(socket_server->m_flags, SocketServer_NeedToStop);
@@ -360,7 +360,7 @@ void socket_server_stop(socket_server_t* socket_server)
 
 void socket_server_release(socket_server_t* socket_server)
 {
-    assert(socket_server != NULL);
+    ROMANO_ASSERT(socket_server != NULL, "");
 
     if(socket_server->m_callbacks != NULL)
     {

@@ -14,7 +14,7 @@ function(set_target_options target_name)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_GCC 1)
 
-        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=leak -fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
 
         target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:C>:${COMPILE_OPTIONS}>)
 

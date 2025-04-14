@@ -2,10 +2,10 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#if ROMANO_OPENCL 
-
 #include "libromano/opencl.h"
 #include "libromano/logger.h"
+
+#if ROMANO_OPENCL 
 
 int32_t cl_create_device(cl_device_id* device)
 {

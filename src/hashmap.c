@@ -53,7 +53,7 @@ void bucket_new(Bucket* bucket,
                 const uint32_t hash,
                 const uint32_t probe_length)
 {
-    assert(bucket != NULL);
+    ROMANO_ASSERT(bucket != NULL, "");
 
     memset(bucket, 0, sizeof(Bucket));
 
@@ -246,7 +246,7 @@ ROMANO_FORCE_INLINE bool bucket_compare_key(const Bucket* bucket,
 
 void bucket_free(Bucket* bucket)
 {
-    assert(bucket != NULL);
+    ROMANO_ASSERT(bucket != NULL, "");
 
     if(bucket_is_empty(bucket))
     {
@@ -306,7 +306,7 @@ void hashmap_grow(HashMap* hashmap,
     size_t index;
     size_t old_capacity;
 
-    assert(hashmap != NULL);
+    ROMANO_ASSERT(hashmap != NULL, "");
 
     old_buckets = hashmap->buckets;
     old_capacity = hashmap->capacity;
@@ -735,7 +735,7 @@ void hashmap_free(HashMap* hashmap)
 {
     size_t i;
 
-    assert(hashmap != NULL);
+    ROMANO_ASSERT(hashmap != NULL, "");
 
     if(hashmap->buckets != NULL)
     {
@@ -787,7 +787,7 @@ void simdbucket_new(SimdBucket* simdbucket,
 {
     char* simdbucket_cast;
 
-    assert(simdbucket != NULL);
+    ROMANO_ASSERT(simdbucket != NULL, "");
 
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES 
     if(BUCKET_KEY_CAN_BE_INTERNED(key_size))
@@ -881,7 +881,7 @@ const void* simdbucket_get_key(const SimdBucket* simdbucket)
 
 void simdbucket_free(SimdBucket* simdbucket)
 {
-    assert(simdbucket != NULL);
+    ROMANO_ASSERT(simdbucket != NULL, "");
     
 #if __ROMANO_HASHMAP_INTERN_SMALL_VALUES
     if(!BUCKET_KEY_INTERNED(simdbucket))
@@ -1341,7 +1341,8 @@ SimdHashMap* simdhashmap_new(size_t initial_capacity)
     return hashmap;
 }
 
-ROMANO_API size_t simdhashmap_size(const SimdHashMap* hashmap) {
+size_t simdhashmap_size(const SimdHashMap* hashmap) 
+{
     return hashmap ? hashmap->size : 0;
 }
 

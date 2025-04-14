@@ -10,27 +10,27 @@
 #include <assert.h>
 #include <limits.h>
 
-strview_t strview_new(const char* data, size_t count)
+StringView strview_new(const char* data, size_t count)
 {
-   strview_t sv;
+   StringView sv;
 
    sv.size = count;
    sv.data = (char*)data;
    return sv;
 }
 
-int strview_cmp(const strview_t lhs, const strview_t rhs)
+int strview_cmp(const StringView lhs, const StringView rhs)
 {
     return lhs.size != rhs.size && memcmp(lhs.data, rhs.data, lhs.size) == 0;    
 }
 
-int strview_split(const char* data, const char* separator, strview_t* string_view)
+int strview_split(const char* data, const char* separator, StringView* string_view)
 {
     char* actual_ptr;
     char* iter_ptr;
     size_t steps;
 
-    assert(data != NULL);
+    ROMANO_ASSERT(data != NULL, "data is NULL");
 
     actual_ptr = string_view->data != NULL ?
                  string_view->data + string_view->size : (char*)data;
@@ -60,9 +60,9 @@ int strview_split(const char* data, const char* separator, strview_t* string_vie
     }
 }
 
-strview_t strview_lsplit(const char* data, const char* separator, strview_t* stringview)
+StringView strview_lsplit(const char* data, const char* separator, StringView* stringview)
 {
-    strview_t res;
+    StringView res;
 
     size_t size = 0;
     const char* start = data;
@@ -86,9 +86,9 @@ strview_t strview_lsplit(const char* data, const char* separator, strview_t* str
     return res;
 }
 
-strview_t strview_rsplit(const char* data, const char* separator, strview_t* stringview)
+StringView strview_rsplit(const char* data, const char* separator, StringView* stringview)
 {
-    strview_t res;
+    StringView res;
 
     const size_t string_size = strlen(data);
     const size_t separator_len = strlen(separator);
@@ -116,7 +116,7 @@ strview_t strview_rsplit(const char* data, const char* separator, strview_t* str
     return res;
 }
 
-int strview_find(const strview_t s, const char* substr, const int substr_len)
+int strview_find(const StringView s, const char* substr, const int substr_len)
 {
     size_t offset = 0;
     const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
@@ -136,7 +136,7 @@ int strview_find(const strview_t s, const char* substr, const int substr_len)
     return -1;
 }
 
-int strview_startswith(const strview_t s, const char* substr, const int substr_len)
+int strview_startswith(const StringView s, const char* substr, const int substr_len)
 {
     const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
@@ -145,7 +145,7 @@ int strview_startswith(const strview_t s, const char* substr, const int substr_l
     return memcmp(substr, s.data, _substr_len) == 0;
 }
 
-int strview_endswith(const strview_t s, const char* substr, const int substr_len)
+int strview_endswith(const StringView s, const char* substr, const int substr_len)
 {
     const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
@@ -154,11 +154,11 @@ int strview_endswith(const strview_t s, const char* substr, const int substr_len
     return memcmp(substr, &(s.data[s.size - _substr_len]), _substr_len) == 0;
 }
 
-strview_t strview_trim(const char* data)
+StringView strview_trim(const char* data)
 {
-   strview_t result;
+   StringView result;
 
-   assert(data != NULL);
+   ROMANO_ASSERT(data != NULL, "Data is null");
 
    while(isspace((unsigned char)*data)) data++;
 
@@ -201,7 +201,7 @@ const int _powers[11] = {
     INT_MAX
 };
 
-int strview_parse_int(const strview_t s)
+int strview_parse_int(const StringView s)
 {
     int is_parsing = 0;
     int sign = 1;
@@ -311,7 +311,7 @@ int strview_parse_int(const strview_t s)
     return res * sign;
 }
 
-int strview_parse_bool(const strview_t s)
+int strview_parse_bool(const StringView s)
 {
     if(s.size >= 1 && (s.data[0] == '0' || s.data[0] == '1'))
     {

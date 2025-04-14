@@ -94,7 +94,7 @@ void fs_parent_dir(const char* path,
     unsigned long path_len = strlen(path);
 #endif /* defined(ROMANO_WIN)*/
 
-    assert(out_path != NULL);
+    ROMANO_ASSERT(out_path != NULL, "");
 
 #if defined(ROMANO_WIN)
     MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), w_path, MAX_PATH);
@@ -255,7 +255,7 @@ int fs_walk(const char* path,
             fs_walk_item_t* walk_item,
             const fs_walk_mode mode)
 {
-    assert(walk_item != NULL);
+    ROMANO_ASSERT(walk_item != NULL, "");
 #if defined(ROMANO_WIN)
     if(search_data == NULL)
     {

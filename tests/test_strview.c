@@ -28,7 +28,7 @@ int main(void)
                               "nunc, at aliquet arcu feugiat sed. Nullam sagittis posuere sapien sed efficitur. "
                               "Donec maximus massa ut rhoncus dapibus.";
 
-    strview_t sp = STRVIEW_NULL;
+    StringView sp = STRVIEW_NULL;
 
     while(strview_split(test, " ", &sp))
     {
@@ -37,23 +37,23 @@ int main(void)
 
     const char* test_trim = "    trim this string  ";
 
-    strview_t trim = strview_trim(test_trim);
+    StringView trim = strview_trim(test_trim);
 
     printf("Trimmed string : \""STRVIEW_FMT"\"\n", STRVIEW_ARG(trim));
 
     const char* test_split = "test this split";
 
-    strview_t r;
-    strview_t lsplit = strview_lsplit(test_split, " ", &r);
+    StringView r;
+    StringView lsplit = strview_lsplit(test_split, " ", &r);
 
     printf("lsplit: \""STRVIEW_FMT"\", \""STRVIEW_FMT"\"\n", STRVIEW_ARG(lsplit), STRVIEW_ARG(r));
 
-    strview_t l;
-    strview_t rsplit = strview_rsplit(test_split, " ", &l);
+    StringView l;
+    StringView rsplit = strview_rsplit(test_split, " ", &l);
 
     printf("rsplit: \""STRVIEW_FMT"\", \""STRVIEW_FMT"\"\n", STRVIEW_ARG(l), STRVIEW_ARG(rsplit));
 
-    strview_t string_view_to_contain;
+    StringView string_view_to_contain;
     string_view_to_contain.data = "this string may contain some substrings";
     string_view_to_contain.size = strlen(string_view_to_contain.data);
 
@@ -74,13 +74,13 @@ int main(void)
                                                                       strview_find(string_view_to_contain, contains[i], strlen(contains[i])));
     }
 
-    strview_t startswith;
+    StringView startswith;
     startswith.data = "this phrase starts with";
     startswith.size = strlen(startswith.data);
 
     printf("\""STRVIEW_FMT"\" starts with: \"this\" %d\n", STRVIEW_ARG(startswith), strview_startswith(startswith, "this", 4));
 
-    strview_t endswith;
+    StringView endswith;
     endswith.data = "this phrase ends with";
     endswith.size = strlen(endswith.data);
 
@@ -101,7 +101,7 @@ int main(void)
 
     for(i = 0; i < NUM_INTS_TO_PARSE; i++)
     {
-        strview_t int_string_view;
+        StringView int_string_view;
         int_string_view.data = ints[i];
         int_string_view.size = strlen(ints[i]);
 
@@ -122,7 +122,7 @@ int main(void)
 
     for(i = 0; i < NUM_BOOLS_TO_PARSE; i++)
     {
-        strview_t bool_string_view;
+        StringView bool_string_view;
         bool_string_view.data = bools[i];
         bool_string_view.size = strlen(bools[i]);
 
