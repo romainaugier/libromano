@@ -962,9 +962,10 @@ inline SimdMaskType SIMD_MOVEMASK_EPI8(SimdRegister a) {
 }
 #endif /* defined(__AVX2__) */
 
-#ifdef _MSC_VER
+#if defined(ROMANO_MSVC)
 #include <intrin.h>
-inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+ROMANO_FORCE_INLINE uint32_t count_trailing_zeros(SimdMaskType mask) 
+{
     unsigned long index;
     if (mask == 0) return sizeof(SimdMaskType) * 8;
     #if defined(__AVX2__) || defined(__clang__) || defined(__GNUC__)
@@ -974,17 +975,19 @@ inline uint32_t count_trailing_zeros(SimdMaskType mask) {
     #endif
     return (uint32_t)index;
 }
-#elif defined(__GNUC__) || defined(__clang__)
-inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+ROMANO_FORCE_INLINE uint32_t count_trailing_zeros(SimdMaskType mask) 
+{
     if (mask == 0) return sizeof(SimdMaskType) * 8;
-    #if defined(__AVX2__) || !defined(__SSE2__)
-        return (uint32_t)__builtin_ctz((uint32_t)mask);
-    #else
-        return (uint32_t)__builtin_ctz((uint16_t)mask);
-    #endif
+#if defined(__AVX2__) || !defined(__SSE2__)
+    return (uint32_t)__builtin_ctz((uint32_t)mask);
+#else
+    return (uint32_t)__builtin_ctz((uint16_t)mask);
+#endif
 }
 #else
-inline uint32_t count_trailing_zeros(SimdMaskType mask) {
+ROMANO_FORCE_INLINE uint32_t count_trailing_zeros(SimdMaskType mask) 
+{
     if (mask == 0) return sizeof(SimdMaskType) * 8;
     uint32_t count = 0;
     while ((mask & 1) == 0) {
