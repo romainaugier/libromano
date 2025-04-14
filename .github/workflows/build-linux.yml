@@ -32,7 +32,7 @@ jobs:
         uses: lukka/get-cmake@v3.21.1
 
       - name: build and test
-        run: ./build.sh --tests --version:0.0.0
+        run: ./build.sh --tests --reldebug --version:0.0.0
 
       - name: show test results
         run: cat build/Testing/Temporary/LastTest.log
