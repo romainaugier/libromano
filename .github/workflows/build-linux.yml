@@ -13,6 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: get-cmake
+        uses: lukka/get-cmake@latest
+
       - name: Pull & update submodules recursively
         run: |
           git submodule update --init --recursive
@@ -27,9 +30,6 @@ jobs:
           cmake --build . --config Release
           cmake --install . --prefix ../cqinstall
           cd ..
-
-      - name: get-cmake
-        uses: lukka/get-cmake@v3.21.1
 
       - name: build and test
         run: ./build.sh --tests --reldebug --version:0.0.0
