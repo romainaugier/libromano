@@ -107,7 +107,7 @@ void vector_push_back(Vector* vector, void* element)
     ((size_t*)vector->data)[0] = vec_size + 1;
 }
 
-void vector_emplace_back(Vector* vector, void* element)
+void* _vector_emplace_back(Vector* vector)
 {
     size_t vec_size;
     size_t vec_capacity;
@@ -126,9 +126,10 @@ void vector_emplace_back(Vector* vector, void* element)
     }
 
     element_address = vector_at(vector, vec_size);
-    memmove(element_address, element, elem_size);
 
     ((size_t*)vector->data)[0] = vec_size + 1;
+
+    return element_address;
 }
 
 void vector_insert(Vector* vector, void* element, const size_t position)
