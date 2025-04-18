@@ -14,8 +14,8 @@ void arena_init(Arena* arena, const size_t size)
     arena->capacity = size;
 }
 
-ROMANO_FORCE_INLINE bool psl_arena_check_resize(Arena* arena, 
-                                                         const size_t new_size)
+ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena, 
+                                            const size_t new_size)
 {
     return (arena->offset + new_size) >= arena->capacity;
 }
