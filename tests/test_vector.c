@@ -39,7 +39,7 @@ int main(void)
         }
         else
         {
-            vector_emplace_back(float_vec, float, f);
+            vector_emplace_back(float_vec, float) = f;
         }
     }
 

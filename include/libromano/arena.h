@@ -26,6 +26,8 @@ ROMANO_API void arena_resize(Arena* arena);
 
 ROMANO_API void* arena_push(Arena* arena, void* data, const size_t data_size);
 
+#define arena_emplace(arena, data_size, data_type) *(data_type*)arena_push(arena, NULL, data_size)
+
 ROMANO_API void* arena_at(Arena* arena, const size_t offset);
 
 ROMANO_API void arena_destroy(Arena* arena);

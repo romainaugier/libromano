@@ -44,9 +44,7 @@ ROMANO_API void vector_push_back(Vector* vector, void* element);
 ROMANO_API void* _vector_emplace_back(Vector* vector);
 
 /* Macro to build the element in place */
-#define vector_emplace_back(vector, type, ctor)               \
-    do { type* address = (type*)_vector_emplace_back(vector); \
-         *address = ctor; } while(0);
+#define vector_emplace_back(vector, type) *(type*)_vector_emplace_back(vector)
 
 /* Adds a new element at the beginning of the given vector */
 ROMANO_API void vector_insert(Vector* vector, void* element, const size_t position);
