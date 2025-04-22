@@ -19,7 +19,7 @@ Roadmap (C library) :
 - :clock3: maths (float32/64 optimized maths library)
 - :clock3: linear algebra (float32/64 optimized linear algebra library)
 - :clock3: stats (float32/64 optimized statistics maths library)
-- :x: uint128 and int128 arithmetic
+- :clock3: uint128 and int128 arithmetic
 - :clock3: filesystem (python-like functions to interact with the filesystem)
 - :clock3: hash (various hash functions)
 - :clock3: random (various random functions)
