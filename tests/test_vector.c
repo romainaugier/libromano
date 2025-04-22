@@ -13,6 +13,12 @@
 
 #include <stdio.h>
 
+void simple_dtor(void* element)
+{
+    void* to_free = *((void**)element);
+    free(to_free);
+}
+
 int float_cmp(const void* x, const void* y)
 {
     return (int)(*(const float*)x - *(const float*)y);
@@ -105,6 +111,18 @@ int main(void)
 
     logger_log(LogLevel_Info, "Freeing vector");
     vector_free(float_vec);
+
+    Vector* alloc_vec = vector_new(64, sizeof(void*));
+
+    for(i = 0; i < 64; i++)
+    {
+        int* addr = (int*)malloc(sizeof(int));
+        *addr = (int)i;
+
+        vector_push_back(alloc_vec, &addr);
+    }
+
+    vector_free_with_dtor(alloc_vec, simple_dtor);
 
     logger_release();
 

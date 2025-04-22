@@ -276,3 +276,16 @@ void vector_free(Vector* vector)
         free(vector);
     }
 }
+
+void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
+{
+    if(vector != NULL && dtor != NULL)
+    {
+        for(size_t i = 0; i < vector_size(vector); i++)
+        {
+            dtor(vector_at(vector, i));
+        }
+    }
+    
+    vector_free(vector);
+}
