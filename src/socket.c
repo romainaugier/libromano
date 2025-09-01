@@ -32,17 +32,17 @@ void socket_init_ctx(void)
 #endif /* defined(ROMANO_WIN) */
 }
 
-socket_t socket_create(int af, int type, int protocol)
+Socket socket_create(int af, int type, int protocol)
 {
     return socket(af, type, protocol);
 }
 
-void socket_set_timeout(socket_t socket, unsigned int timeout)
+void socket_set_timeout(Socket socket, unsigned int timeout)
 {
     setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 }
 
-void socket_destroy(socket_t socket)
+void socket_destroy(Socket socket)
 {
 #if defined(ROMANO_WIN)
     closesocket(socket);

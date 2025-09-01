@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_OPENCL)
 #define __LIBROMANO_OPENCL
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #if ROMANO_OPENCL
 

@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_RANDOM)
 #define __LIBROMANO_RANDOM
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

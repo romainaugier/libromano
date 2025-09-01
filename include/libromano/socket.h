@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_SOCKET)
 #define __LIBROMANO_SOCKET
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 
@@ -16,11 +16,11 @@ ROMANO_CPP_ENTER
 #define ROMANO_HAS_WINSOCK
 #include <WinSock2.h>
 #pragma warning(default:4820)
-typedef SOCKET socket_t;
-typedef SOCKADDR_IN sockaddr_in_t;
-typedef SOCKADDR sockaddr_t;
-typedef IN_ADDR inaddr_t;
-typedef FD_SET fd_set_t;
+typedef SOCKET Socket;
+typedef SOCKADDR_IN SockAddrIn;
+typedef SOCKADDR SockAddr;
+typedef IN_ADDR InAddr;
+typedef FD_SET FdSet;
 #elif defined(ROMANO_LINUX)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,21 +36,21 @@ typedef FD_SET fd_set_t;
 #define SD_RECEIVE SHUT_RD
 #define SD_BOTH SHUT_RDWR
 
-typedef int socket_t;
-typedef struct sockaddr_in sockaddr_in_t;
-typedef struct sockaddr sockaddr_t;
-typedef struct in_addr inaddr_t;
-typedef fd_set fd_set_t;
+typedef int Socket;
+typedef struct sockaddr_in SockAddrIn;
+typedef struct sockaddr SockAddr;
+typedef struct in_addr InAddr;
+typedef fd_set FdSet;
 #endif /* defined(ROMANO_WIN) */
 
 /* Initialize the socket context */
 ROMANO_API void socket_init_ctx(void);
 
 /* Creates a new socket */
-ROMANO_API socket_t socket_create(int af, int type, int protocol);
+ROMANO_API Socket socket_create(int af, int type, int protocol);
 
 /* Sets the timeout in milliseconds on the given socket */
-ROMANO_API void socket_set_timeout(socket_t socket, unsigned int timeout);
+ROMANO_API void socket_set_timeout(Socket socket, unsigned int timeout);
 
 ROMANO_FORCE_INLINE static int32_t socket_get_error(void) 
 {  
@@ -62,7 +62,7 @@ ROMANO_FORCE_INLINE static int32_t socket_get_error(void)
 }
 
 /* Deletes the given socket */
-ROMANO_API void socket_destroy(socket_t socket);
+ROMANO_API void socket_destroy(Socket socket);
 
 /* Release the socket context */
 ROMANO_API void socket_release_ctx(void);

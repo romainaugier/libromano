@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_STACK)
 #define __LIBROMANO_STACK
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

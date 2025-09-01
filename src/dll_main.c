@@ -2,7 +2,7 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 #include "libromano/simd.h"
 #include "libromano/memory.h"
 #include "libromano/cpu.h"

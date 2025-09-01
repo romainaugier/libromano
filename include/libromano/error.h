@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_ERROR)
 #define __LIBROMANO_ERROR
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #if defined(ROMANO_WIN)
 #include <Windows.h>

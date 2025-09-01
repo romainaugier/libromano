@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_HASH)
 #define __LIBROMANO_HASH
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_VECTOR)
 #define __LIBROMANO_VECTOR
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

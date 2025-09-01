@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_MATH_LINALG32)
 #define __LIBROMANO_MATH_LINALG32
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 #include "libromano/math/common32.h"
 
 #include <stdlib.h>
@@ -16,13 +16,13 @@ ROMANO_CPP_ENTER
 
 /* vec3f */
 
-typedef struct vec3f {
+typedef struct Vec3F {
     float x, y, z;
-} vec3f_t;
+} Vec3F;
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_add(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE Vec3F vec3f_add(const Vec3F a, const Vec3F b)
 {
-    vec3f_t res;
+    Vec3F res;
 
     res.x = a.x + b.x;
     res.y = a.y + b.y;
@@ -31,9 +31,9 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_add(const vec3f_t a, const vec3f_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_sub(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE Vec3F vec3f_sub(const Vec3F a, const Vec3F b)
 {
-    vec3f_t res;
+    Vec3F res;
 
     res.x = a.x - b.x;
     res.y = a.y - b.y;
@@ -42,9 +42,9 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_sub(const vec3f_t a, const vec3f_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_mul(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE Vec3F vec3f_mul(const Vec3F a, const Vec3F b)
 {
-    vec3f_t res;
+    Vec3F res;
 
     res.x = a.x * b.x;
     res.y = a.y * b.y;
@@ -53,9 +53,9 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_mul(const vec3f_t a, const vec3f_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_div(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE Vec3F vec3f_div(const Vec3F a, const Vec3F b)
 {
-    vec3f_t res;
+    Vec3F res;
 
     res.x = a.x / b.x;
     res.y = a.y / b.y;
@@ -64,14 +64,14 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_div(const vec3f_t a, const vec3f_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE float vec3f_dot(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE float vec3f_dot(const Vec3F a, const Vec3F b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_cross(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE Vec3F vec3f_cross(const Vec3F a, const Vec3F b)
 {
-    vec3f_t res;
+    Vec3F res;
 
     res.x = a.y * b.z - a.z * b.y; 
     res.y = a.z * b.x - a.x * b.z; 
@@ -80,10 +80,10 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_cross(const vec3f_t a, const vec3f_t b)
     return res;
 }
 
-static ROMANO_FORCE_INLINE vec3f_t vec3f_norm(const vec3f_t v)
+static ROMANO_FORCE_INLINE Vec3F vec3f_norm(const Vec3F v)
 {
     float t;
-    vec3f_t res;
+    Vec3F res;
 
     t = mathf_rsqrt(vec3f_dot(v, v));
 
@@ -94,17 +94,17 @@ static ROMANO_FORCE_INLINE vec3f_t vec3f_norm(const vec3f_t v)
     return res;
 }
 
-static ROMANO_FORCE_INLINE float vec3f_length(const vec3f_t v)
+static ROMANO_FORCE_INLINE float vec3f_length(const Vec3F v)
 {
     return mathf_sqrt(vec3f_dot(v, v));
 }
 
-static ROMANO_FORCE_INLINE float vec3f_length2(const vec3f_t v)
+static ROMANO_FORCE_INLINE float vec3f_length2(const Vec3F v)
 {
     return vec3f_dot(v, v);
 }
 
-static ROMANO_FORCE_INLINE float vec3f_dist(const vec3f_t a, const vec3f_t b)
+static ROMANO_FORCE_INLINE float vec3f_dist(const Vec3F a, const Vec3F b)
 {
     return mathf_sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
@@ -115,11 +115,11 @@ typedef struct matrix44f {
     float data[16];
 } matrix44f_t;
 
-struct matrixf {
+struct MatrixF {
     float* data;
 };
 
-typedef struct matrixf MatrixF;
+typedef struct MatrixF MatrixF;
 
 ROMANO_API MatrixF matrix_null();
 

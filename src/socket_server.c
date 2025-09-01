@@ -31,9 +31,9 @@ struct socket_server
 
     socket_server_log_callback m_log_callback;
 
-    mutex_t* m_mutex;
+    Mutex* m_mutex;
 
-    thread_t* m_thread;
+    Thread* m_thread;
 
     uint32_t m_flags;
     int32_t m_error;
@@ -93,13 +93,13 @@ void socket_server_log(socket_server_t* socket_server,
 
 void* socket_server_main_loop(void* _socket_server)
 {
-    socket_t sock;
-    sockaddr_in_t server;
+    Socket sock;
+    SockAddrIn server;
 
-    fd_set_t read_fds;
+    FdSet read_fds;
     timeval_t time_interval;
 
-    socket_t new_connection;
+    Socket new_connection;
 
     int32_t select_status;
     int32_t result;
@@ -129,14 +129,14 @@ void* socket_server_main_loop(void* _socket_server)
 
     socket_set_timeout(sock, 1);
 
-    memset(&server, 0, sizeof(sockaddr_in_t));
+    memset(&server, 0, sizeof(SockAddrIn));
     server.sin_family = AF_INET;
     server.sin_port = htons(socket_server->m_port);
 
     if(HAS_FLAG(socket_server->m_flags, SocketServer_IpMode_Any)) server.sin_addr.s_addr = INADDR_ANY;
     else server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    if(bind(sock, (sockaddr_t*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
     {
         socket_destroy(sock);
         socket_server_log(socket_server, socket_get_error(), "Error during socket binding");

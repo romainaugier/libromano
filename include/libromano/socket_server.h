@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_SOCKET_SERVER)
 #define __LIBROMANO_SOCKET_SERVER
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 #include "libromano/flag.h"
 
 #include <assert.h>

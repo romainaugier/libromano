@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_MEMORY)
 #define __LIBROMANO_MEMORY
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #include <immintrin.h>
 
@@ -70,7 +70,7 @@ ROMANO_FORCE_INLINE uint64_t mem_bswapu64(uint64_t x) { return _byteswap_uint64(
 ROMANO_FORCE_INLINE uint16_t mem_bswapu16(uint16_t x) { return __builtin_bswap16(x); }
 ROMANO_FORCE_INLINE uint32_t mem_bswapu32(uint32_t x) { return __builtin_bswap32(x); }
 ROMANO_FORCE_INLINE uint64_t mem_bswapu64(uint64_t x) { return __builtin_bswap64(x); }
-#endif
+#endif /* defined(ROMANO_MSVC) */
 
 ROMANO_API void mem_swap(void *m1, void *m2, const size_t n);
 

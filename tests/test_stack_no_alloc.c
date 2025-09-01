@@ -6,19 +6,19 @@
 
 int main() 
 {
-    stack_init(int, mystack, 5);
+    stacknoa_init(int, mystack, 5);
     
-    for(int i = 0; !stack_is_full(mystack); i++) 
+    for(int i = 0; !stacknoa_is_full(mystack); i++) 
     {
-        stack_push(mystack, i * 10);
-        printf("Pushed: %d\n", *stack_top(mystack));
+        stacknoa_push(mystack, i * 10);
+        printf("Pushed: %d\n", *stacknoa_top(mystack));
     }
 
     printf("\nPopping:\n");
 
-    while(!stack_is_empty(mystack)) 
+    while(!stacknoa_is_empty(mystack)) 
     {
-        printf("Popped: %d\n", stack_pop(mystack));
+        printf("Popped: %d\n", stacknoa_pop(mystack));
     }
 
     return 0;

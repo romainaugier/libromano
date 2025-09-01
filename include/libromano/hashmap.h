@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_HASHMAP)
 #define __LIBROMANO_HASHMAP
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 #include "libromano/hash.h"
 #include "libromano/memory.h"
 

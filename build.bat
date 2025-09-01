@@ -14,6 +14,7 @@ set REMOVEOLDDIR=0
 set ARCH=x64
 set VERSION="0.0.0"
 set INSTALLDIR=%CD%\install
+set INSTALL=0
 set SANITIZE=0
 
 for %%x in (%*) do (
@@ -70,12 +71,14 @@ if %RUNTESTS% equ 1 (
     )
 )
 
-cmake --install . --config %BUILDTYPE% --prefix %INSTALLDIR%
+if %INSTALL% equ 1 (
+    cmake --install . --config %BUILDTYPE% --prefix %INSTALLDIR%
 
-if %errorlevel% neq 0 (
-    call :LogError "Error caught during CMake installation"
-    cd ..
-    exit /B 1
+    if %errorlevel% neq 0 (
+        call :LogError "Error caught during CMake installation"
+        cd ..
+        exit /B 1
+    )
 )
 
 cd ..
@@ -91,6 +94,8 @@ if "%~1" equ "--debug" set BUILDTYPE=Debug
 if "%~1" equ "--reldebug" set BUILDTYPE=RelWithDebInfo
 
 if "%~1" equ "--tests" set RUNTESTS=1
+
+if "%~1" equ "--install" set INSTALL=1
 
 if "%~1" equ "--clean" set REMOVEOLDDIR=1
 

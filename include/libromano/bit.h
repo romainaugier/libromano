@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_BIT)
 #define __LIBROMANO_BIT
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

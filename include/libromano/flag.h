@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_FLAG)
 #define __LIBROMANO_FLAG
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

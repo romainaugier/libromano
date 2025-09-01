@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_REGEX)
 #define __LIBROMANO_REGEX
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 /*
     Very simple regular expression matching using Thompson's NFA algorithm

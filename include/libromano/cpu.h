@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_CPU)
 #define __LIBROMANO_CPU
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #include <stdlib.h>
 

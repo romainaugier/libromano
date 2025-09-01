@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_LOGGER)
 #define __LIBROMANO_LOGGER
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

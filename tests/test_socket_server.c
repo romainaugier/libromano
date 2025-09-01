@@ -29,8 +29,8 @@ int main(void)
 {
     socket_server_t* socket_server;
 
-    socket_t client_socket;
-    sockaddr_in_t client_addr;
+    Socket client_socket;
+    SockAddrIn client_addr;
     int32_t client_result;
     char client_msg[CLIENT_MSG_SIZE];
     char client_buffer[CLIENT_BUFFER_SIZE];
@@ -68,12 +68,12 @@ int main(void)
             continue;
         }
 
-        memset(&client_addr, 0, sizeof(sockaddr_in_t));
+        memset(&client_addr, 0, sizeof(SockAddrIn));
         client_addr.sin_family = AF_INET;
         client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
         client_addr.sin_port = htons(50111);
 
-        client_result = connect(client_socket, (sockaddr_t*)&client_addr, sizeof(client_addr));
+        client_result = connect(client_socket, (SockAddr*)&client_addr, sizeof(client_addr));
 
         if(client_result == SOCKET_ERROR)
         {

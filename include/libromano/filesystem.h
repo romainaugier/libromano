@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_FILESYSTEM)
 #define __LIBROMANO_FILESYSTEM
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #if defined(ROMANO_WIN)
 #define MAX_PATH 260
@@ -57,25 +57,25 @@ ROMANO_API uint32_t fs_is_file(const char* path);
 /* File system walk yields all files in a directory and its subdirectory if in recursive mode */
 typedef enum 
 {
-    FsWalkMode_YieldDirs = 0x1,
-    FsWalkMode_YieldFiles = 0x2,
-    FsWalkMode_Recursive = 0x4
-} fs_walk_mode; 
+    FSWalkMode_YieldDirs = 0x1,
+    FSWalkMode_YieldFiles = 0x2,
+    FSWalkMode_Recursive = 0x4
+} FSWalkMode; 
 
-struct fs_walk_item {
+struct FSWalkItem {
     char* path;
     size_t path_length;
 };
 
-typedef struct fs_walk_item fs_walk_item_t;
+typedef struct FSWalkItem FSWalkItem;
 
-ROMANO_API fs_walk_item_t* fs_walk_item_new(const char* path);
+ROMANO_API FSWalkItem* fs_walk_item_new(const char* path);
 
-ROMANO_API void fs_walk_item_free(fs_walk_item_t* walk_item);
+ROMANO_API void fs_walk_item_free(FSWalkItem* walk_item);
 
 ROMANO_API int fs_walk(const char* path,
-                       fs_walk_item_t* walk_item,
-                       const fs_walk_mode mode);
+                       FSWalkItem* walk_item,
+                       const FSWalkMode mode);
 
 ROMANO_CPP_END
 

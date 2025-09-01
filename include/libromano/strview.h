@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_STRVIEW)
 #define __LIBROMANO_STRVIEW
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

@@ -7,29 +7,52 @@
 #include <stdlib.h>
 #include <string.h>
 
-void arena_init(Arena* arena, const size_t size)
+ArenaBlock* arena_block_init(const size_t block_size)
 {
-    arena->ptr = malloc(size);
-    arena->offset = 0;
-    arena->capacity = size;
+    const size_t total_size = block_size + sizeof(ArenaBlock);
+
+    void* addr = malloc(total_size);
+
+    ROMANO_ASSERT(addr != NULL, "Error during arena reallocation");
+
+    if(addr == NULL)
+    {
+        return NULL;
+    }
+
+    void* block_addr = (char*)addr + sizeof(ArenaBlock);
+
+    ArenaBlock* block = (ArenaBlock*)addr;
+    block->address = block_addr;
+    block->capacity = block_size;
+    block->offset = 0;
+    block->previous = NULL;
+    block->next = NULL;
+
+    return block;
+}
+
+void arena_init(Arena* arena, const size_t block_size)
+{
+    arena->current_block = arena_block_init(block_size);
+    arena->block_size = block_size;
+    arena->capacity = block_size;
 }
 
 ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena, 
                                             const size_t new_size)
 {
-    return (arena->offset + new_size) >= arena->capacity;
+    return (arena->current_block->offset + new_size) >= arena->current_block->capacity;
 }
 
 void arena_resize(Arena* arena)
 {
-    const size_t new_capacity = (size_t)((float)arena->capacity * ARENA_GROWTH_RATE);
+    ArenaBlock* new_block = arena_block_init(arena->block_size);
 
-    void* new_ptr = realloc(arena->ptr, new_capacity);
+    new_block->previous = arena->current_block;
+    arena->current_block = new_block;
 
-    ROMANO_ASSERT(new_ptr != NULL, "Error during arena reallocation");
-
-    arena->ptr = new_ptr;
-    arena->capacity = new_capacity;
+    arena->capacity += arena->block_size;
 }
 
 void* arena_push(Arena* arena, void* data, const size_t data_size)
@@ -39,31 +62,62 @@ void* arena_push(Arena* arena, void* data, const size_t data_size)
         arena_resize(arena);
     }
 
-    void* data_address = (void*)((char*)arena->ptr + arena->offset);
+    void* data_address = (void*)((char*)arena->current_block->address + arena->current_block->offset);
     
     if(data != NULL)
     {
         memcpy(data_address, data, data_size);
     }
 
-    arena->offset += data_size;
+    arena->current_block->offset += data_size;
 
     return data_address;
 }
 
-void* arena_at(Arena* arena, const size_t offset)
+void arena_clear(Arena* arena)
 {
-    ROMANO_ASSERT(offset < arena->capacity, "offset too large");
+    ArenaBlock* current = arena->current_block;
+    current->offset = 0;
 
-    void* data_address = (char*)arena->ptr + offset;
+    while(current->previous != NULL)
+    {
+        current = current->previous;
+        current->offset = 0;
+    }
 
-    return data_address;
+    arena->current_block = current;
 }
 
 void arena_destroy(Arena* arena)
 {
-    free(arena->ptr);
-    arena->ptr = NULL;
-    arena->offset = 0;
+    if(arena->current_block != NULL)
+    {
+        ArenaBlock* prev_block = arena->current_block->previous;
+
+        while(prev_block != NULL)
+        {
+            ArenaBlock* prev_prev_block = prev_block->previous;
+
+            free(prev_block);
+
+            prev_block = prev_prev_block;
+        }
+
+        ArenaBlock* next_block = arena->current_block->next;
+
+        while(next_block != NULL)
+        {
+            ArenaBlock* next_next_block = next_block->next;
+
+            free(next_block);
+
+            next_block = next_next_block;
+        }
+
+        free(arena->current_block);
+
+        arena->current_block = NULL;
+    }
+
     arena->capacity = 0;
 }

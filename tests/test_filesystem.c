@@ -7,7 +7,7 @@
 
 int main(void)
 {
-    fs_walk_item_t* walk_item;
+    FSWalkItem* walk_item;
 
     logger_init();
     logger_set_level(LogLevel_Debug);

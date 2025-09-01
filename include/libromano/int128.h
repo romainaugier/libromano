@@ -9,7 +9,7 @@
 #if !defined(__LIBROMANO_INT128)
 #define __LIBROMANO_128
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #include <immintrin.h>
 

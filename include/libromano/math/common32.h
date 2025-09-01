@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_MATH_COMMON)
 #define __LIBROMANO_MATH_COMMON
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #include <immintrin.h>
 

@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_MATH_STATS32)
 #define __LIBROMANO_MATH_STATS32
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

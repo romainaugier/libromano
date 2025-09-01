@@ -121,12 +121,12 @@ void fs_parent_dir(const char* path,
 }
 
 
-fs_walk_item_t* fs_walk_item_new(const char* path)
+FSWalkItem* fs_walk_item_new(const char* path)
 {
     size_t path_length;
-    fs_walk_item_t* item;
+    FSWalkItem* item;
     
-    item = (fs_walk_item_t*)malloc(sizeof(fs_walk_item_t));
+    item = (FSWalkItem*)malloc(sizeof(FSWalkItem));
 
     if(path != NULL)
     {
@@ -146,7 +146,7 @@ fs_walk_item_t* fs_walk_item_new(const char* path)
 }
 
 
-void fs_walk_item_free(fs_walk_item_t* walk_item)
+void fs_walk_item_free(FSWalkItem* walk_item)
 {
     if(walk_item->path != NULL)
     {
@@ -228,7 +228,7 @@ void fs_walk_push_parent_dir(fs_walk_data* data)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void fs_walk_push_file(fs_walk_data* data, fs_walk_item_t* item)
+void fs_walk_push_file(fs_walk_data* data, FSWalkItem* item)
 {
 #if defined(ROMANO_WIN)
     char* parent_dir_path;
@@ -252,8 +252,8 @@ void fs_walk_push_file(fs_walk_data* data, fs_walk_item_t* item)
 }
 
 int fs_walk(const char* path,
-            fs_walk_item_t* walk_item,
-            const fs_walk_mode mode)
+            FSWalkItem* walk_item,
+            const FSWalkMode mode)
 {
     ROMANO_ASSERT(walk_item != NULL, "");
 #if defined(ROMANO_WIN)

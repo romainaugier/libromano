@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_TIME)
 #define __LIBROMANO_TIME
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 ROMANO_CPP_ENTER
 

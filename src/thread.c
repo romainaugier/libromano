@@ -17,7 +17,7 @@
 typedef HANDLE thread_handle;
 typedef DWORD thread_id;
 #elif defined(ROMANO_LINUX)
-typedef pthread_t thread_handle;
+typedef pThread thread_handle;
 typedef int thread_id;
 #endif /* defined(ROMANO_WIN) */
 
@@ -32,9 +32,9 @@ size_t get_num_procs(void)
 #endif
 }
 
-mutex_t* mutex_new(void)
+Mutex* mutex_new(void)
 {
-    mutex_t* new_mutex = malloc(sizeof(mutex_t));
+    Mutex* new_mutex = malloc(sizeof(Mutex));
 
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(new_mutex);
@@ -45,7 +45,7 @@ mutex_t* mutex_new(void)
     return new_mutex;
 }
 
-void mutex_init(mutex_t* mutex)
+void mutex_init(Mutex* mutex)
 {
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(mutex);
@@ -55,7 +55,7 @@ void mutex_init(mutex_t* mutex)
 }
 
 
-void mutex_lock(mutex_t* mutex)
+void mutex_lock(Mutex* mutex)
 {
     ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
@@ -66,7 +66,7 @@ void mutex_lock(mutex_t* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_unlock(mutex_t* mutex)
+void mutex_unlock(Mutex* mutex)
 {
     ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
@@ -77,7 +77,7 @@ void mutex_unlock(mutex_t* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_release(mutex_t* mutex)
+void mutex_release(Mutex* mutex)
 {
     ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
@@ -88,7 +88,7 @@ void mutex_release(mutex_t* mutex)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void mutex_free(mutex_t* mutex)
+void mutex_free(Mutex* mutex)
 {
     ROMANO_ASSERT(mutex != NULL, "Mutex has not been initialized");
 
@@ -101,9 +101,9 @@ void mutex_free(mutex_t* mutex)
     free(mutex);
 }
 
-conditional_variable* conditional_variable_new(void)
+ConditionalVariable* ConditionalVariable_new(void)
 {
-    conditional_variable* new_cond_var = malloc(sizeof(conditional_variable));
+    ConditionalVariable* new_cond_var = malloc(sizeof(ConditionalVariable));
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(new_cond_var);
@@ -114,7 +114,7 @@ conditional_variable* conditional_variable_new(void)
     return new_cond_var;
 }
 
-void conditional_variable_init(conditional_variable* cond_var)
+void ConditionalVariable_init(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
@@ -125,7 +125,7 @@ void conditional_variable_init(conditional_variable* cond_var)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void conditional_variable_wait(conditional_variable* cond_var, mutex_t* mtx, uint32_t wait_duration_ms)
+void ConditionalVariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_t wait_duration_ms)
 {
     ROMANO_ASSERT(cond_var != NULL && mtx != NULL, "");
 
@@ -152,7 +152,7 @@ void conditional_variable_wait(conditional_variable* cond_var, mutex_t* mtx, uin
 #endif /* defined(ROMANO_WIN) */
 }
 
-void conditional_variable_signal(conditional_variable* cond_var)
+void ConditionalVariable_signal(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 #if defined(ROMANO_WIN)
@@ -162,7 +162,7 @@ void conditional_variable_signal(conditional_variable* cond_var)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void conditional_variable_broadcast(conditional_variable* cond_var)
+void ConditionalVariable_broadcast(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
@@ -173,7 +173,7 @@ void conditional_variable_broadcast(conditional_variable* cond_var)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void conditional_variable_release(conditional_variable* cond_var)
+void ConditionalVariable_release(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
@@ -182,7 +182,7 @@ void conditional_variable_release(conditional_variable* cond_var)
 #endif /* defined(ROMANO_LINUX) */
 }
 
-void conditional_variable_free(conditional_variable* cond_var)
+void ConditionalVariable_free(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
@@ -193,7 +193,7 @@ void conditional_variable_free(conditional_variable* cond_var)
     free(cond_var);
 }
 
-struct thread {
+struct Thread {
     thread_handle _thread_handle;
     thread_id _id;
 #if defined(ROMANO_LINUX)
@@ -202,11 +202,11 @@ struct thread {
 #endif /* defined(ROMANO_LINUX) */
 };
 
-thread_t* thread_create(thread_func func, void* arg)
+Thread* thread_create(ThreadFunc func, void* arg)
 {
-    thread_t* new_thread = (thread_t*)malloc(sizeof(thread_t));
+    Thread* new_thread = (Thread*)malloc(sizeof(Thread));
 
-    memset(new_thread, 0, sizeof(thread_t));
+    memset(new_thread, 0, sizeof(Thread));
 
 #if defined(ROMANO_WIN)
     new_thread->_thread_handle = CreateThread(NULL,
@@ -223,7 +223,7 @@ thread_t* thread_create(thread_func func, void* arg)
     return new_thread;
 }
 
-void thread_start(thread_t* thread)
+void thread_start(Thread* thread)
 {
     ROMANO_ASSERT(thread != NULL, "thread has not been initialized");
 
@@ -259,7 +259,7 @@ size_t thread_get_id(void)
 #endif /* defined(ROMANO_WIN) */
 }
 
-void thread_detach(thread_t* thread)
+void thread_detach(Thread* thread)
 {
     ROMANO_ASSERT(thread != NULL, "");
 
@@ -272,7 +272,7 @@ void thread_detach(thread_t* thread)
     free(thread);
 }
 
-void thread_join(thread_t* thread)
+void thread_join(Thread* thread)
 {
     if(thread == NULL)
     {
@@ -289,15 +289,15 @@ void thread_join(thread_t* thread)
     free(thread);
 }
 
-struct work
+struct Work
 {
-    thread_func func;
+    ThreadFunc func;
     void* arg;
 };
 
-typedef struct work work_t;
+typedef struct Work Work;
 
-struct threadpool
+struct ThreadPool
 {
     MoodycamelCQHandle work_queue;
 
@@ -306,13 +306,13 @@ struct threadpool
     uint32_t stop;
 };
 
-work_t* work_new(thread_func func, void* arg)
+Work* work_new(ThreadFunc func, void* arg)
 {
-    work_t* new_work;
+    Work* new_work;
     
     ROMANO_ASSERT(func != NULL, "");
 
-    new_work = malloc(sizeof(work_t));
+    new_work = malloc(sizeof(Work));
     
     new_work->func = func;
     new_work->arg = arg;
@@ -320,7 +320,7 @@ work_t* work_new(thread_func func, void* arg)
     return new_work;
 }
 
-void work_free(work_t* work)
+void work_free(Work* work)
 {
     ROMANO_ASSERT(work != NULL, "");
 
@@ -329,41 +329,41 @@ void work_free(work_t* work)
 
 void* threadpool_worker_func(void* arg)
 {
-    threadpool_t* threadpool = (threadpool_t*)arg;
-    work_t* work;
+    ThreadPool* threadpool = (ThreadPool*)arg;
+    Work* work;
 
     while(1)
     {
-        if(atomic_load_32((atomic32_t*)&threadpool->stop))
+        if(atomic_load_32((Atomic32*)&threadpool->stop))
         {
             break;
         }
 
         if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
         {
-            atomic_add_32((atomic32_t*)&threadpool->working_threads_count, 1);
+            atomic_add_32((Atomic32*)&threadpool->working_threads_count, 1);
 
             work->func(work->arg);
 
-            atomic_sub_32((atomic32_t*)&threadpool->working_threads_count, 1);
+            atomic_sub_32((Atomic32*)&threadpool->working_threads_count, 1);
 
             work_free(work);
         }
     }
 
-    atomic_sub_32((atomic32_t*)&threadpool->workers_count, 1);
+    atomic_sub_32((Atomic32*)&threadpool->workers_count, 1);
 
     return NULL;
 }
 
-threadpool_t* threadpool_init(size_t workers_count)
+ThreadPool* threadpool_init(size_t workers_count)
 {
-    threadpool_t* threadpool;
+    ThreadPool* threadpool;
     size_t i;
     
     workers_count = workers_count == 0 ? get_num_procs() : workers_count;
     
-    threadpool = malloc(sizeof(struct threadpool));
+    threadpool = malloc(sizeof(struct ThreadPool));
 
     threadpool->workers_count = workers_count;
     threadpool->working_threads_count = 0;
@@ -376,7 +376,7 @@ threadpool_t* threadpool_init(size_t workers_count)
 
     for(i = 0; i < workers_count; i++)
     {
-        thread_t* new_thread;
+        Thread* new_thread;
         
         new_thread = thread_create(threadpool_worker_func, (void*)threadpool);
         
@@ -387,9 +387,9 @@ threadpool_t* threadpool_init(size_t workers_count)
     return threadpool;
 }
 
-int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
+int threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg)
 {
-    work_t* work;
+    Work* work;
 
     ROMANO_ASSERT(threadpool != NULL, "");
 
@@ -400,13 +400,13 @@ int threadpool_work_add(threadpool_t* threadpool, thread_func func, void* arg)
     return 1;
 }
 
-void threadpool_wait(threadpool_t* threadpool)
+void threadpool_wait(ThreadPool* threadpool)
 {
     ROMANO_ASSERT(threadpool != NULL, "");
 
     while(1)
     {
-        if(atomic_load_32((atomic32_t*)&threadpool->working_threads_count) == 0 && 
+        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count) == 0 && 
            moodycamel_cq_size_approx(threadpool->work_queue) == 0)
         {
             break;
@@ -414,14 +414,14 @@ void threadpool_wait(threadpool_t* threadpool)
     }
 }
 
-void threadpool_release(threadpool_t* threadpool)
+void threadpool_release(ThreadPool* threadpool)
 {
-    work_t* work;
+    Work* work;
     size_t i;
     
     ROMANO_ASSERT(threadpool != NULL, "");
 
-    atomic_store_32((atomic32_t*)&threadpool->stop, 1);
+    atomic_store_32((Atomic32*)&threadpool->stop, 1);
 
     threadpool->stop = 1;
 

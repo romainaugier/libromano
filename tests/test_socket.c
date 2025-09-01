@@ -22,7 +22,7 @@ void socket_loop(void)
 {
     socket_init_ctx();
     
-    socket_t sock = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    Socket sock = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(sock == INVALID_SOCKET)
     {
@@ -31,12 +31,12 @@ void socket_loop(void)
         return;
     }
 
-    sockaddr_in_t server = { 0 };
+    SockAddrIn server = { 0 };
     server.sin_family = AF_INET;
     server.sin_port = htons(45666);
     server.sin_addr.s_addr = INADDR_ANY;
 
-    if(bind(sock, (sockaddr_t*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", get_last_error());
         closesocket(sock);
@@ -56,7 +56,7 @@ void socket_loop(void)
 
     while(end_server == 0)
     {
-        socket_t new_connection = accept(sock, NULL, NULL);
+        Socket new_connection = accept(sock, NULL, NULL);
 
         if(new_connection == INVALID_SOCKET)
         {

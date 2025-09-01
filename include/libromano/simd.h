@@ -7,7 +7,7 @@
 #if !defined(__LIBROMANO_SIMD)
 #define __LIBROMANO_SIMD
 
-#include "libromano/libromano.h"
+#include "libromano/common.h"
 
 #include <stdlib.h>
 #include <immintrin.h>
