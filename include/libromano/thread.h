@@ -21,7 +21,7 @@ typedef CONDITION_VARIABLE ConditionalVariable;
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/syscall.h>
-typedef pthread_mutex Mutex;
+typedef pthread_mutex_t Mutex;
 typedef pthread_cond_t ConditionalVariable;
 #endif /* defined(ROMANO_WIN) */
 
