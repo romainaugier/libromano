@@ -197,7 +197,7 @@ struct Thread {
     thread_handle _thread_handle;
     thread_id _id;
 #if defined(ROMANO_LINUX)
-    thread_func _func;
+    ThreadFunc _func;
     void* _data;
 #endif /* defined(ROMANO_LINUX) */
 };
