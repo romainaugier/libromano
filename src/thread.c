@@ -17,7 +17,7 @@
 typedef HANDLE thread_handle;
 typedef DWORD thread_id;
 #elif defined(ROMANO_LINUX)
-typedef pThread thread_handle;
+typedef pthread_t thread_handle;
 typedef int thread_id;
 #endif /* defined(ROMANO_WIN) */
 
