@@ -190,7 +190,7 @@ void fs_walk_data_free(fs_walk_data* walk_data, uint32_t close_find)
         free(*(void**)vector_at(walk_data->dir_queue, i)); 
     };
 
-    vector_free(walk_data->dir_queue);
+    vector_destroy(walk_data->dir_queue);
 
 #if defined(ROMANO_WIN)
     if(close_find == 1)

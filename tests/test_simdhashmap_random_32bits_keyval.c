@@ -116,7 +116,7 @@ int main(void)
 
     simdhashmap_free(hashmap);
 
-    vector_free(keys);
+    vector_destroy(keys);
 
     logger_release();
 

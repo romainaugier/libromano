@@ -122,7 +122,7 @@ int main(void)
     SCOPED_PROFILE_MS_END(_simdhashmap_delete);
 
     simdhashmap_free(hashmap);
-    vector_free(keys);
+    vector_destroy(keys);
 
     logger_release();
 

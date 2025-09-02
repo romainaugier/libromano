@@ -77,10 +77,16 @@ ROMANO_API size_t vector_find(Vector* vector, void* value);
 typedef void (*vector_free_func)(void*);
 
 /* Frees the given vector and releases it */
+ROMANO_API void vector_destroy(Vector* vector);
+
+/* Frees the given vector */
 ROMANO_API void vector_free(Vector* vector);
 
 /* Frees the given vector and execute a dtor on each element */
 ROMANO_API void vector_free_with_dtor(Vector* vector, vector_free_func dtor);
+
+/* Frees and releases the given vector and execute a dtor on each element */
+ROMANO_API void vector_destroy_with_dtor(Vector* vector, vector_free_func dtor);
 
 #if !defined(__LIBROMANO_VECTOR_IMPL)
 #undef GET_VEC_PTR

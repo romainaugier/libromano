@@ -264,6 +264,16 @@ size_t vector_find(Vector* vector, void* value)
     return VECTOR_NOT_FOUND;
 }
 
+void vector_destroy(Vector *vector)
+{
+    if(vector != NULL)
+    {
+        vector_free(vector);
+
+        free(vector);
+    }
+}
+
 void vector_free(Vector* vector)
 {
     if(vector != NULL)
@@ -272,8 +282,6 @@ void vector_free(Vector* vector)
         {
             free(vector->data);
         }
-
-        free(vector);
     }
 }
 
@@ -288,4 +296,11 @@ void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
     }
     
     vector_free(vector);
+}
+
+void vector_destroy_with_dtor(Vector* vector, vector_free_func dtor)
+{
+    vector_free_with_dtor(vector, dtor);
+
+    free(vector);
 }

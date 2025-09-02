@@ -110,7 +110,7 @@ int main(void)
     logger_log(LogLevel_Info, "Vector back: %f", *(float*)vector_back(float_vec));
 
     logger_log(LogLevel_Info, "Freeing vector");
-    vector_free(float_vec);
+    vector_destroy(float_vec);
 
     Vector* alloc_vec = vector_new(64, sizeof(void*));
 
@@ -122,7 +122,7 @@ int main(void)
         vector_push_back(alloc_vec, &addr);
     }
 
-    vector_free_with_dtor(alloc_vec, simple_dtor);
+    vector_destroy_with_dtor(alloc_vec, simple_dtor);
 
     logger_release();
 

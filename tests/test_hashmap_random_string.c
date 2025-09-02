@@ -145,7 +145,7 @@ int main(void)
         string_free(*key);
     } 
 
-    vector_free(keys);
+    vector_destroy(keys);
 
     logger_release();
 

@@ -130,7 +130,7 @@ int main(void)
 
     hashmap_free(hashmap);
 
-    vector_free(keys);
+    vector_destroy(keys);
 
     logger_release();
 
