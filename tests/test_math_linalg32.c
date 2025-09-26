@@ -14,8 +14,8 @@
 #define MATMUL_SIZE_M 350
 #define MATMUL_SIZE_N 213
 #else
-#define MATMUL_SIZE_M 1578
-#define MATMUL_SIZE_N 1730
+#define MATMUL_SIZE_M 1024
+#define MATMUL_SIZE_N 1024
 #endif /* ROMANO_DEBUG */
 
 #define M_CHOL 4

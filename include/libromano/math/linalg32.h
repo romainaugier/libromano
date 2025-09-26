@@ -117,6 +117,8 @@ typedef struct matrix44f {
 
 struct MatrixF {
     float* data;
+    uint32_t N;
+    uint32_t M;
 };
 
 typedef struct MatrixF MatrixF;

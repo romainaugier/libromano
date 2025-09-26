@@ -4,7 +4,6 @@
 
 #include "libromano/math/linalg32.h"
 #include "libromano/memory.h"
-#include "libromano/cpu.h"
 #include "libromano/simd.h"
 #include "libromano/logger.h"
 
@@ -14,26 +13,15 @@
 
 /* MATRIX */
 
-#define HEADER_SIZE 8
+#define GET_AT(A, i, j) (A.data[i * A.N + j])
+#define SET_AT(A, value, i, j) (A.data[i * A.N + j] = value)
 
-#define SIZE_N(A) ((int)A.data[0])
-#define SIZE_M(A) ((int)A.data[1])
-#define SET_SIZE_N(A, N) A.data[0] = (float)N
-#define SET_SIZE_M(A, M) A.data[1] = (float)M
-
-#define GET_AT(A, i, j) (A.data[i * SIZE_N(A) + j + HEADER_SIZE])
-#define SET_AT(A, value, i, j) (A.data[i * SIZE_N(A) + j + HEADER_SIZE] = value)
-
-#define GET_PTR(A) ((float*)&(A.data[HEADER_SIZE]))
-
-#define GET_AT_WITH_N(A, N, i, j) (A.data[i * N + j + HEADER_SIZE])
-#define SET_AT_WITH_N(A, N, value, i, j) (A.data[i * N + j + HEADER_SIZE] = value)
+#define GET_AT_WITH_N(A, N, i, j) (A.data[i * N + j])
+#define SET_AT_WITH_N(A, N, value, i, j) (A.data[i * N + j] = value)
 
 #define SWAP_FLOAT(f1, f2) do { float tmp = f1; f1 = f2; f2 = tmp; } while (0)
 
-#define ALIGNMENT simd_has_avx() ? 32 : 16
-
-#define INIT_HEADER(data) (memset(data, 0, HEADER_SIZE * sizeof(float)))
+#define ALIGNMENT 32
 
 /* 
     M -> rows
@@ -44,6 +32,8 @@ MatrixF matrix_null()
 {
     MatrixF A;
     A.data = NULL;
+    A.N = 0;
+    A.M = 0;
 
     return A;
 }
@@ -52,10 +42,9 @@ MatrixF matrixf_create(const int M, const int N)
 {
     MatrixF A;
 
-    A.data = (float*)mem_aligned_alloc((M * N + HEADER_SIZE) * sizeof(float), ALIGNMENT);
-    INIT_HEADER(A.data);
-    SET_SIZE_M(A, M);
-    SET_SIZE_N(A, N);
+    A.data = (float*)mem_aligned_alloc((M * N) * sizeof(float), ALIGNMENT);
+    A.M = M;
+    A.N = N;
 
     return A;
 }
@@ -64,10 +53,12 @@ MatrixF matrixf_copy(MatrixF* A)
 {
     MatrixF B;
 
-    const uint64_t size = (SIZE_M((*A)) * SIZE_N((*A)) + HEADER_SIZE) * sizeof(float);
+    const size_t size = (A->M * A->N) * sizeof(float);
 
     B.data = (float*)mem_aligned_alloc(size, ALIGNMENT);
-    INIT_HEADER(B.data);
+    B.M = A->M;
+    B.N = A->N;
+
     memcpy(B.data, A->data, size);
 
     return B;
@@ -77,8 +68,8 @@ void matrixf_size(MatrixF* A, int* M, int* N)
 {
     if(A->data != NULL)
     {
-        *M = SIZE_M((*A));
-        *N = SIZE_N((*A));
+        *M = A->M;
+        *N = A->N;
     }
 }
 
@@ -89,17 +80,16 @@ void matrixf_resize(MatrixF* A, const int M, const int N)
         mem_aligned_free(A->data);
     }
 
-    A->data = (float*)mem_aligned_alloc((M * N + HEADER_SIZE) * sizeof(float), ALIGNMENT);
-    INIT_HEADER(A->data);
-    SET_SIZE_M((*A), M);
-    SET_SIZE_N((*A), N);
+    A->data = (float*)mem_aligned_alloc((M * N) * sizeof(float), ALIGNMENT);
+    A->M = M;
+    A->N = N;
 }
 
 int matrixf_row_size(MatrixF* A)
 {
     if(A->data)
     {
-        return SIZE_M((*A));
+        return A->M;
     }
 
     return 0;
@@ -109,7 +99,7 @@ int matrixf_column_size(MatrixF* A)
 {
     if(A->data)
     {
-        return SIZE_N((*A));
+        return A->N;
     }
 
     return 0;
@@ -117,12 +107,12 @@ int matrixf_column_size(MatrixF* A)
 
 void matrixf_set_at(MatrixF* A, const float value, const int i, const int j)
 {
-    A->data[i * SIZE_N((*A)) + j + HEADER_SIZE] = value;
+    A->data[i * A->N + j] = value;
 }
 
 float matrixf_get_at(MatrixF* A, const int i, const int j)
 {
-    return A->data[i * SIZE_N((*A)) + j + HEADER_SIZE];
+    return A->data[i * A->N + j];
 }
 
 float matrixf_trace(MatrixF* A)
@@ -132,66 +122,146 @@ float matrixf_trace(MatrixF* A)
 
 void matrixf_zero(MatrixF* A)
 {
-    memset(A->data + HEADER_SIZE, 0, SIZE_M((*A)) * SIZE_N((*A)) * sizeof(float));
+    memset(A->data, 0, A->M * A->N * sizeof(float));
+}
+
+void transpose_8x8_avx2_float(const float* ROMANO_RESTRICT src,
+                              float* ROMANO_RESTRICT dst,
+                              uint32_t src_stride, 
+                              uint32_t dst_stride) 
+{
+    __m256 row0 = _mm256_load_ps(&src[0 * src_stride]);
+    __m256 row1 = _mm256_load_ps(&src[1 * src_stride]);
+    __m256 row2 = _mm256_load_ps(&src[2 * src_stride]);
+    __m256 row3 = _mm256_load_ps(&src[3 * src_stride]);
+    __m256 row4 = _mm256_load_ps(&src[4 * src_stride]);
+    __m256 row5 = _mm256_load_ps(&src[5 * src_stride]);
+    __m256 row6 = _mm256_load_ps(&src[6 * src_stride]);
+    __m256 row7 = _mm256_load_ps(&src[7 * src_stride]);
+
+    __m256 tmp0 = _mm256_unpacklo_ps(row0, row1);
+    __m256 tmp1 = _mm256_unpackhi_ps(row0, row1);
+    __m256 tmp2 = _mm256_unpacklo_ps(row2, row3);
+    __m256 tmp3 = _mm256_unpackhi_ps(row2, row3);
+    __m256 tmp4 = _mm256_unpacklo_ps(row4, row5);
+    __m256 tmp5 = _mm256_unpackhi_ps(row4, row5);
+    __m256 tmp6 = _mm256_unpacklo_ps(row6, row7);
+    __m256 tmp7 = _mm256_unpackhi_ps(row6, row7);
+
+    __m256 tmp8  = _mm256_shuffle_ps(tmp0, tmp2, _MM_SHUFFLE(1,0,1,0));
+    __m256 tmp9  = _mm256_shuffle_ps(tmp0, tmp2, _MM_SHUFFLE(3,2,3,2));
+    __m256 tmp10 = _mm256_shuffle_ps(tmp1, tmp3, _MM_SHUFFLE(1,0,1,0));
+    __m256 tmp11 = _mm256_shuffle_ps(tmp1, tmp3, _MM_SHUFFLE(3,2,3,2));
+    __m256 tmp12 = _mm256_shuffle_ps(tmp4, tmp6, _MM_SHUFFLE(1,0,1,0));
+    __m256 tmp13 = _mm256_shuffle_ps(tmp4, tmp6, _MM_SHUFFLE(3,2,3,2));
+    __m256 tmp14 = _mm256_shuffle_ps(tmp5, tmp7, _MM_SHUFFLE(1,0,1,0));
+    __m256 tmp15 = _mm256_shuffle_ps(tmp5, tmp7, _MM_SHUFFLE(3,2,3,2));
+
+    row0 = _mm256_permute2f128_ps(tmp8, tmp12, 0x20);
+    row1 = _mm256_permute2f128_ps(tmp9, tmp13, 0x20);
+    row2 = _mm256_permute2f128_ps(tmp10, tmp14, 0x20);
+    row3 = _mm256_permute2f128_ps(tmp11, tmp15, 0x20);
+    row4 = _mm256_permute2f128_ps(tmp8, tmp12, 0x31);
+    row5 = _mm256_permute2f128_ps(tmp9, tmp13, 0x31);
+    row6 = _mm256_permute2f128_ps(tmp10, tmp14, 0x31);
+    row7 = _mm256_permute2f128_ps(tmp11, tmp15, 0x31);
+
+    _mm256_store_ps(&dst[0 * dst_stride], row0);
+    _mm256_store_ps(&dst[1 * dst_stride], row1);
+    _mm256_store_ps(&dst[2 * dst_stride], row2);
+    _mm256_store_ps(&dst[3 * dst_stride], row3);
+    _mm256_store_ps(&dst[4 * dst_stride], row4);
+    _mm256_store_ps(&dst[5 * dst_stride], row5);
+    _mm256_store_ps(&dst[6 * dst_stride], row6);
+    _mm256_store_ps(&dst[7 * dst_stride], row7);
 }
 
 void matrixf_transpose(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
+    uint32_t bi;
+    uint32_t bj;
+
+    uint32_t block_rows;
+    uint32_t block_cols;
+    const uint32_t block_size = 8;
 
     float* new_data; 
 
-    const int M = SIZE_M((*A));
-    const int N = SIZE_N((*A));
+    const int M = A->M;
+    const int N = A->N;
 
-    if(M == N)
+    new_data = (float*)mem_aligned_alloc((N * M) * sizeof(float), ALIGNMENT);
+
+    for(i = 0; i < M; i += block_size)
     {
-        for(i = 0; i < M; i++)
+        for(j = 0; j < N; j += block_size) 
         {
-            for(j = (i + 1); j < M; j++)
+            block_rows = block_size > (M - i) ? (M - i) : block_size;
+            block_cols = block_size > (N - j) ? (N - j) : block_size;
+
+            if(block_rows == block_size && block_cols == block_size)
             {
-                SWAP_FLOAT(A->data[i * M + j + HEADER_SIZE], A->data[j * M + i + HEADER_SIZE]);
+                transpose_8x8_avx2_float(&A->data[i * N + j], &new_data[j * M + i], M, N);
+            }
+            else 
+            {
+                for(bi = 0; bi < block_rows; bi++)
+                {
+                    for(bj = 0; bj < block_cols; bj++)
+                    {
+                        new_data[(j + bj) * M + (i + bi)] = A->data[(i + bi) * N + (j + bj)];
+                    }
+                }
             }
         }
     }
-    else
-    {
-        new_data = (float*)mem_aligned_alloc((N * M + HEADER_SIZE) * sizeof(float), ALIGNMENT);
-        INIT_HEADER(new_data);
 
-        for(i = 0; i < M; i++)
-        {
-            for(j = 0; j < N; j++)
-            {
-                new_data[j * M + i + HEADER_SIZE] = A->data[i * N + j + HEADER_SIZE];
-            }
-        }
+    mem_aligned_free(A->data);
 
-        mem_aligned_free(A->data);
-
-        A->data = new_data;
-    }
-
-    SET_SIZE_N((*A), N);
-    SET_SIZE_M((*A), M);
+    A->data = new_data;
+    A->M = M;
+    A->N = N;
 }
 
 MatrixF matrixf_transpose_from(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
+    uint32_t bi;
+    uint32_t bj;
 
-    const int M = SIZE_M((*A));
-    const int N = SIZE_N((*A));
+    const int M = A->M;
+    const int N = A->N;
+
+    uint32_t block_rows;
+    uint32_t block_cols;
+    const uint32_t block_size = 8;
 
     MatrixF res = matrixf_create(N, M);
     
-    for(i = 0; i < M; i++)
+    for(i = 0; i < M; i += block_size)
     {
-        for(j = 0; j < N; j++)
+        for(j = 0; j < N; j += block_size)
         {
-            SET_AT_WITH_N(res, M, GET_AT_WITH_N((*A), N, i, j), j, i);
+            block_rows = block_size > (M - i) ? (M - i) : block_size;
+            block_cols = block_size > (N - j) ? (N - j) : block_size;
+
+            if(block_rows == block_size && block_cols == block_size)
+            {
+                transpose_8x8_avx2_float(&A->data[i * N + j], &res.data[j * M + i], M, N);
+            }
+            else 
+            {
+                for(bi = 0; bi < block_rows; bi++)
+                {
+                    for(bj = 0; bj < block_cols; bj++)
+                    {
+                        res.data[(j + bj) * M + (i + bi)] = A->data[(i + bi) * N + (j + bj)];
+                    }
+                }
+            }
         }
     }
 
@@ -262,10 +332,10 @@ void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
             {
-                a1_sse = _mm_loadu_ps(&A[i * N + k]);
-                a2_sse = _mm_loadu_ps(&A[(i + 1) * N + k]);
-                a3_sse = _mm_loadu_ps(&A[(i + 2) * N + k]);
-                a4_sse = _mm_loadu_ps(&A[(i + 3) * N + k]);
+                a1_sse = _mm_load_ps(&A[i * N + k]);
+                a2_sse = _mm_load_ps(&A[(i + 1) * N + k]);
+                a3_sse = _mm_load_ps(&A[(i + 2) * N + k]);
+                a4_sse = _mm_load_ps(&A[(i + 3) * N + k]);
 
                 b_sse = _mm_loadu_ps(&B[j * N + k]);
 
@@ -303,8 +373,8 @@ void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
             {
-                a1_sse = _mm_loadu_ps(&A[i * N + k]);
-                b_sse = _mm_loadu_ps(&B[j * N + k]);
+                a1_sse = _mm_load_ps(&A[i * N + k]);
+                b_sse = _mm_load_ps(&B[j * N + k]);
 
                 sse_sum1 = _mm_fmadd_ps(a1_sse, b_sse, sse_sum1);
             }
@@ -352,10 +422,10 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
-                a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
-                a3_avx = _mm256_loadu_ps(&A[(i + 2) * N + k]);
-                a4_avx = _mm256_loadu_ps(&A[(i + 3) * N + k]);
+                a1_avx = _mm256_load_ps(&A[i * N + k]);
+                a2_avx = _mm256_load_ps(&A[(i + 1) * N + k]);
+                a3_avx = _mm256_load_ps(&A[(i + 2) * N + k]);
+                a4_avx = _mm256_load_ps(&A[(i + 3) * N + k]);
 
                 b_avx = _mm256_loadu_ps(&B[j * N + k]);
 
@@ -393,8 +463,8 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
-                b_avx = _mm256_loadu_ps(&B[j * N + k]);
+                a1_avx = _mm256_load_ps(&A[i * N + k]);
+                b_avx = _mm256_load_ps(&B[j * N + k]);
 
                 avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
             }
@@ -434,11 +504,11 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 
     float sum;
 
-    ROMANO_ASSERT(SIZE_N((*A)) == SIZE_M((*B)), "");    
+    ROMANO_ASSERT(A->N == B->M, "");    
 
-    M = SIZE_M((*A));
-    N = SIZE_N((*A));
-    P = SIZE_N((*B));
+    M = A->M;
+    N = A->N;
+    P = B->N;
 
     matrixf_resize(C, M, P);
     matrixf_zero(C);
@@ -447,13 +517,13 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
     {
         B_t = matrixf_transpose_from(B);
 
-        __matmul_funcs[simd_get_vectorization_mode()](GET_PTR((*A)), GET_PTR((B_t)), GET_PTR((*C)), M, N, P);
+        __matmul_funcs[simd_get_vectorization_mode()](A->data, B_t.data, C->data, M, N, P);
 
         matrixf_destroy(&B_t);
     }
     else
     {
-        _matrixf_mul_scalar(GET_PTR((*A)), GET_PTR((*B)), GET_PTR((*C)), M, N, P);
+        _matrixf_mul_scalar(A->data, B->data, C->data, M, N, P);
     }
 }
 
@@ -473,8 +543,8 @@ void _matrixf_add_f_scalar(MatrixF* A, const float f, const uint32_t M, const ui
 
 void matrixf_add_f(MatrixF* A, float f)
 {
-    const uint32_t M = SIZE_M((*A));
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t M = A->M;
+    const uint32_t N = A->N;
 
     _matrixf_add_f_scalar(A, f, M, N);
 }
@@ -495,8 +565,8 @@ void _matrixf_sub_f_scalar(MatrixF* A, const float f, const uint32_t M, const ui
 
 void matrixf_sub_f(MatrixF* A, float f)
 {
-    const uint32_t M = SIZE_M((*A));
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t M = A->M;
+    const uint32_t N = A->N;
 
     _matrixf_sub_f_scalar(A, f, M, N);
 }
@@ -517,8 +587,8 @@ void _matrixf_mul_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const
 
 void matrixf_mul_by_f(MatrixF* A, float f)
 {
-    const uint32_t M = SIZE_M((*A));
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t M = A->M;
+    const uint32_t N = A->N;
 
     _matrixf_mul_by_f_scalar(A, f, M, N);
 }
@@ -539,8 +609,8 @@ void _matrixf_div_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const
 
 void matrixf_div_by_f(MatrixF* A, float f)
 {
-    const uint32_t M = SIZE_M((*A));
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t M = A->M;
+    const uint32_t N = A->N;
 
     _matrixf_div_by_f_scalar(A, f, M, N);
 }
@@ -621,8 +691,8 @@ void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, cons
 
 void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns)
 {
-    const uint32_t M = SIZE_M((*A));
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t M = A->M;
+    const uint32_t N = A->N;
     
     printf("Matrix f32: %u x %u\n", M, N);
 
@@ -655,9 +725,9 @@ bool matrixf_cholesky_decomposition(MatrixF* A, MatrixF* L)
     float value;
     float tmp;
 
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t N = A->N;
 
-    if(SIZE_M((*A)) != SIZE_N((*A)))
+    if(A->M != A->N)
     {
         logger_log(LogLevel_Error, "Cholesky Decomposition failed: non-square matrix");
         return false;
@@ -729,9 +799,9 @@ bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
     MatrixF L = matrix_null();
     MatrixF y = matrix_null();
 
-    const uint32_t N = SIZE_N((*A));
+    const uint32_t N = A->N;
 
-    if(SIZE_M((*A)) != SIZE_N((*A)))
+    if(A->M != A->N)
     {
         logger_log(LogLevel_Error, "Cholesky Solve failed: non-square matrix");
         return false;
@@ -746,8 +816,8 @@ bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
 
     /* Ly = b */
 
-    b_m = SIZE_M((*b));
-    b_n = SIZE_N((*b));
+    b_m = b->M;
+    b_n = b->N;
 
     y = matrixf_create(b_m, b_n);
 
