@@ -24,15 +24,15 @@ jobs:
       - name: Build concurrentqueue
         run: |
           cd concurrentqueue
-          cmake -S . -B cqbuild -DC_API=1
-          cd cqbuild
-          cmake --build . --config Debug
-          cmake --build . --config Release
-          cmake --install . --prefix ../cqinstall
+          ./build_c_api.bat
           cd ..
 
-      - name: build and test
-        run: ./build.bat --tests --reldebug --version:0.0.0
+      - name: build and test with addr san
+        run: |
+          ./build.bat --tests --reldebug --addrsan --clean
+          type build\Testing\Temporary\LastTest.log
 
-      - name: show test results
-        run: type build\Testing\Temporary\LastTest.log
+      - name: build and test
+        run: |
+          ./build.bat --tests --reldebug --clean
+          type build\Testing\Temporary\LastTest.log

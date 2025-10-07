@@ -10,6 +10,11 @@ REMOVEOLDDIR=0
 EXPORTCOMPILECOMMANDS=0
 VERSION="0.0.0"
 INSTALLDIR="$PWD/install"
+INSTALL=0
+THREADSAN=0
+UBSAN=0
+ADDRSAN=0
+LEAKSAN=0
 
 # Little function to parse command line arguments
 parse_args()
@@ -21,6 +26,16 @@ parse_args()
     [ "$1" == "--tests" ] && RUNTESTS=1
 
     [ "$1" == "--clean" ] && REMOVEOLDDIR=1
+    
+    [ "$1" == "--install" ] && INSTALL=1
+
+    [ "$1" == "--threadsan" ] && THREADSAN=1
+
+    [ "$1" == "--ubsan" ] && UBSAN=1
+
+    [ "$1" == "--addrsan" ] && ADDRSAN=1
+
+    [ "$1" == "--leaksan" ] && LEAKSAN=1
 
     [ "$1" == "--export-compile-commands" ] && EXPORTCOMPILECOMMANDS=1
 
@@ -68,6 +83,23 @@ do
     parse_args "$arg"
 done
 
+if [[ $UBSAN -eq 1 ]]; then
+    if [[ $ADDRSAN -eq 1 ]]; then
+        log_error "Undefined Behavior Sanitizer and Address Sanitizer are not compatible"
+        exit 1
+    fi
+
+    if [[ $LEAKSAN -eq 1 ]]; then
+        log_error "Undefined Behavior Sanitizer and Leak Sanitizer are not compatible"
+        exit 1
+    fi
+
+    if [[ $THREADSAN -eq 1 ]]; then
+        log_error "Undefined Behavior Sanitizer and Thread Sanitizer are not compatible"
+        exit 1
+    fi
+fi
+
 log_info "Build type: $BUILDTYPE"
 log_info "Build version: $VERSION"
 
@@ -81,7 +113,14 @@ if [[ -d "install" && $REMOVEOLDDIR -eq 1 ]]; then
     rm -rf install
 fi
 
-cmake -S . -B build -DRUN_TESTS=$RUNTESTS -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPORTCOMPILECOMMANDS -DCMAKE_BUILD_TYPE=$BUILDTYPE -DVERSION=$VERSION
+cmake -S . -B build -DRUN_TESTS=$RUNTESTS \
+                    -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPORTCOMPILECOMMANDS \
+                    -DCMAKE_BUILD_TYPE=$BUILDTYPE \
+                    -DVERSION=$VERSION \
+                    -DTHREADSAN=$THREADSAN \
+                    -DUBSAN=$UBSAN \
+                    -DADDRSAN=$ADDRSAN \
+                    -DLEAKSAN=LEAK$SAN
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
@@ -108,18 +147,19 @@ if [[ $RUNTESTS -eq 1 ]]; then
     fi
 fi
 
-cmake --install . --config %BUILDTYPE% --prefix $INSTALLDIR
+if [[ $INSTALL -eq 1 ]]; then
+    cmake --install . --config %BUILDTYPE% --prefix $INSTALLDIR
 
-if [[ $? -ne 0 ]]; then
-    log_error "Error during CMake installation"
-    cd ..
-    exit 1
+    if [[ $? -ne 0 ]]; then
+        log_error "Error during CMake installation"
+        cd ..
+        exit 1
+    fi
 fi
 
 cd ..
 
-if [[ $EXPORTCOMPILECOMMANDS -eq 1 ]]
-then
+if [[ $EXPORTCOMPILECOMMANDS -eq 1 ]]; then
     cp ./build/compile_commands.json ./compile_commands.json
     log_info "Copied compile_commands.json to root directory"
 fi

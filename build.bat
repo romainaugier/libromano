@@ -15,7 +15,7 @@ set ARCH=x64
 set VERSION="0.0.0"
 set INSTALLDIR=%CD%\install
 set INSTALL=0
-set SANITIZE=0
+set ADDRSAN=0
 
 for %%x in (%*) do (
     call :ParseArg %%~x
@@ -43,7 +43,7 @@ if %REMOVEOLDDIR% equ 1 (
 call :LogInfo "Build type: %BUILDTYPE%"
 call :LogInfo "Build version: %VERSION%"
 
-cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" -DVERSION=%VERSION%
+cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" -DVERSION=%VERSION% -DADDRSAN=%ADDRSAN%
 
 if %errorlevel% neq 0 (
     call :LogError "Error caught during CMake configuration"
@@ -98,6 +98,8 @@ if "%~1" equ "--tests" set RUNTESTS=1
 if "%~1" equ "--install" set INSTALL=1
 
 if "%~1" equ "--clean" set REMOVEOLDDIR=1
+
+if "%~1" equ "--addrsan" set ADDRSAN=1
 
 if "%~1" equ "--export-compile-commands" (
     call :LogWarning "Exporting compile commands is not supported on Windows for now"
