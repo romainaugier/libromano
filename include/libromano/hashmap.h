@@ -69,57 +69,6 @@ ROMANO_API bool hashmap_iterate(HashMap* hashmap,
 
 ROMANO_API void hashmap_free(HashMap* hashmap);
 
-/* Simd version of an hashmap inspired by https://www.youtube.com/watch?v=ncHmEUmJZf4 */
-
-struct _SimdHashMap;
-typedef struct _SimdHashMap SimdHashMap;
-
-typedef uint32_t (*simdhashmap_hash_func)(const void*, const size_t, const uint32_t);
-
-typedef uint32_t SimdHashMapIterator;
-
-ROMANO_CPP_ENTER
-
-ROMANO_API SimdHashMap* simdhashmap_new(size_t initial_capacity);
-
-ROMANO_API size_t simdhashmap_size(const SimdHashMap* hashmap);
-
-ROMANO_API size_t simdhashmap_capacity(const SimdHashMap* hashmap);
-
-ROMANO_API void simdhashmap_set_hash_func(SimdHashMap* hashmap, simdhashmap_hash_func func);
-
-ROMANO_API void simdhashmap_clear(SimdHashMap* hashmap);
-
-ROMANO_API bool simdhashmap_reserve(SimdHashMap* hashmap, const size_t count);
-
-ROMANO_API bool simdhashmap_set(SimdHashMap* hashmap,
-                                const void* key,
-                                const uint64_t key_size,
-                                void* value,
-                                const uint64_t value_size);
-
-ROMANO_API void* simdhashmap_get(const SimdHashMap* hashmap,
-                                 const void* key,
-                                 const uint64_t key_size,
-                                 uint64_t* out_value_size);
-
-ROMANO_API bool simdhashmap_contains(const SimdHashMap* hashmap,
-                                     const void* key,
-                                     const uint64_t key_size);
-
-ROMANO_API bool simdhashmap_remove(SimdHashMap* hashmap,
-                                   const void* key,
-                                   const uint64_t key_size);
-
-ROMANO_API bool simdhashmap_iterate(const SimdHashMap* hashmap,
-                                    SimdHashMapIterator* it,
-                                    void** out_key,
-                                    uint64_t* out_key_size,
-                                    void** out_value,
-                                    uint64_t* out_value_size);
-
-ROMANO_API void simdhashmap_free(SimdHashMap* hashmap);
-
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_HASHMAP) */
