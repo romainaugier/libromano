@@ -64,3 +64,6 @@ install
 # CMake generated files
 cmake/libromano*
 libromanoConfigVersion.cmake
+
+# Test files
+*.json

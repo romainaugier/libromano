@@ -67,10 +67,13 @@ ROMANO_API void string_clear(String string);
 /* Splits a data into multiple ones and returns a pointer to the list of datas */
 ROMANO_API String* string_splitc(char* data, const char* separator, uint32_t* count);
 
-/* Returns one if the two strings are equals, 0 otherwise */
+/* 
+ * Compares two String 
+ * Returns one if the two strings are equals, 0 otherwise 
+ */
 ROMANO_API bool string_eq(const String a, const String b);
 
-/* Frees the given data */
+/* Frees the given String */
 ROMANO_API void string_free(String data);
 
 ROMANO_CPP_END

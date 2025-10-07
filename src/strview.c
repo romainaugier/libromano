@@ -136,7 +136,7 @@ int strview_find(const StringView s, const char* substr, const int substr_len)
     return -1;
 }
 
-int strview_startswith(const StringView s, const char* substr, const int substr_len)
+bool strview_startswith(const StringView s, const char* substr, const int substr_len)
 {
     const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
@@ -145,7 +145,7 @@ int strview_startswith(const StringView s, const char* substr, const int substr_
     return memcmp(substr, s.data, _substr_len) == 0;
 }
 
-int strview_endswith(const StringView s, const char* substr, const int substr_len)
+bool strview_endswith(const StringView s, const char* substr, const int substr_len)
 {
     const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
 
@@ -311,22 +311,27 @@ int strview_parse_int(const StringView s)
     return res * sign;
 }
 
-int strview_parse_bool(const StringView s)
+bool strview_parse_bool(const StringView s)
 {
     if(s.size >= 1 && (s.data[0] == '0' || s.data[0] == '1'))
     {
-        return s.data[0] - 0x30;
+        return (bool)(s.data[0] - 0x30);
     }
 
     if(s.size >= 4 && (memcmp(s.data, "true", 4) == 0 || memcmp(s.data, "True", 4) == 0))
     {
-        return 1;
+        return true;
     }
 
     if(s.size >= 5 && (memcmp(s.data, "false", 5) == 0 || memcmp(s.data, "False", 5)))
     {
-        return 0;
+        return false;
     }
 
-    return 0;
+    return false;
+}
+
+double strview_parse_double(const StringView s)
+{
+    return strtod(s.data, NULL);
 }

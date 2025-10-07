@@ -15,7 +15,7 @@
 - :heavy_check_mark: 32/64 bits atomics
 - :clock3: regular expressions (regex)
 - :x: command line arguments parser
-- :x: json
+- :clock3: json
 - :heavy_check_mark: logger
 - :heavy_check_mark: sockets
 - :x: websockets

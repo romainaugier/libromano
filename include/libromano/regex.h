@@ -11,7 +11,7 @@
 
 /*
     Very simple regular expression matching using Thompson's NFA algorithm
-    Supports *, +, ., ?, | operators and alpha numeric characters
+    Supports *, +, ., ?, | operators and alpha-numeric characters
 */
 
 ROMANO_CPP_ENTER
