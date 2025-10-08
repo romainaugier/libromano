@@ -67,8 +67,8 @@ Json* json_from_file(const char* file_path)
 
 void json_free(Json* json)
 {
-    arena_destroy(&json->string_arena);
-    arena_destroy(&json->value_arena);
+    arena_release(&json->string_arena);
+    arena_release(&json->value_arena);
 
     free(json);
 }

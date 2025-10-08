@@ -2,6 +2,7 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "libromano/common.h"
 #define __LIBROMANO_VECTOR_IMPL
 
 #include "libromano/vector.h"
@@ -189,6 +190,23 @@ void vector_pop(Vector* vector)
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
 
+void vector_pop_front(Vector* vector)
+{
+    size_t vec_size;
+
+    ROMANO_ASSERT(vector != NULL, "vector is NULL");
+
+    vec_size = vector_size(vector);
+
+    ROMANO_ASSERT(vec_size > 0, "vector does not contain any element");
+
+    ((size_t*)vector->data)[0] = vec_size - 1;
+
+    memmove(vector_at(vector, 0),
+            vector_at(vector, 1),
+            (vec_size - 1) * vector_element_size(vector));
+}
+
 void* vector_at(Vector* vector, const size_t index)
 {
     size_t element_size;
@@ -229,7 +247,7 @@ void vector_sort(Vector* vector, vector_sort_cmp_function cmp)
     qsort(vector_at(vector, 0), vector_size(vector), vector_element_size(vector), cmp);
 }
 
-void vector_shuffle(Vector* vector, const uint64_t seed)
+void vector_shuffle(Vector* vector, uint64_t seed)
 {
     size_t size;
     size_t element_size;
@@ -264,17 +282,7 @@ size_t vector_find(Vector* vector, void* value)
     return VECTOR_NOT_FOUND;
 }
 
-void vector_destroy(Vector *vector)
-{
-    if(vector != NULL)
-    {
-        vector_free(vector);
-
-        free(vector);
-    }
-}
-
-void vector_free(Vector* vector)
+void vector_release(Vector* vector)
 {
     if(vector != NULL)
     {
@@ -285,7 +293,17 @@ void vector_free(Vector* vector)
     }
 }
 
-void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
+void vector_free(Vector *vector)
+{
+    if(vector != NULL)
+    {
+        vector_release(vector);
+
+        free(vector);
+    }
+}
+
+void vector_release_with_dtor(Vector* vector, vector_free_func dtor)
 {
     if(vector != NULL && dtor != NULL)
     {
@@ -295,12 +313,12 @@ void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
         }
     }
     
-    vector_free(vector);
+    vector_release(vector);
 }
 
-void vector_destroy_with_dtor(Vector* vector, vector_free_func dtor)
+void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
 {
-    vector_free_with_dtor(vector, dtor);
+    vector_release_with_dtor(vector, dtor);
 
     free(vector);
 }

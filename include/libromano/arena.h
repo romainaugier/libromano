@@ -39,9 +39,14 @@ typedef struct
 } Arena;
 
 /*
- * Create a new Arena and sets the block size for each block in the Arena
+ * Initializes a new arena
  */
 ROMANO_API void arena_init(Arena* arena, const size_t block_size);
+
+/*
+ * Creates a new heap-allocated Arena and initializes it
+ */
+ROMANO_API Arena* arena_new(const size_t block_size);
 
 /*
  * Pushes a new element to the Arena, returns the adress for that element
@@ -59,9 +64,14 @@ ROMANO_API void* arena_push(Arena* arena, void* data, const size_t data_size);
 ROMANO_API void arena_clear(Arena* arena);
 
 /*
- * Clears and destroy the Arena
+ * Clears and releases the Arena
  */
-ROMANO_API void arena_destroy(Arena* arena);
+ROMANO_API void arena_release(Arena* arena);
+
+/*
+ * Releases and frees a heap-allocated arena
+ */
+ROMANO_API void arena_free(Arena* arena);
 
 ROMANO_CPP_END
 

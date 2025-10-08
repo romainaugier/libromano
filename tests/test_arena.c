@@ -24,7 +24,7 @@ int main(void)
         arena_push(&arena, &f, sizeof(float));
     }
 
-    arena_destroy(&arena);
+    arena_release(&arena);
 
     logger_release();
 

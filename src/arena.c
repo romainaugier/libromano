@@ -16,9 +16,7 @@ ArenaBlock* arena_block_init(const size_t block_size)
     ROMANO_ASSERT(addr != NULL, "Error during arena reallocation");
 
     if(addr == NULL)
-    {
         return NULL;
-    }
 
     void* block_addr = (char*)addr + sizeof(ArenaBlock);
 
@@ -39,6 +37,13 @@ void arena_init(Arena* arena, const size_t block_size)
     arena->capacity = block_size;
 }
 
+Arena* arena_new(const size_t block_size)
+{
+    Arena* arena = (Arena*)calloc(1, sizeof(Arena));
+    arena_init(arena, block_size);
+    return arena;
+}
+
 ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena, 
                                             const size_t new_size)
 {
@@ -50,24 +55,20 @@ void arena_resize(Arena* arena)
     ArenaBlock* new_block = arena_block_init(arena->block_size);
 
     new_block->previous = arena->current_block;
-    arena->current_block = new_block;
 
+    arena->current_block = new_block;
     arena->capacity += arena->block_size;
 }
 
 void* arena_push(Arena* arena, void* data, const size_t data_size)
 {
     if(arena_check_resize(arena, data_size))
-    {
         arena_resize(arena);
-    }
 
     void* data_address = (void*)((char*)arena->current_block->address + arena->current_block->offset);
     
     if(data != NULL)
-    {
         memcpy(data_address, data, data_size);
-    }
 
     arena->current_block->offset += data_size;
 
@@ -88,7 +89,7 @@ void arena_clear(Arena* arena)
     arena->current_block = current;
 }
 
-void arena_destroy(Arena* arena)
+void arena_release(Arena* arena)
 {
     if(arena->current_block != NULL)
     {
@@ -120,4 +121,10 @@ void arena_destroy(Arena* arena)
     }
 
     arena->capacity = 0;
+}
+
+void arena_free(Arena* arena)
+{
+    arena_release(arena);
+    free(arena);
 }
