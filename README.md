@@ -5,11 +5,7 @@
 
 C99 utility library for projects and learning.
 
-## Naming and Object Lifecycle Conventions
-
 The library follows consistent naming conventions to make the API easy to read and use.
-
----
 
 ## Struct
 
