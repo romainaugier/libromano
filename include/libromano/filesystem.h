@@ -137,6 +137,7 @@ typedef enum
 typedef struct FSWalkIterator {
     char* current_path;
     size_t current_path_sz;
+    size_t current_path_capacity;
 
     char* _current_dir;
     size_t _current_dir_sz;
