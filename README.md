@@ -7,7 +7,7 @@ C99 utility library for projects and learning.
 
 The library follows consistent naming conventions to make the API easy to read and use.
 
-## Struct
+## Structs and functions
 
 All structs have their members exposed in all header files, but for member access prefer methods when available
 instead of direct member access. For some structs we use some shenanigans to optimize storage (Str for example).
