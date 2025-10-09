@@ -65,6 +65,17 @@ ROMANO_API bool fs_makedirs(const char* path);
  */
 ROMANO_API size_t fs_parent_dir(const char* path);
 
+/*
+ * Returns a malloced null-terminated string containing the parent dir path
+ */
+ROMANO_API char* fs_parent_dir_new(const char* path);
+
+/*
+ * Returns zero on success and copies the parent dir path in buffer with a null terminator
+ * If buffer_size is not large enough, it returns the needed size (including the null byte)
+ */
+ROMANO_API size_t fs_parent_dir_init(const char* path, char* buffer, size_t buffer_size);
+
 typedef enum FsCHMode
 {
     FsChMod_NOne = 0,

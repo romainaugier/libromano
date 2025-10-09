@@ -138,6 +138,40 @@ size_t fs_parent_dir(const char* path)
     return path_sz + 1;
 }
 
+char* fs_parent_dir_new(const char* path)
+{
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+    size_t parent_path_sz = fs_parent_dir(path);
+
+    char* parent_path = (char*)malloc((parent_path_sz + 1) * sizeof(char));
+
+    if(parent_path == NULL)
+        return NULL;
+
+    memcpy(parent_path, path, parent_path_sz);
+
+    parent_path[parent_path_sz] = '\0';
+
+    return parent_path;
+}
+
+size_t fs_parent_dir_init(const char* path, char* buffer, size_t buffer_size)
+{
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+    size_t parent_path_sz = fs_parent_dir(path);
+
+    if(parent_path_sz >= buffer_size)
+        return parent_path_sz + 1;
+
+    memcpy(buffer, path, parent_path_sz);
+
+    buffer[parent_path_sz] = '\0';
+
+    return 0;
+}
+
 bool fs_chmod(const char* path,
               FsCHMod mode)
 {
