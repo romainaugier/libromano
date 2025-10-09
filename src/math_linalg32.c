@@ -125,102 +125,43 @@ void matrixf_zero(MatrixF* A)
     memset(A->data, 0, A->M * A->N * sizeof(float));
 }
 
-void transpose_8x8_avx2_float(const float* ROMANO_RESTRICT src,
-                              float* ROMANO_RESTRICT dst,
-                              uint32_t src_stride, 
-                              uint32_t dst_stride) 
-{
-    __m256 row0 = _mm256_load_ps(&src[0 * src_stride]);
-    __m256 row1 = _mm256_load_ps(&src[1 * src_stride]);
-    __m256 row2 = _mm256_load_ps(&src[2 * src_stride]);
-    __m256 row3 = _mm256_load_ps(&src[3 * src_stride]);
-    __m256 row4 = _mm256_load_ps(&src[4 * src_stride]);
-    __m256 row5 = _mm256_load_ps(&src[5 * src_stride]);
-    __m256 row6 = _mm256_load_ps(&src[6 * src_stride]);
-    __m256 row7 = _mm256_load_ps(&src[7 * src_stride]);
-
-    __m256 tmp0 = _mm256_unpacklo_ps(row0, row1);
-    __m256 tmp1 = _mm256_unpackhi_ps(row0, row1);
-    __m256 tmp2 = _mm256_unpacklo_ps(row2, row3);
-    __m256 tmp3 = _mm256_unpackhi_ps(row2, row3);
-    __m256 tmp4 = _mm256_unpacklo_ps(row4, row5);
-    __m256 tmp5 = _mm256_unpackhi_ps(row4, row5);
-    __m256 tmp6 = _mm256_unpacklo_ps(row6, row7);
-    __m256 tmp7 = _mm256_unpackhi_ps(row6, row7);
-
-    __m256 tmp8  = _mm256_shuffle_ps(tmp0, tmp2, _MM_SHUFFLE(1,0,1,0));
-    __m256 tmp9  = _mm256_shuffle_ps(tmp0, tmp2, _MM_SHUFFLE(3,2,3,2));
-    __m256 tmp10 = _mm256_shuffle_ps(tmp1, tmp3, _MM_SHUFFLE(1,0,1,0));
-    __m256 tmp11 = _mm256_shuffle_ps(tmp1, tmp3, _MM_SHUFFLE(3,2,3,2));
-    __m256 tmp12 = _mm256_shuffle_ps(tmp4, tmp6, _MM_SHUFFLE(1,0,1,0));
-    __m256 tmp13 = _mm256_shuffle_ps(tmp4, tmp6, _MM_SHUFFLE(3,2,3,2));
-    __m256 tmp14 = _mm256_shuffle_ps(tmp5, tmp7, _MM_SHUFFLE(1,0,1,0));
-    __m256 tmp15 = _mm256_shuffle_ps(tmp5, tmp7, _MM_SHUFFLE(3,2,3,2));
-
-    row0 = _mm256_permute2f128_ps(tmp8, tmp12, 0x20);
-    row1 = _mm256_permute2f128_ps(tmp9, tmp13, 0x20);
-    row2 = _mm256_permute2f128_ps(tmp10, tmp14, 0x20);
-    row3 = _mm256_permute2f128_ps(tmp11, tmp15, 0x20);
-    row4 = _mm256_permute2f128_ps(tmp8, tmp12, 0x31);
-    row5 = _mm256_permute2f128_ps(tmp9, tmp13, 0x31);
-    row6 = _mm256_permute2f128_ps(tmp10, tmp14, 0x31);
-    row7 = _mm256_permute2f128_ps(tmp11, tmp15, 0x31);
-
-    _mm256_store_ps(&dst[0 * dst_stride], row0);
-    _mm256_store_ps(&dst[1 * dst_stride], row1);
-    _mm256_store_ps(&dst[2 * dst_stride], row2);
-    _mm256_store_ps(&dst[3 * dst_stride], row3);
-    _mm256_store_ps(&dst[4 * dst_stride], row4);
-    _mm256_store_ps(&dst[5 * dst_stride], row5);
-    _mm256_store_ps(&dst[6 * dst_stride], row6);
-    _mm256_store_ps(&dst[7 * dst_stride], row7);
-}
-
 void matrixf_transpose(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
-    uint32_t bi;
-    uint32_t bj;
-
-    uint32_t block_rows;
-    uint32_t block_cols;
-    const uint32_t block_size = 8;
 
     float* new_data; 
 
     const int M = A->M;
     const int N = A->N;
 
-    new_data = (float*)mem_aligned_alloc((N * M) * sizeof(float), ALIGNMENT);
-
-    for(i = 0; i < M; i += block_size)
+    if(M == N)
     {
-        for(j = 0; j < N; j += block_size) 
+        for(i = 0; i < M; i++)
         {
-            block_rows = block_size > (M - i) ? (M - i) : block_size;
-            block_cols = block_size > (N - j) ? (N - j) : block_size;
-
-            if(block_rows == block_size && block_cols == block_size)
+            for(j = 0; j < N; j++) 
             {
-                transpose_8x8_avx2_float(&A->data[i * N + j], &new_data[j * M + i], M, N);
-            }
-            else 
-            {
-                for(bi = 0; bi < block_rows; bi++)
-                {
-                    for(bj = 0; bj < block_cols; bj++)
-                    {
-                        new_data[(j + bj) * M + (i + bi)] = A->data[(i + bi) * N + (j + bj)];
-                    }
-                }
+                SWAP_FLOAT(A->data[i * M + j], A->data[j * M + i]);
             }
         }
     }
+    else 
+    {
+        new_data = (float*)mem_aligned_alloc((N * M) * sizeof(float), ALIGNMENT);
 
-    mem_aligned_free(A->data);
+        for(i = 0; i < M; i++)
+        {
+            for(j = 0; j < N; j++)
+            {
+                new_data[j * M + i] = A->data[i * N + j];
+            }
+        }
 
-    A->data = new_data;
+        mem_aligned_free(A->data);
+
+        A->data = new_data;
+    }
+
     A->M = M;
     A->N = N;
 }
@@ -229,39 +170,17 @@ MatrixF matrixf_transpose_from(MatrixF* A)
 {
     uint32_t i;
     uint32_t j;
-    uint32_t bi;
-    uint32_t bj;
 
     const int M = A->M;
     const int N = A->N;
 
-    uint32_t block_rows;
-    uint32_t block_cols;
-    const uint32_t block_size = 8;
-
     MatrixF res = matrixf_create(N, M);
     
-    for(i = 0; i < M; i += block_size)
+    for(i = 0; i < M; i++)
     {
-        for(j = 0; j < N; j += block_size)
+        for(j = 0; j < N; j++)
         {
-            block_rows = block_size > (M - i) ? (M - i) : block_size;
-            block_cols = block_size > (N - j) ? (N - j) : block_size;
-
-            if(block_rows == block_size && block_cols == block_size)
-            {
-                transpose_8x8_avx2_float(&A->data[i * N + j], &res.data[j * M + i], M, N);
-            }
-            else 
-            {
-                for(bi = 0; bi < block_rows; bi++)
-                {
-                    for(bj = 0; bj < block_cols; bj++)
-                    {
-                        res.data[(j + bj) * M + (i + bi)] = A->data[(i + bi) * N + (j + bj)];
-                    }
-                }
-            }
+            res.data[i * N + j] = A->data[j * M + i];
         }
     }
 
