@@ -20,7 +20,8 @@
 - :heavy_check_mark: sockets
 - :x: websockets
 - :heavy_check_mark: socket server
-- :clock3: filesystem interaction (python-like functions to interact with the filesystem)
+- :heavy_check_mark: filesystem interaction (python-like functions to interact with the filesystem)
+- :x: http requests
 - :clock3: hash (various hash functions)
 - :clock3: random number generators
 - :clock3: memory (memory_arena, allocators...)
