@@ -204,7 +204,7 @@ void vector_pop_front(Vector* vector)
 
     memmove(vector_at(vector, 0),
             vector_at(vector, 1),
-            (vec_size - 1) * vector_element_size(vector));
+            vec_size * vector_element_size(vector));
 }
 
 void* vector_at(Vector* vector, const size_t index)
