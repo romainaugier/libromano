@@ -122,7 +122,7 @@ int main(void)
     SCOPED_PROFILE_MS_END(_hashmap_delete);
 
     hashmap_free(hashmap);
-    vector_destroy(keys);
+    vector_free(keys);
 
     logger_release();
 

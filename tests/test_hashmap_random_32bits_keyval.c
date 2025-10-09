@@ -116,7 +116,7 @@ int main(void)
 
     hashmap_free(hashmap);
 
-    vector_destroy(keys);
+    vector_free(keys);
 
     logger_release();
 

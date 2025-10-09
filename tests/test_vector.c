@@ -107,10 +107,14 @@ int main(void)
         logger_log(LogLevel_Info, "Vector at %d: %f", i, *(float*)vector_at(float_vec, i));
     }
 
+    logger_log(LogLevel_Info, "Vector front: %f", *(float*)vector_at(float_vec, 0));
+    vector_pop_front(float_vec);
+    logger_log(LogLevel_Info, "Vector front: %f", *(float*)vector_at(float_vec, 0));
+
     logger_log(LogLevel_Info, "Vector back: %f", *(float*)vector_back(float_vec));
 
     logger_log(LogLevel_Info, "Freeing vector");
-    vector_destroy(float_vec);
+    vector_free(float_vec);
 
     Vector* alloc_vec = vector_new(64, sizeof(void*));
 
@@ -122,7 +126,7 @@ int main(void)
         vector_push_back(alloc_vec, &addr);
     }
 
-    vector_destroy_with_dtor(alloc_vec, simple_dtor);
+    vector_free_with_dtor(alloc_vec, simple_dtor);
 
     logger_release();
 

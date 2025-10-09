@@ -7,8 +7,6 @@
 
 int main(void)
 {
-    FSWalkItem* walk_item;
-
     logger_init();
     logger_set_level(LogLevel_Debug);
 
@@ -20,41 +18,44 @@ int main(void)
     logger_log(LogLevel_Info, "File \""__FILE__"\" exists : %d", exists);
 
     FileContent content;
-    fs_file_content_new(__FILE__, &content);
+    fs_file_content_init(&content, __FILE__, false);
 
-    printf(__FILE__"\ncontent:\n%.*s\n", (int)content.content_length, content.content);
+    printf(__FILE__"\ncontent:\n%.*s\n", (int)content.content_sz, content.content);
 
-    fs_file_content_free(&content);
+    fs_file_content_release(&content);
 
     char dir_path[MAX_PATH];
-    fs_parent_dir(__FILE__, dir_path);
+    size_t dir_sz = fs_parent_dir(__FILE__);
 
-    logger_log(LogLevel_Info, "Directory of "__FILE__" is %s", dir_path);
+    logger_log(LogLevel_Info, "Directory of "__FILE__" is %*.s", dir_sz, dir_path);
 
     logger_log(LogLevel_Info, "Starting filesystem walk");
 
     char walk_dir_path[MAX_PATH];
-    fs_parent_dir(dir_path, walk_dir_path);
+    size_t walk_dir_path_sz = fs_parent_dir(dir_path);
 
-    walk_item = fs_walk_item_new(NULL);
+    memcpy(walk_dir_path, dir_path, walk_dir_path_sz * sizeof(char));
+    walk_dir_path[walk_dir_path_sz] = '\0';
 
-    while(fs_walk(walk_dir_path, walk_item, 0) != 0)
+    FSWalkIterator* walk_iterator = fs_walk_iterator_new();
+
+    while(fs_walk(walk_dir_path, walk_iterator, FSWalkMode_Recursive) != 0)
     {
-        logger_log(LogLevel_Info, "%s", walk_item->path);
+        logger_log(LogLevel_Info, "%s", walk_iterator->current_path);
     }
 
-    fs_walk_item_free(walk_item);
+    fs_walk_iterator_free(walk_iterator);
 
     logger_log(LogLevel_Info, "Finished first filesystem walk");
 
-    walk_item = fs_walk_item_new(NULL);
+    walk_iterator = fs_walk_iterator_new(NULL);
 
-    while(fs_walk(walk_dir_path, walk_item, 0) != 0)
+    while(fs_walk(walk_dir_path, walk_iterator, FSWalkMode_Recursive) != 0)
     {
-        logger_log(LogLevel_Info, "%s", walk_item->path);
+        logger_log(LogLevel_Info, "%s", walk_iterator->current_path);
     }
 
-    fs_walk_item_free(walk_item);
+    fs_walk_iterator_free(walk_iterator);
 
     logger_log(LogLevel_Info, "Finished filesystem walk");
 

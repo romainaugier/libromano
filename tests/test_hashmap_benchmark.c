@@ -274,8 +274,8 @@ int main(int argc, char** argv)
     }
 
     hashmap_free(hashmap);
-    vector_destroy(keys_insert);
-    vector_destroy(keys_read);
+    vector_free(keys_insert);
+    vector_free(keys_read);
 
     logger_release();
 
