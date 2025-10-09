@@ -6,16 +6,9 @@
 #include "libromano/memory.h"
 #include "libromano/vector.h"
 
-#include <assert.h>
-#include <errhandlingapi.h>
-#include <fileapi.h>
-#include <handleapi.h>
-#include <minwinbase.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <winerror.h>
-#include <winnt.h>
 
 #if defined(ROMANO_WIN)
 #include <Shlwapi.h>
@@ -24,6 +17,9 @@
 #elif defined(ROMANO_LINUX)
 #include <sys/stat.h>
 #include <linux/limits.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <dirent.h>
 #endif /* ROMANO_WIN */
 
 bool fs_file_content_init(FileContent* content,
@@ -413,8 +409,21 @@ bool walk_should_skip_entry(FSWalkMode mode,
 }
 #elif defined(ROMANO_LINUX)
 bool walk_should_skip_entry(FSWalkMode mode,
-                            const char* path)
+                            const char* entry_name,
+                            unsigned char entry_type /* struct dirent->d_type */)
 {
+    /* TODO: maybe handle DT_UNKNOWN correctly ? */
+
+    switch(entry_type)
+    {
+        case DT_REG:
+            return mode & FSWalkMode_YieldFiles;
+        case DT_DIR:
+            return mode & FsWalkMode_YieldDirs;
+        default:
+            return true;
+    }
+
     return false;
 }
 #else
@@ -427,9 +436,6 @@ bool fs_walk(const char* path,
 {
     ROMANO_ASSERT(walk_iterator != NULL, "walk_iterator is NULL");
 
-#if defined(ROMANO_WIN)
-    WIN32_FIND_DATAA find_data;
-
     if(walk_iterator->_first_entry)
     {
         size_t path_sz = strlen(path);
@@ -440,6 +446,9 @@ bool fs_walk(const char* path,
 
         walk_iterator->_first_entry = false;
     }
+
+#if defined(ROMANO_WIN)
+    WIN32_FIND_DATAA find_data;
 
     while(true)
     {
@@ -537,8 +546,99 @@ bool fs_walk(const char* path,
 
         return true;
     }
-
 #elif defined(ROMANO_LINUX)
+    struct dirent* entry;
+
+    while(true)
+    {
+        if(walk_iterator->_dir == NULL)
+        {
+            if(vector_size(&walk_iterator->_dir_queue) == 0)
+                return false;
+
+            char* search_path = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
+            vector_pop_front(&walk_iterator->_dir_queue);
+
+            walk_iterator->_dir = opendir(search_path);
+
+            if(walk_iterator->_dir == NULL)
+            {
+                return false;
+            }
+
+            walk_iterator->_current_dir = search_path;
+            walk_iterator->_current_dir_sz = search_path_sz;
+
+            break;
+        }
+        else
+        {
+            int old_errno = errno();
+
+            entry = readdir(walk_iterator->_dir);
+
+            if(entry == NULL)
+            {
+                closedir(walk_iterator->_dir);
+
+                if(old_errno != errno())
+                    return false;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    while(true)
+    {
+        if(walk_should_skip_entry(mode, entry->d_name, entry->d_type))
+        {
+            entry = readdir(walk_iterator->_dir);
+
+            if(entry == NULL)
+                break;
+
+            continue;
+        }
+
+        size_t c_file_name_sz = strlen(entry->d_name);
+
+        size_t current_path_sz = walk_iterator->_current_dir_sz + 1 + c_file_name_sz + 1;
+
+        if(current_path_sz > walk_iterator->current_path_capacity)
+        {
+            walk_iterator->current_path_capacity <<= 1;
+            walk_iterator->current_path = realloc(walk_iterator->current_path,
+                                                  walk_iterator->current_path_capacity);
+
+            if(walk_iterator->current_path == NULL)
+                return false;
+        }
+
+        snprintf(walk_iterator->current_path,
+                 current_path_sz,
+                 "%.*s\\%s",
+                 (int)walk_iterator->_current_dir_sz,
+                 walk_iterator->_current_dir,
+                 find_data.cFileName);
+
+        walk_iterator->current_path[current_path_sz - 1] = '\0';
+
+        bool is_dir = entry->d_type == DT_UNKNOWN ? fs_is_dir(walk_iterator->current_path) :
+                                                    entry->d_type == D_DIR;
+
+        if(is_dir && (mode & FSWalkMode_Recursive))
+        {
+            char* dir_path = (char*)calloc(current_path_sz, sizeof(char));
+            memcpy(dir_path, walk_iterator->current_path, current_path_sz * sizeof(char));
+            vector_push_back(&walk_iterator->_dir_queue, &dir_path);
+        }
+
+        return true;
+    }
+
 #endif /* defined(ROMANO_WIN) */
 
     return false;
