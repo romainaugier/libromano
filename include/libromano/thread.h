@@ -94,7 +94,7 @@ struct ThreadPoolWaiter;
 typedef struct ThreadPoolWaiter ThreadpoolWaiter;
 
 /* Creates a threadpool with x workers and waits for work */
-ROMANO_API ThreadPool* threadpool_init(size_t workers_count);
+ROMANO_API ThreadPool* threadpool_init(uint32_t workers_count);
 
 /* Adds some work to the threadpool  */
 ROMANO_API int threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg);

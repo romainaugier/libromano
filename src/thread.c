@@ -356,12 +356,12 @@ void* threadpool_worker_func(void* arg)
     return NULL;
 }
 
-ThreadPool* threadpool_init(size_t workers_count)
+ThreadPool* threadpool_init(uint32_t workers_count)
 {
     ThreadPool* threadpool;
     size_t i;
     
-    workers_count = workers_count == 0 ? get_num_procs() : workers_count;
+    workers_count = workers_count == 0 ? (uint32_t)get_num_procs() : workers_count;
     
     threadpool = malloc(sizeof(struct ThreadPool));
 
@@ -417,7 +417,6 @@ void threadpool_wait(ThreadPool* threadpool)
 void threadpool_release(ThreadPool* threadpool)
 {
     Work* work;
-    size_t i;
     
     ROMANO_ASSERT(threadpool != NULL, "");
 
