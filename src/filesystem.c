@@ -793,7 +793,7 @@ bool fs_walk(const char* path,
                            "%.*s\\%s",
                            (int)walk_iterator->_current_dir_sz,
                            walk_iterator->_current_dir,
-                           find_data.cFileName);
+                           entry->d_name);
 
         if(ret < 0)
         {
