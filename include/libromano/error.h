@@ -24,6 +24,7 @@ typedef enum ErrorCode {
     ErrorCode_MemAllocError = 0x0FFFFFFF, 
     ErrorCode_FormattingError, 
     ErrorCode_SizeOverflow, 
+    ErrorCode_WrongIPAddressFormat, 
 
     /* Other error codes will be set from system error
      * For Windows see: 

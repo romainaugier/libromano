@@ -15,23 +15,26 @@
 ROMANO_CPP_ENTER
 
 typedef enum {
-    SocketServer_NeedToStop = BIT_FLAG(0),
-    SocketServer_IsRunning = BIT_FLAG(1),
-    SocketServer_IpMode_Any = BIT_FLAG(2),
-    SocketServer_IpMode_LocalHost = BIT_FLAG(3)
-} socket_server_flags;
+    SocketServerFlags_NeedToStop = BIT_FLAG(0),
+    SocketServerFlags_IsRunning = BIT_FLAG(1),
+    SocketServerFlags_IpMode_Any = BIT_FLAG(2),
+    SocketServerFlags_IpMode_LocalHost = BIT_FLAG(3)
+} SocketServerFlags;
 
-struct socket_server;
+struct SocketServer;
 
-typedef struct socket_server socket_server_t;
+typedef struct SocketServer SocketServer;
 
 typedef void (*socket_server_callback_func)(char* data);
 
 typedef void (*socket_server_log_callback)(int32_t error_code, char* error_msg);
 
-ROMANO_API socket_server_t* socket_server_init(const uint16_t port,
-                                               const uint16_t max_connections,
-                                               const socket_server_flags ip_mode);
+/*
+ * Creates a new heap-allocated socket server. Returns NULL on failure
+ */
+ROMANO_API SocketServer* socket_server_new(uint16_t port,
+                                           uint16_t max_connections,
+                                           SocketServerFlags ip_mode);
 
 /*
  * Function called whenever the socket server needs to log something.
@@ -40,21 +43,21 @@ ROMANO_API socket_server_t* socket_server_init(const uint16_t port,
  * The callback function signature must be like this : 
  * void my_log_callback(int32_t code, char* msg)
  */
-ROMANO_API void socket_server_set_log_callback(socket_server_t* socket_server,
+ROMANO_API void socket_server_set_log_callback(SocketServer* socket_server,
                                                socket_server_log_callback error_callback);
 
-ROMANO_API void socket_server_start(socket_server_t* socket_server);
+ROMANO_API void socket_server_start(SocketServer* socket_server);
 
-ROMANO_API void socket_server_push_callback(socket_server_t* socket_server,
+ROMANO_API bool socket_server_push_callback(SocketServer* socket_server,
                                             socket_server_callback_func callback);
 
-ROMANO_API int32_t socket_server_get_last_error(socket_server_t* socket_server);
+ROMANO_API int32_t socket_server_get_last_error(SocketServer* socket_server);
 
-ROMANO_API int32_t socket_server_is_running(socket_server_t* socket_server);
+ROMANO_API int32_t socket_server_is_running(SocketServer* socket_server);
 
-ROMANO_API void socket_server_stop(socket_server_t* socket_server);
+ROMANO_API void socket_server_stop(SocketServer* socket_server);
 
-ROMANO_API void socket_server_release(socket_server_t* socket_server);
+ROMANO_API void socket_server_free(SocketServer* socket_server);
 
 ROMANO_CPP_END
 

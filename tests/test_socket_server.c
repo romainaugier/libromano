@@ -27,7 +27,7 @@ void log_callback(int32_t code, char* msg)
 
 int main(void)
 {
-    socket_server_t* socket_server;
+    SocketServer* socket_server;
 
     Socket client_socket;
     SockAddrIn client_addr;
@@ -44,7 +44,7 @@ int main(void)
 
     socket_init_ctx();
 
-    socket_server = socket_server_init(50111, 2, SocketServer_IpMode_LocalHost);
+    socket_server = socket_server_new(50111, 2, SocketServerFlags_IpMode_LocalHost);
 
     socket_server_set_log_callback(socket_server, log_callback);
     socket_server_push_callback(socket_server, callback);
@@ -121,7 +121,7 @@ int main(void)
 
     socket_server_stop(socket_server);
 
-    socket_server_release(socket_server);
+    socket_server_free(socket_server);
 
     socket_release_ctx();
 
