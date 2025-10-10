@@ -7,13 +7,23 @@
 #if !defined(__LIBROMANO)
 #define __LIBROMANO
 
+/* https://github.com/cpredef/predef/blob/master/Compilers.md */
 #if defined(_MSC_VER)
 #define ROMANO_MSVC
-#pragma warning(disable:4711) /* function selected for automatic inline expansion */
 #elif defined(__GNUC__)
 #define ROMANO_GCC
 #elif defined(__clang__)
 #define ROMANO_CLANG
+#elif defined(__EMSCRIPTEN__)
+#define ROMANO_EMSCRIPTEN
+#elif defined(__INTEL_COMPILER) || defined(__ICC)
+#define ROMANO_ICC
+#elif defined(__MINGW32__)
+#define ROMANO_MINGW32
+#elif defined(__MINGW64__)
+#define ROMANO_MINGW64
+#else
+#error "Unknown compiler"
 #endif /* defined(_MSC_VER) */
 
 #if !defined(ROMANO_VERSION_STR)
@@ -26,51 +36,76 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if INTPTR_MAX == INT64_MAX || defined(__x86_64__)
+/* https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170 */
+/* https://github.com/cpredef/predef/blob/master/Architectures.md */
+#if INTPTR_MAX == INT64_MAX || defined(__x86_64__) || defined(_M_AMD64)
 #define ROMANO_X64
 #define ROMANO_SIZEOF_PTR 8
 #elif INTPTR_MAX == INT32_MAX
 #define ROMANO_X86
 #define ROMANO_SIZEOF_PTR 4
-#endif /* INTPTR_MAX == INT64_MAX || defined(__x86_64__) */
+#elif defined(__arm__)
+#define ROMANO_AARCH32
+#define ROMANO_SIZEOF_PTR 4
+#elif defined(__aarch64__)
+#define ROMANO_AARCH64
+#define ROMANO_SIZEOF_PTR 8
+#endif /* INTPTR_MAX == INT64_MAX || defined(__x86_64__) || defined(_M_AMD64) */
 
+/* https://sourceforge.net/p/predef/wiki/OperatingSystems */
 #if defined(_WIN32)
 #define ROMANO_WIN
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif /* !defined(WIN32_LEAN_AND_MEAN) */
 #if defined(ROMANO_X64)
-#define ROMANO_PLATFORM_STR "WIN64"
+#define ROMANO_PLATFORM_STR "WIN_X86_64"
+#elif defined(ROMANO_X86)
+#define ROMANO_PLATFORM_STR "WIN_X86"
+#elif defined(ROMANO_AARCH32)
+#define ROMANO_PLATFORM_STR "WIN_AARCH32"
+#elif defined(ROMANO_AARCH64)
+#define ROMANO_PLATFORM_STR "WIN_AARCH64"
 #else
-#define ROMANO_PLATFORM_STR "WIN32"
-#endif /* defined(ROMANO_x64) */
+#error "Unknown platform"
+#endif /* defined(ROMANO_X64) */
 #elif defined(__linux__)
 #define ROMANO_LINUX
 #if defined(ROMANO_X64)
-#define ROMANO_PLATFORM_STR "LINUX64"
+#define ROMANO_PLATFORM_STR "LINUX_X86_64"
+#elif defined(ROMANO_X86)
+#define ROMANO_PLATFORM_STR "LINUX_X86"
+#elif defined(ROMANO_AARCH32)
+#define ROMANO_PLATFORM_STR "LINUX_AARCH32"
+#elif defined(ROMANO_AARCH64)
+#define ROMANO_PLATFORM_STR "LINUX_AARCH64"
 #else
-#define ROMANO_PLATFORM_STR "LINUX32"
+#error "Unknown platform"
 #endif /* defined(ROMANO_X64) */
 #elif defined(__APPLE__)
 #define ROMANO_APPLE
 #if defined(ROMANO_X64)
-#define ROMANO_PLATFORM_STR "APPLE64"
+#define ROMANO_PLATFORM_STR "APPLE_X86_64"
+#elif defined(ROMANO_X86)
+#define ROMANO_PLATFORM_STR "APPLE_X86"
+#elif defined(ROMANO_AARCH32)
+#define ROMANO_PLATFORM_STR "APPLE_AARCH32"
+#elif defined(ROMANO_AARCH64)
+#define ROMANO_PLATFORM_STR "APPLE_AARCH64"
 #else
-#define ROMANO_PLATFORM_STR "APPLE32"
+#error "Unknown platform"
 #endif /* defined(ROMANO_X64) */
-#elif defined(__OpenBSD__)
-#define ROMANO_OPENBSD
+#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
+#define ROMANO_BSD
 #if defined(ROMANO_X64)
-#define ROMANO_PLATFORM_STR "OPENBSD64"
-#else
-#define ROMANO_PLATFORM_STR "OPENBSD32"
+#define ROMANO_PLATFORM_STR "BSD_X86_64"
+#elif defined(ROMANO_X86)
+#define ROMANO_PLATFORM_STR "BSD_X86"
+#else 
+#error "Unknown platform"
 #endif /* defined(ROMANO_X64) */
-#elif defined(__NetBSD__) 
-#define ROMANO_NETBSD
-#elif defined(__FreeBSD__) 
-#define ROMANO_FREEBSD
-#elif defined(__DragonFly__)
-#define ROMANO_DRAGONFLY
+#else
+#error "Unknown platform"
 #endif /* defined(_WIN32) */
 
 #define ROMANO_BYTE_ORDER_UNDEFINED 0
@@ -166,13 +201,11 @@
 #define ROMANO_PACKED_STRUCT(__struct__) __struct__
 #endif /* defined(ROMANO_MSVC) */
 
-#if defined(ROMANO_MSVC)
-#define dump_struct(s) 
-#elif defined(ROMANO_CLANG)
+#if defined(ROMANO_CLANG)
 #define dump_struct(s) __builtin_dump_struct(s, printf)
-#elif defined(ROMANO_GCC)
+#else
 #define dump_struct(s) 
-#endif /* defined(ROMANO_MSVC) */
+#endif /* defined(ROMANO_CLANG) */
 
 #if defined(DEBUG_BUILD)
 #define ROMANO_DEBUG 1

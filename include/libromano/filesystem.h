@@ -165,8 +165,14 @@ typedef struct FSWalkIterator {
 #endif /* defined(ROMANO_WIN) */
 } FSWalkIterator;
 
-ROMANO_API void fs_walk_iterator_init(FSWalkIterator* walk_iterator);
+/*
+ * Initializes a walk iterator. Returns false if an error happened
+ */
+ROMANO_API bool fs_walk_iterator_init(FSWalkIterator* walk_iterator);
 
+/*
+ * Allocates a new walk iterator. Returns NULL if an error happened
+ */
 ROMANO_API FSWalkIterator* fs_walk_iterator_new();
 
 ROMANO_API void fs_walk_iterator_release(FSWalkIterator* walk_iterator);

@@ -17,14 +17,33 @@
 
 ROMANO_CPP_ENTER
 
-static ROMANO_FORCE_INLINE int get_last_error(void)
-{
-#if defined(ROMANO_WIN)
-    return GetLastError();
-#elif defined(ROMANO_LINUX)
-    return errno;
-#endif /* defined(ROMANO_WIN) */
-}
+typedef enum ErrorCode {
+    ErrorCode_NoError = 0,
+
+    /* Memory error */
+    ErrorCode_MemAllocError = 0x0FFFFFFF, 
+    ErrorCode_FormattingError, 
+    ErrorCode_SizeOverflow, 
+
+    /* Other error codes will be set from system error
+     * For Windows see: 
+     * https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499- 
+     * Codes range from 0 (no error) to 15999
+     * For Linux see:
+     * https://en.wikipedia.org/wiki/Errno.h
+     * Codes range from 0 (no error) to 143
+     */
+} ErrorCode;
+
+/*
+ * Returns the last error from library calls
+ */
+ROMANO_API ErrorCode error_get_last(void);
+
+/*
+ * Returns the last error from system calls (GetLastError, errno...)
+ */
+ROMANO_API int error_get_last_from_system(void);
 
 ROMANO_CPP_END
 

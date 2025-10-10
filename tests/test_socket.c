@@ -26,7 +26,7 @@ void socket_loop(void)
 
     if(sock == INVALID_SOCKET)
     {
-        logger_log(LogLevel_Fatal, "Cannot create socket (%d)", get_last_error());
+        logger_log(LogLevel_Fatal, "Cannot create socket (%d)", error_get_last_from_system());
         socket_release_ctx();
         return;
     }
@@ -38,7 +38,7 @@ void socket_loop(void)
 
     if(bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
     {
-        logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", get_last_error());
+        logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", error_get_last_from_system());
         closesocket(sock);
         socket_release_ctx();
         return;
@@ -46,7 +46,7 @@ void socket_loop(void)
 
     if(listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
     {
-        logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", get_last_error());
+        logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", error_get_last_from_system());
         closesocket(sock);
         socket_release_ctx();
         return;
@@ -60,7 +60,7 @@ void socket_loop(void)
 
         if(new_connection == INVALID_SOCKET)
         {
-            logger_log(LogLevel_Error, "Cannot accept socket (%d)", get_last_error());
+            logger_log(LogLevel_Error, "Cannot accept socket (%d)", error_get_last_from_system());
             continue;
         }
 
@@ -117,7 +117,7 @@ void socket_loop(void)
             }
             else
             {
-                logger_log(LogLevel_Error, "Failed to receive data (%d)", get_last_error());
+                logger_log(LogLevel_Error, "Failed to receive data (%d)", error_get_last_from_system());
                 break;
             }
         }
