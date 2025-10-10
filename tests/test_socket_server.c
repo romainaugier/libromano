@@ -10,12 +10,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(ROMANO_WIN)
+#include <WS2tcpip.h>
+#elif defined(ROMANO_LINUX)
+#include <arpa/inet.h>
+#endif /* defined(ROMANO_WIN) */
+
 #define CLIENT_MSG_SIZE 512
 #define CLIENT_BUFFER_SIZE 32
 
-void callback(char* buffer)
+void callback(char* buffer, size_t buffer_size)
 {
-    logger_log(LogLevel_Info, buffer);
+    logger_log(LogLevel_Info, "%*.s", (int)buffer_size, buffer);
 }
 
 void log_callback(int32_t code, char* msg)
@@ -70,7 +76,14 @@ int main(void)
 
         memset(&client_addr, 0, sizeof(SockAddrIn));
         client_addr.sin_family = AF_INET;
-        client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+        if(inet_pton(AF_INET, "127.0.0.1", &client_addr.sin_addr.s_addr) <= 0)
+        {
+            logger_log(LogLevel_Warning, "Invalid ip address");
+            socket_destroy(client_socket);
+            continue;
+        }
+
         client_addr.sin_port = htons(50111);
 
         client_result = connect(client_socket, (SockAddr*)&client_addr, sizeof(client_addr));

@@ -25,7 +25,7 @@ struct SocketServer;
 
 typedef struct SocketServer SocketServer;
 
-typedef void (*socket_server_callback_func)(char* data);
+typedef void (*socket_server_callback_func)(char* data, size_t data_sz);
 
 typedef void (*socket_server_log_callback)(int32_t error_code, char* error_msg);
 
@@ -46,17 +46,36 @@ ROMANO_API SocketServer* socket_server_new(uint16_t port,
 ROMANO_API void socket_server_set_log_callback(SocketServer* socket_server,
                                                socket_server_log_callback error_callback);
 
+/*
+ * Starts the socket server
+ */
 ROMANO_API void socket_server_start(SocketServer* socket_server);
 
+/*
+ * Pushes a new callback to the socket server that will be executed
+ * when the socket server receives data
+ */
 ROMANO_API bool socket_server_push_callback(SocketServer* socket_server,
                                             socket_server_callback_func callback);
 
+/*
+ * Returns the last error caught in the socket server
+ */
 ROMANO_API int32_t socket_server_get_last_error(SocketServer* socket_server);
 
-ROMANO_API int32_t socket_server_is_running(SocketServer* socket_server);
+/*
+ * Returns true if the socket server is currently running
+ */
+ROMANO_API bool socket_server_is_running(SocketServer* socket_server);
 
+/*
+ * Stops the socket server
+ */
 ROMANO_API void socket_server_stop(SocketServer* socket_server);
 
+/*
+ * Stops the socket server and frees it
+ */
 ROMANO_API void socket_server_free(SocketServer* socket_server);
 
 ROMANO_CPP_END

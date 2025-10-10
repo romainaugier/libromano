@@ -125,7 +125,7 @@ void* socket_server_main_loop(void* _socket_server)
 
     char* data_buffer;
     char temp_data_buffer[RECV_SIZE];
-    uint32_t rec_data_size;
+    size_t rec_data_size;
 
     char send_buffer[SEND_SIZE];
     int32_t sent_data_size;
@@ -270,7 +270,7 @@ void* socket_server_main_loop(void* _socket_server)
 
             for(i = 0; i < GET_CALLBACKS_COUNT(socket_server->callbacks); i++)
             {
-                GET_CALLBACK_PTR(socket_server->callbacks, i)(data_buffer);
+                GET_CALLBACK_PTR(socket_server->callbacks, i)(data_buffer, rec_data_size);
             }
 
             socket_server_log(socket_server, 0, "Sending client infos about the size of received packet");
@@ -381,11 +381,11 @@ int32_t socket_server_get_last_error(SocketServer* socket_server)
     return error;
 }
 
-int32_t socket_server_is_running(SocketServer* socket_server)
+bool socket_server_is_running(SocketServer* socket_server)
 { 
     ROMANO_ASSERT(socket_server != NULL, "socket_server is NULL");
     
-    return HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
+    return (bool)HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
 }
 
 void socket_server_stop(SocketServer* socket_server)
@@ -410,6 +410,9 @@ void socket_server_stop(SocketServer* socket_server)
 void socket_server_free(SocketServer* socket_server)
 {
     ROMANO_ASSERT(socket_server != NULL, "socket_server is NULL");
+
+    if(HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning))
+        socket_server_stop(socket_server);
 
     if(socket_server->callbacks != NULL)
     {
