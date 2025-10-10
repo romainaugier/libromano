@@ -118,8 +118,8 @@ StringView strview_rsplit(const char* data, const char* separator, StringView* s
 
 int strview_find(const StringView s, const char* substr, const int substr_len)
 {
-    size_t offset = 0;
-    const size_t _substr_len = substr_len < 1 ? strlen(substr) : (size_t)substr_len;
+    int offset = 0;
+    int _substr_len = substr_len < 1 ? (int)strlen(substr) : substr_len;
 
     if(_substr_len > s.size) return -1;
 
@@ -178,137 +178,9 @@ StringView strview_trim(const char* data)
    return result;
 }
 
-#define is_plus(c) ((int)c == 43)
-#define is_minus(c) ((int)c == 45)
-#define is_digit(c) ((int)c > 47 && (int)c < 58)
-#define is_whitespace(c) ((int)c == 32)
-#define to_digit(c) ((int)c - 48)
-#define is_valid(c) (is_digit(c) || is_plus(c) || is_minus(c) || is_whitespace(c))
-
-#define INT_MAX_OVER_10 INT_MAX / 10
-
-const int _powers[11] = {
-    1,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000,
-    INT_MAX
-};
-
 int strview_parse_int(const StringView s)
 {
-    int is_parsing = 0;
-    int sign = 1;
-    int start = -1;
-    int length = 0;
-    int i = 0;
-    int j = 0;
-    int digit;
-    int res;
-    int zfill;
-
-    if(!is_valid(s.data[0])) return 0;
-
-    while(s.data[i] != '\0' && i < s.size)
-    {
-        if(is_plus(s.data[i]))
-        {
-            if(is_parsing) 
-            {
-                if(start > -1) 
-                {
-                    length = i - start;
-                    break;
-                }
-
-                return 0;
-            }
-
-            is_parsing = 1;
-            start = i + 1;
-        }
-        else if(is_minus(s.data[i]))
-        {
-            if(is_parsing) 
-            {
-                if(start > -1)
-                {
-                    length = i - start;
-                    break;
-                }
-                
-                return 0;
-            }
-
-            is_parsing = 1;
-            sign = -1;
-            start = i + 1;
-        }
-        else if(is_digit(s.data[i]))
-        {
-            if(!is_parsing)
-            {
-                is_parsing = 1;
-                start = i;
-            }
-        }
-        else if(is_parsing)
-        {
-            is_parsing = 0;
-            length = i - start;
-            break;
-        }
-        else if(!is_whitespace(s.data[i]))
-        {
-            return 0;
-        }
-
-        i++;
-    }
-
-    if(is_parsing)
-    {
-        length = i - start;
-    }
-
-    res = 0;
-
-    if(start > -1)
-    {
-        zfill = 0;
-
-        for(j = 0; j < length; j++)
-        {
-            if(to_digit(s.data[j + start]) == 0)
-            {
-                zfill++;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        start += zfill;
-        length -= zfill;
-
-        for(j = 0; j < length; j++)
-        {
-            digit = to_digit(s.data[j + start]);
-
-            if((res > INT_MAX_OVER_10) || (res == INT_MAX_OVER_10 && digit > 7)) return sign > 0 ? INT_MAX : INT_MIN;
-            
-            res = res * 10 + digit;
-        }
-    }
-
-    return res * sign;
+    return strtol(s.data, NULL, 10);
 }
 
 bool strview_parse_bool(const StringView s)
