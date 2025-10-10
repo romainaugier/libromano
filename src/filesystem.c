@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <dirent.h>
+#include <unistd.h>
+#include <ftw.h>
 #endif /* ROMANO_WIN */
 
 bool fs_file_content_init(FileContent* content,
@@ -453,7 +455,7 @@ bool walk_should_skip_entry(FSWalkMode mode,
         case DT_REG:
             return mode & FSWalkMode_YieldFiles;
         case DT_DIR:
-            return mode & FsWalkMode_YieldDirs;
+            return mode & FSWalkMode_YieldDirs;
         default:
             return true;
     }
@@ -593,6 +595,8 @@ bool fs_walk(const char* path,
             char* search_path = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
             vector_pop_front(&walk_iterator->_dir_queue);
 
+            size_t search_path_sz = strlen(search_path);
+
             walk_iterator->_dir = opendir(search_path);
 
             if(walk_iterator->_dir == NULL)
@@ -607,7 +611,7 @@ bool fs_walk(const char* path,
         }
         else
         {
-            int old_errno = errno();
+            int old_errno = errno;
 
             entry = readdir(walk_iterator->_dir);
 
@@ -615,7 +619,7 @@ bool fs_walk(const char* path,
             {
                 closedir(walk_iterator->_dir);
 
-                if(old_errno != errno())
+                if(old_errno != errno)
                     return false;
             }
             else
@@ -661,7 +665,7 @@ bool fs_walk(const char* path,
         walk_iterator->current_path[current_path_sz - 1] = '\0';
 
         bool is_dir = entry->d_type == DT_UNKNOWN ? fs_is_dir(walk_iterator->current_path) :
-                                                    entry->d_type == D_DIR;
+                                                    entry->d_type == DT_DIR;
 
         if(is_dir && (mode & FSWalkMode_Recursive))
         {

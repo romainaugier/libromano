@@ -6,6 +6,10 @@
 #include "libromano/arena.h"
 #include "libromano/logger.h"
 
+#if defined(ROMANO_LINUX)
+#include <errno.h>
+#endif
+
 Json* json_new()
 {
     Json* json = malloc(sizeof(Json));
