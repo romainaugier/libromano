@@ -5,6 +5,8 @@
 #include "libromano/filesystem.h"
 #include "libromano/logger.h"
 
+#include <string.h>
+
 int main(void)
 {
     logger_init();

@@ -251,10 +251,10 @@ void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
             {
-                a1_sse = _mm_load_ps(&A[i * N + k]);
-                a2_sse = _mm_load_ps(&A[(i + 1) * N + k]);
-                a3_sse = _mm_load_ps(&A[(i + 2) * N + k]);
-                a4_sse = _mm_load_ps(&A[(i + 3) * N + k]);
+                a1_sse = _mm_loadu_ps(&A[i * N + k]);
+                a2_sse = _mm_loadu_ps(&A[(i + 1) * N + k]);
+                a3_sse = _mm_loadu_ps(&A[(i + 2) * N + k]);
+                a4_sse = _mm_loadu_ps(&A[(i + 3) * N + k]);
 
                 b_sse = _mm_loadu_ps(&B[j * N + k]);
 
@@ -292,8 +292,8 @@ void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += SSE_N_BLOCK_SIZE)
             {
-                a1_sse = _mm_load_ps(&A[i * N + k]);
-                b_sse = _mm_load_ps(&B[j * N + k]);
+                a1_sse = _mm_loadu_ps(&A[i * N + k]);
+                b_sse = _mm_loadu_ps(&B[j * N + k]);
 
                 sse_sum1 = _mm_fmadd_ps(a1_sse, b_sse, sse_sum1);
             }
@@ -341,10 +341,10 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_load_ps(&A[i * N + k]);
-                a2_avx = _mm256_load_ps(&A[(i + 1) * N + k]);
-                a3_avx = _mm256_load_ps(&A[(i + 2) * N + k]);
-                a4_avx = _mm256_load_ps(&A[(i + 3) * N + k]);
+                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
+                a2_avx = _mm256_loadu_ps(&A[(i + 1) * N + k]);
+                a3_avx = _mm256_loadu_ps(&A[(i + 2) * N + k]);
+                a4_avx = _mm256_loadu_ps(&A[(i + 3) * N + k]);
 
                 b_avx = _mm256_loadu_ps(&B[j * N + k]);
 
@@ -382,8 +382,8 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
 
             for(k = 0; k < n_blocks; k += AVX_N_BLOCK_SIZE)
             {
-                a1_avx = _mm256_load_ps(&A[i * N + k]);
-                b_avx = _mm256_load_ps(&B[j * N + k]);
+                a1_avx = _mm256_loadu_ps(&A[i * N + k]);
+                b_avx = _mm256_loadu_ps(&B[j * N + k]);
 
                 avx_sum1 = _mm256_fmadd_ps(a1_avx, b_avx, avx_sum1);
             }
