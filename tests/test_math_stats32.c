@@ -9,18 +9,34 @@
 #define ROMANO_ENABLE_PROFILING
 #include "libromano/profiling.h"
 
+#if ROMANO_DEBUG
 #define VALUES_SIZE 10000
+#else
+#define VALUES_SIZE 1000000
+#endif /* ROMANO_DEBUG*/
+
+void log_stats(float* stats, const char* name)
+{
+    logger_log(LogLevel_Info,
+               "Stats: %s : %.03f, %.03f, %.03f, %.03f, %.03f",
+               name,
+               stats[0],
+               stats[1],
+               stats[2],
+               stats[3],
+               stats[4]);
+}
 
 int main(void)
 {
     size_t i;
-    float __sum;
-    float mean;
-    float variance;
-    float std;
-    float min;
-    float max;
-    float range;
+    float sum[5];
+    float mean[5];
+    float variance[5];
+    float std[5];
+    float min[5];
+    float max[5];
+    float range[5];
 
     logger_init();
 
@@ -31,57 +47,42 @@ int main(void)
         values[i] = (float)i + 1.0f;
     }
 
-    __sum = stats_sum(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The sum is: %f", __sum);
+    for(i = 0; i < VectorizationMode_COUNT; i++)
+    {
+        simd_force_vectorization_mode((VectorizationMode)i);
 
-    mean = stats_mean(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The mean is: %f", mean);
+        logger_log(LogLevel_Info, "Vectorization mode: %s", simd_get_vectorization_mode_as_string(i));
 
-    variance = stats_variance(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The variance is: %f", variance);
+        SCOPED_PROFILE_MS_START(profiling);
 
-    std = stats_std(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The std is: %f", std);
+        sum[i] = stats_sum(values, VALUES_SIZE);
+        mean[i] = stats_mean(values, VALUES_SIZE);
+        variance[i] = stats_variance(values, VALUES_SIZE);
+        std[i] = stats_std(values, VALUES_SIZE);
+        min[i] = stats_min(values, VALUES_SIZE);
+        max[i] = stats_max(values, VALUES_SIZE);
+        range[i] = stats_range(values, VALUES_SIZE);
 
-    min = stats_min(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The min is: %f", min);
-
-    max = stats_max(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The max is: %f", max);
-
-    range = stats_range(values, VALUES_SIZE);
-    logger_log(LogLevel_Info, "The range is: %f", range);
-
-    logger_log(LogLevel_Info, "Starting performance profiling");
-
-    /* SUM */
+        SCOPED_PROFILE_MS_END(profiling);
+    }
 
     simd_force_vectorization_mode(VectorizationMode_Scalar);
-    SCOPED_PROFILE_MS_START(scalar_sum_profiling);
 
-    __sum = stats_sum(values, VALUES_SIZE);
+    log_stats(sum, "sum");
+    log_stats(mean, "mean");
+    log_stats(variance, "variance");
+    log_stats(std, "std");
+    log_stats(min, "min");
+    log_stats(max, "max");
+    log_stats(range, "range");
 
-    SCOPED_PROFILE_MS_END(scalar_sum_profiling);
-
-    logger_log(LogLevel_Info, "Scalar sum: %f", __sum);
-
-    simd_force_vectorization_mode(VectorizationMode_SSE);
-    SCOPED_PROFILE_MS_START(sse_sum_profiling);
-
-    __sum = stats_sum(values, VALUES_SIZE);
-
-    SCOPED_PROFILE_MS_END(sse_sum_profiling);
-
-    logger_log(LogLevel_Info, "SSE sum: %f", __sum);
-
-    simd_force_vectorization_mode(VectorizationMode_AVX);
-    SCOPED_PROFILE_MS_START(avx2_sum_profiling);
-
-    __sum = stats_sum(values, VALUES_SIZE);
-
-    SCOPED_PROFILE_MS_END(avx2_sum_profiling);
-
-    logger_log(LogLevel_Info, "AVX2 sum: %f", __sum);
+    // ROMANO_ASSERT(stats_variance(sum, 5) < 1000.0f, "sum variance is too high");
+    // ROMANO_ASSERT(stats_variance(mean, 5) < 0.001f, "mean variance is too high");
+    // ROMANO_ASSERT(stats_variance(variance, 5) < 0.001f, "variance variance is too high");
+    // ROMANO_ASSERT(stats_variance(std, 5) < 0.001f, "std variance is too high");
+    // ROMANO_ASSERT(stats_variance(min, 5) < 0.001f, "min variance is too high");
+    // ROMANO_ASSERT(stats_variance(max, 5) < 0.001f, "max variance is too high");
+    // ROMANO_ASSERT(stats_variance(range, 5) < 0.001f, "range variance is too high");
 
     free(values);
 

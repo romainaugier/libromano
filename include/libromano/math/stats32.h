@@ -11,19 +11,40 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_API float stats_sum(const float* array, const size_t n);
+/*
+ * Returns the sum of the given data (Uses Kahan algorithm for stability)
+ */
+ROMANO_API float stats_sum(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_mean(const float* array, const size_t n);
+/*
+ * Returns the mean of the given data
+ */
+ROMANO_API float stats_mean(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_std(const float* array, const size_t n);
+/*
+ * Returns the standard-deviation of the given data
+ */
+ROMANO_API float stats_std(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_variance(const float* array, const size_t n);
+/*
+ * Returns the variance of the given data (Uses Youngs and Cramer algorithm for stability)
+ */
+ROMANO_API float stats_variance(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_min(const float* array, const size_t n);
+/*
+ * Returns the minimum value of the given data
+ */
+ROMANO_API float stats_min(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_max(const float* array, const size_t n);
+/*
+ * Returns the maximum value of the given data
+ */
+ROMANO_API float stats_max(const float* ROMANO_RESTRICT array, size_t n);
 
-ROMANO_API float stats_range(const float* array, const size_t n);
+/*
+ * Returns the range value of the given data abs(max - min)
+ */
+ROMANO_API float stats_range(const float* ROMANO_RESTRICT array, size_t n);
 
 ROMANO_CPP_END
 
