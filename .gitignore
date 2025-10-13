@@ -67,3 +67,4 @@ libromanoConfigVersion.cmake
 
 # Test files
 *.json
+tests_data
