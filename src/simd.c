@@ -68,3 +68,16 @@ void simd_force_vectorization_mode(const VectorizationMode mode)
 {
     _vectorization_mode = mode;
 }
+
+const char* simd_get_vectorization_mode_as_string(VectorizationMode mode)
+{
+    switch(mode)
+    {
+        case VectorizationMode_Scalar: return "Scalar";
+        case VectorizationMode_SSE: return "SSE";
+        case VectorizationMode_AVX: return "AVX";
+        case VectorizationMode_AVX2: return "AVX2";
+        case VectorizationMode_AVX512: return "AVX512";
+        default: return "Unknown";
+    }
+}

@@ -18,7 +18,10 @@ typedef enum
 {
     VectorizationMode_Scalar = 0,
     VectorizationMode_SSE = 1,
-    VectorizationMode_AVX = 2
+    VectorizationMode_AVX = 2,
+    VectorizationMode_AVX2 = 3,
+    VectorizationMode_AVX512 = 4,
+    VectorizationMode_COUNT = 5,
 } VectorizationMode;
 
 #define VECTORIZATION_MODE_STR(mode) mode == 2 ? "AVX" : mode == 1 ? "SSE" : "Scalar (None)" 
@@ -33,11 +36,15 @@ ROMANO_API VectorizationMode simd_get_vectorization_mode(void);
 
 ROMANO_API void simd_force_vectorization_mode(const VectorizationMode mode);
 
+ROMANO_API const char* simd_get_vectorization_mode_as_string(VectorizationMode mode);
+
 /* SIMD helper functions */
 
-/* Horizontal sums (sum the entire vector to a single element) */
 /* https://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-sse-vector-sum-or-other-reduction */
 
+/*
+ * Returns the horizontal sum of the packed 4 floats
+ */
 static ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
 {
     __m128 shuf = _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 1));
@@ -47,14 +54,55 @@ static ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
     return _mm_cvtss_f32(sums);
 }
 
+/*
+ * Returns the horizontal sum of the packed 8 floats
+ */
 static ROMANO_FORCE_INLINE float _mm256_hsum_ps(__m256 x)
 {
-    const __m128 hi = _mm256_extractf128_ps(x, 1);
-    const __m128 lo = _mm256_castps256_ps128(x);
+    __m128 hi = _mm256_extractf128_ps(x, 1);
+    __m128 lo = _mm256_castps256_ps128(x);
     __m128 sum = _mm_add_ps(hi, lo);
     sum = _mm_hadd_ps(sum, sum);
     sum = _mm_hadd_ps(sum, sum);
     return _mm_cvtss_f32(sum);
+}
+
+/*
+ * Returns the linear interpolation of a and b depending on parameter t
+ */
+static ROMANO_FORCE_INLINE __m128 _mm_lerp_ps(__m128 a, __m128 b, __m128 t)
+{
+    __m128 one_minus_t = _mm_sub_ps(_mm_set1_ps(1.0f), t);
+    a = _mm_mul_ps(one_minus_t, a);
+    b = _mm_mul_ps(b, t);
+    return _mm_add_ps(a, b);
+}
+
+/*
+ * Returns the linear interpolation of a and b depending on parameter t
+ */
+static ROMANO_FORCE_INLINE __m256 _mm256_lerp_ps(__m256 a, __m256 b, __m256 t)
+{
+    __m256 one_minus_t = _mm256_sub_ps(_mm256_set1_ps(1.0f), t);
+    a = _mm256_mul_ps(one_minus_t, a);
+    b = _mm256_mul_ps(b, t);
+    return _mm256_add_ps(a, b);
+}
+
+/*
+ * Returns the horizontal mean of the 4 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm_hmean_ps(__m128 x)
+{
+    return _mm_hsum_ps(x) / 4.0;
+}
+
+/*
+ * Returns the horizontal mean of the 8 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
+{
+    return _mm256_hsum_ps(x) / 8.0;
 }
 
 ROMANO_CPP_END
