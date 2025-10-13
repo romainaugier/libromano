@@ -7,35 +7,6 @@
 #if !defined(__LIBROMANO)
 #define __LIBROMANO
 
-/* https://github.com/cpredef/predef/blob/master/Compilers.md */
-#if defined(_MSC_VER)
-#define ROMANO_MSVC
-#elif defined(__GNUC__)
-#define ROMANO_GCC
-#elif defined(__clang__)
-#define ROMANO_CLANG
-#elif defined(__EMSCRIPTEN__)
-#define ROMANO_EMSCRIPTEN
-#elif defined(__INTEL_COMPILER) || defined(__ICC)
-#define ROMANO_ICC
-#elif defined(__MINGW32__)
-#define ROMANO_MINGW32
-#elif defined(__MINGW64__)
-#define ROMANO_MINGW64
-#else
-#error "Unknown compiler"
-#endif /* defined(_MSC_VER) */
-
-#if !defined(ROMANO_VERSION_STR)
-#define ROMANO_VERSION_STR "Debug"
-#endif /* !defined(ROMANO_VERSION_STR) */
-
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 /* https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170 */
 /* https://github.com/cpredef/predef/blob/master/Architectures.md */
 #if INTPTR_MAX == INT64_MAX || defined(__x86_64__) || defined(_M_AMD64)
@@ -107,6 +78,40 @@
 #else
 #error "Unknown platform"
 #endif /* defined(_WIN32) */
+
+/* https://github.com/cpredef/predef/blob/master/Compilers.md */
+#if defined(_MSC_VER)
+#define ROMANO_MSVC
+#elif defined(__GNUC__)
+#define ROMANO_GCC
+#elif defined(__clang__)
+#define ROMANO_CLANG
+#elif defined(__EMSCRIPTEN__)
+#define ROMANO_EMSCRIPTEN
+#elif defined(__INTEL_COMPILER) || defined(__ICC)
+#define ROMANO_ICC
+#elif defined(__MINGW32__)
+#define ROMANO_MINGW32
+#elif defined(__MINGW64__)
+#define ROMANO_MINGW64
+#else
+#error "Unknown compiler"
+#endif /* defined(_MSC_VER) */
+
+#if !defined(ROMANO_VERSION_STR)
+#define ROMANO_VERSION_STR "Debug"
+#endif /* !defined(ROMANO_VERSION_STR) */
+
+#if defined(ROMANO_LINUX)
+#define _GNU_SOURCE
+#define _XOPEN_SOURCE 500
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define ROMANO_BYTE_ORDER_UNDEFINED 0
 #define ROMANO_BYTE_ORDER_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
