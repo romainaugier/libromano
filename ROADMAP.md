@@ -29,10 +29,13 @@
 - :clock3: simd utilities
 
 ## Maths
-- :clock3: common (float32/64 optimized maths library)
-- :clock3: linear algebra (float32/64 optimized linear algebra library)
-- :clock3: stats (float32/64 optimized statistics maths library)
+- :heavy_check_mark: f32 common (optimized maths library)
+- :clock3: f32 linear algebra (optimized linear algebra library)
+- :heavy_check_mark: f32 descriptive statistics (optimized statistics maths library)
+- :x: f64 common (optimized maths library)
+- :x: f64 linear algebra (optimized linear algebra library)
+- :x: f64 descriptive statistics (optimized statistics maths library)
 - :clock3: uint128 and int128 arithmetic
-- :x: finance (maths, technical indicators...)
+- :x: f64 finance (maths, technical indicators...)
 - :x: optimization (differential evolution, gradient descent...)
 - :x: machine learning
