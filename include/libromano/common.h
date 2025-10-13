@@ -114,7 +114,11 @@
 
 #define ROMANO_BYTE_ORDER __BYTE_ORDER__
 
+#if defined(ROMANO_MSVC)
+#define ROMANO_RESTRICT __restrict
+#else
 #define ROMANO_RESTRICT restrict
+#endif /* defined(ROMANO_MSVC) */
 
 #if defined(ROMANO_WIN)
 #if defined(ROMANO_MSVC)
@@ -168,6 +172,12 @@
 #if !defined NULL
 #define NULL (void*)0
 #endif /* !defined NULL */
+
+#if defined(ROMANO_MSVC)
+#define ROMANO_NO_VECTORIZATION __pragma(loop(no_vector))
+#else
+#define ROMANO_NO_VECTORIZATION
+#endif /* defined(ROMANO_MSVC) */
 
 #if defined(ROMANO_WIN)
 #define ROMANO_FUNCTION __FUNCTION__
