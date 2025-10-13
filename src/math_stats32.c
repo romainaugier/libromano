@@ -176,13 +176,6 @@ float __stats_min_scalar(const float* ROMANO_RESTRICT array, size_t n)
     return min;
 }
 
-ROMANO_FORCE_INLINE float __stats_hmin_sse(__m128 v)
-{
-    v = _mm_min_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 0)));
-    v = _mm_min_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 0, 0)));
-    return _mm_cvtss_f32(v);
-}
-
 float __stats_min_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
     size_t i;
@@ -196,7 +189,7 @@ float __stats_min_sse(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < sse_loop; i += 4)
     {
         v = _mm_loadu_ps(&array[i]);
-        min = mathf_min(min, __stats_hmin_sse(v));
+        min = mathf_min(min, _mm_hmin_ps(v));
     }
 
     for(; i < n; i++)
@@ -205,20 +198,6 @@ float __stats_min_sse(const float* ROMANO_RESTRICT array, size_t n)
     }
 
     return min;
-}
-
-ROMANO_FORCE_INLINE float __stats_hmin_avx(__m256 v)
-{
-    __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
-    __m256 m0 = _mm256_max_ps(perm_halves, v);
-
-    __m256 perm0 = _mm256_permute_ps(m0, 0b01001110);
-    __m256 m1 = _mm256_max_ps(m0, perm0);
-
-    __m256 perm1 = _mm256_permute_ps(m1, 0b10110001);
-    __m256 m2 = _mm256_max_ps(perm1, m1);
-
-    return _mm256_cvtss_f32(m2);
 }
 
 float __stats_min_avx(const float* ROMANO_RESTRICT array, size_t n)
@@ -234,7 +213,7 @@ float __stats_min_avx(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < avx_loop; i += 8)
     {
         v = _mm256_loadu_ps(&array[i]);
-        min = mathf_min(min, __stats_hmin_avx(v));
+        min = mathf_min(min, _mm256_hmin_ps(v));
     }
 
     for(; i < n; i++)
@@ -284,13 +263,6 @@ float __stats_max_scalar(const float* ROMANO_RESTRICT array, size_t n)
     return max;
 }
 
-ROMANO_FORCE_INLINE float __stats_hmax_sse(__m128 v)
-{
-    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 0)));
-    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 0, 0)));
-    return _mm_cvtss_f32(v);
-}
-
 float __stats_max_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
     size_t i;
@@ -304,7 +276,7 @@ float __stats_max_sse(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < sse_loop; i += 4)
     {
         v = _mm_loadu_ps(&array[i]);
-        max = mathf_max(max, __stats_hmax_sse(v));
+        max = mathf_max(max, _mm_hmax_ps(v));
     }
 
     for(; i < n; i++)
@@ -313,20 +285,6 @@ float __stats_max_sse(const float* ROMANO_RESTRICT array, size_t n)
     }
 
     return max;
-}
-
-ROMANO_FORCE_INLINE float __stats_hmax_avx(__m256 v)
-{
-    __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
-    __m256 m0 = _mm256_max_ps(perm_halves, v);
-
-    __m256 perm0 = _mm256_permute_ps(m0, 0b01001110);
-    __m256 m1 = _mm256_max_ps(m0, perm0);
-
-    __m256 perm1 = _mm256_permute_ps(m1, 0b10110001);
-    __m256 m2 = _mm256_max_ps(perm1, m1);
-
-    return _mm256_cvtss_f32(m2);
 }
 
 float __stats_max_avx(const float* ROMANO_RESTRICT array, size_t n)
@@ -342,7 +300,7 @@ float __stats_max_avx(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < avx_loop; i += 8)
     {
         v = _mm256_loadu_ps(&array[i]);
-        max = mathf_max(max, __stats_hmax_avx(v));
+        max = mathf_max(max, _mm256_hmax_ps(v));
     }
 
     for(; i < n; i++)
@@ -410,8 +368,8 @@ float __stats_range_sse(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < sse_loop; i += 4)
     {
         v = _mm_loadu_ps(&array[i]);
-        min = mathf_min(min, __stats_hmin_sse(v));
-        max = mathf_max(max, __stats_hmax_sse(v));
+        min = mathf_min(min, _mm_hmin_ps(v));
+        max = mathf_max(max, _mm_hmax_ps(v));
     }
 
     for(; i < n; i++)
@@ -438,8 +396,8 @@ float __stats_range_avx(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < avx_loop; i += 8)
     {
         v = _mm256_loadu_ps(&array[i]);
-        min = mathf_min(min, __stats_hmin_avx(v));
-        max = mathf_max(max, __stats_hmax_avx(v));
+        min = mathf_min(min, _mm256_hmin_ps(v));
+        max = mathf_max(max, _mm256_hmax_ps(v));
     }
 
     for(; i < n; i++)
