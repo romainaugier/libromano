@@ -105,6 +105,60 @@ static ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
     return _mm256_hsum_ps(x) / 8.0;
 }
 
+/*
+ * Returns the minimum value of the 4 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm_hmin_ps(__m128 x)
+{
+    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 0)));
+    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(1, 1, 0, 0)));
+    return _mm_cvtss_f32(x);
+}
+
+/*
+ * Returns the minimum value of the 8 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm256_hmin_ps(__m256 v)
+{
+    __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
+    __m256 m0 = _mm256_min_ps(perm_halves, v);
+
+    __m256 perm0 = _mm256_permute_ps(m0, 0x4E);
+    __m256 m1 = _mm256_min_ps(m0, perm0);
+
+    __m256 perm1 = _mm256_permute_ps(m1, 0xB1);
+    __m256 m2 = _mm256_min_ps(perm1, m1);
+
+    return _mm256_cvtss_f32(m2);
+}
+
+/*
+ * Returns the maximum value of the 4 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm_hmax_ps(__m128 v)
+{
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 0)));
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 0, 0)));
+    return _mm_cvtss_f32(v);
+}
+
+/*
+ * Returns the maximum value of the 8 packed floats
+ */
+static ROMANO_FORCE_INLINE float _mm256_hmax_ps(__m256 v)
+{
+    __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
+    __m256 m0 = _mm256_max_ps(perm_halves, v);
+
+    __m256 perm0 = _mm256_permute_ps(m0, 0x4E);
+    __m256 m1 = _mm256_max_ps(m0, perm0);
+
+    __m256 perm1 = _mm256_permute_ps(m1, 0xB1);
+    __m256 m2 = _mm256_max_ps(perm1, m1);
+
+    return _mm256_cvtss_f32(m2);
+}
+
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_SIMD) */

@@ -536,12 +536,15 @@ bool walk_should_skip_entry(FSWalkMode mode,
 {
     /* TODO: maybe handle DT_UNKNOWN correctly ? */
 
+    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
+        return true;
+
     switch(entry_type)
     {
         case DT_REG:
-            return mode & FSWalkMode_YieldFiles;
+            return (mode & FSWalkMode_YieldFiles) == 0;
         case DT_DIR:
-            return mode & FSWalkMode_YieldDirs;
+            return (mode & FSWalkMode_YieldDirs) == 0;
         default:
             return true;
     }
@@ -728,6 +731,11 @@ bool fs_walk(const char* path,
                 return false;
             }
 
+            entry = readdir(walk_iterator->_dir);
+
+            if(entry == NULL)
+                return false;
+
             walk_iterator->_current_dir = search_path;
             walk_iterator->_current_dir_sz = search_path_sz;
 
@@ -739,17 +747,15 @@ bool fs_walk(const char* path,
 
             entry = readdir(walk_iterator->_dir);
 
-            if(entry == NULL)
-            {
-                closedir(walk_iterator->_dir);
-
-                if(old_errno != errno)
-                    return false;
-            }
-            else
-            {
+            if(entry != NULL)
                 break;
-            }
+
+            closedir(walk_iterator->_dir);
+
+            walk_iterator->_dir = NULL;
+
+            if(old_errno != errno)
+                return false;
         }
     }
 
@@ -790,7 +796,7 @@ bool fs_walk(const char* path,
 
         int ret = snprintf(walk_iterator->current_path,
                            current_path_sz,
-                           "%.*s\\%s",
+                           "%.*s/%s",
                            (int)walk_iterator->_current_dir_sz,
                            walk_iterator->_current_dir,
                            entry->d_name);
