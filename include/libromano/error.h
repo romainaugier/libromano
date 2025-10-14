@@ -34,6 +34,9 @@ typedef enum ErrorCode {
      * https://en.wikipedia.org/wiki/Errno.h
      * Codes range from 0 (no error) to 143
      */
+
+    /* Json errors */
+    ErrorCode_JsonUnexpectedCharacter,
 } ErrorCode;
 
 /*
