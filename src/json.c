@@ -11,6 +11,8 @@
 #include <errno.h>
 #endif
 
+#include <ctype.h>
+
 extern ErrorCode g_current_error;
 
 /********************/
@@ -1253,6 +1255,8 @@ bool json_write_value(JsonWriter* writer, JsonValue* value)
         case JsonTag_Dict:
             return json_write_dict(writer, value);
     }
+
+    return false;
 }
 
 char* json_write(Json* json, size_t indent_size, size_t* written_size)
