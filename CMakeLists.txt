@@ -14,6 +14,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if(RUN_TESTS EQUAL 1)
     message(STATUS "RUN_TESTS enabled, building and running tests")
+    add_definitions(-DTESTS_DATA_DIR="${CMAKE_SOURCE_DIR}/tests_data")
     enable_testing()
 endif()
 

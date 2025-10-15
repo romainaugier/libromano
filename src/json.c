@@ -12,6 +12,7 @@
 #endif
 
 #include <ctype.h>
+#include <math.h>
 
 extern ErrorCode g_current_error;
 
@@ -644,8 +645,13 @@ JsonValue* json_parse_number(JsonParser* p)
     size_t start = p->pos;
     bool is_negative = false;
     bool is_float = false;
+    int64_t int_val = 0;
+    double float_val = 0.0;
+    double fraction = 0.0;
+    int exponent = 0;
+    bool exp_negative = false;
     
-    if(p->str[p->pos] == '-') 
+    if(p->pos < p->len && p->str[p->pos] == '-') 
     {
         is_negative = true;
         p->pos++;
@@ -654,52 +660,83 @@ JsonValue* json_parse_number(JsonParser* p)
     if(p->pos >= p->len || !isdigit(p->str[p->pos]))
         return NULL;
     
-    while(p->pos < p->len && isdigit(p->str[p->pos]))
+    while(p->pos < p->len && isdigit(p->str[p->pos])) 
+    {
+        int_val = int_val * 10 + (p->str[p->pos] - '0');
+        float_val = float_val * 10 + (p->str[p->pos] - '0');
         p->pos++;
+    }
     
-    if(p->pos < p->len && p->str[p->pos] == '.')
+    if(p->pos < p->len && p->str[p->pos] == '.') 
     {
         is_float = true;
         p->pos++;
-
-        if(p->pos >= p->len || !isdigit(p->str[p->pos]))
+        
+        if (p->pos >= p->len || !isdigit(p->str[p->pos]))
             return NULL;
+        
+        double divisor = 10.0;
 
-        while(p->pos < p->len && isdigit(p->str[p->pos]))
+        while(p->pos < p->len && isdigit(p->str[p->pos])) 
+        {
+            fraction += (p->str[p->pos] - '0') / divisor;
+            divisor *= 10.0;
             p->pos++;
+        }
+
+        float_val += fraction;
     }
     
     if(p->pos < p->len && (p->str[p->pos] == 'e' || p->str[p->pos] == 'E')) 
     {
         is_float = true;
         p->pos++;
-
-        if(p->pos < p->len && (p->str[p->pos] == '+' || p->str[p->pos] == '-'))
+        
+        if(p->pos < p->len && p->str[p->pos] == '-') 
+        {
+            exp_negative = true;
             p->pos++;
-
+        } 
+        else if(p->pos < p->len && p->str[p->pos] == '+') 
+        {
+            p->pos++;
+        }
+        
         if(p->pos >= p->len || !isdigit(p->str[p->pos]))
             return NULL;
-
-        while (p->pos < p->len && isdigit(p->str[p->pos]))
+        
+        while(p->pos < p->len && isdigit(p->str[p->pos])) 
+        {
+            exponent = exponent * 10 + (p->str[p->pos] - '0');
             p->pos++;
+        }
     }
     
     if(is_float) 
     {
-        double d = strtod(p->str + start, NULL);
-        return json_f64_new(p->json, d);
+        if(exp_negative) 
+        {
+            exponent = -exponent;
+        }
+
+        float_val *= pow(10.0, exponent);
+
+        if(is_negative) 
+        {
+            float_val = -float_val;
+        }
+
+        return json_f64_new(p->json, float_val);
     } 
     else 
     {
         if(is_negative) 
         {
-            int64_t i = strtoll(p->str + start, NULL, 10);
-            return json_i64_new(p->json, i);
+            return json_i64_new(p->json, -int_val);
         } 
         else 
         {
-            uint64_t u = strtoull(p->str + start, NULL, 10);
-            return json_u64_new(p->json, u);
+            return json_u64_new(p->json, (uint64_t)int_val);
         }
     }
 }

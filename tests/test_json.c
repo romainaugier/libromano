@@ -4,6 +4,11 @@
 
 #include "libromano/json.h"
 #include "libromano/logger.h"
+#include "libromano/filesystem.h"
+#include "libromano/string.h"
+
+#define ROMANO_ENABLE_PROFILING
+#include "libromano/profiling.h"
 
 int main(void)
 {
@@ -13,38 +18,29 @@ int main(void)
 
     logger_log_info("Starting Json test");
 
-    const char* json_str = "{\"menu\": {"
-"\"id\": \"file\","
-"\"value\": \"File\","
-"\"popup\": {"
-"\"menuitem\": ["
-"{\"value\": \"New\", \"onclick\": \"CreateNewDoc()\"},"
-"{\"value\": \"Open\", \"onclick\": \"OpenDoc()\"},"
-"{\"value\": \"Close\", \"onclick\": \"CloseDoc()\"}"
-"]"
-"}"
-"}}";
+    if(!fs_path_exists(TESTS_DATA_DIR))
+    {
+        logger_log_warning("Can't find tests data dir, silently failing Json test");
+        return 0;
+    }
 
-    Json* doc = json_loads(json_str, strlen(json_str));
+    String json_path = string_newf("%s/json/canada.json", TESTS_DATA_DIR);
+
+    if(json_path == NULL)
+    {
+        logger_log_error("Error while formatting file path");
+        return 1;
+    }
+
+    SCOPED_PROFILE_MS_START(json_loadf);
+    Json* doc = json_loadf(json_path);
+    SCOPED_PROFILE_MS_END(json_loadf);
 
     if(doc == NULL)
     {
-        logger_log_error("Error while parsing json string");
+        logger_log_error("Error while parsing json from file: %s", json_path);
         return 1;
     }
-
-    size_t json_dump_size = 0;
-    char* json_dump = json_dumps(doc, 2, &json_dump_size);
-
-    if(json_dump == NULL)
-    {
-        logger_log_error("Error while dumping json");
-        return 1;
-    }
-
-    logger_log_info("Json doc: %s", json_dump);
-
-    json_free(doc);
 
     logger_log_info("Finished Json test");
 
