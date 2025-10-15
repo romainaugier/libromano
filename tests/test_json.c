@@ -24,22 +24,38 @@ int main(void)
         return 0;
     }
 
-    String json_path = string_newf("%s/json/canada.json", TESTS_DATA_DIR);
+    const char* const jsons[3] = {
+        "canada.json",
+        "twitter.json",
+        "citm_catalog.json"
+    };
 
-    if(json_path == NULL)
+    for(size_t i = 0; i < 3; i++)
     {
-        logger_log_error("Error while formatting file path");
-        return 1;
-    }
+        String json_path = string_newf("%s/json/%s", TESTS_DATA_DIR, jsons[i]);
 
-    SCOPED_PROFILE_MS_START(json_loadf);
-    Json* doc = json_loadf(json_path);
-    SCOPED_PROFILE_MS_END(json_loadf);
+        if(json_path == NULL)
+        {
+            logger_log_error("Error while formatting file path");
+            return 1;
+        }
 
-    if(doc == NULL)
-    {
-        logger_log_error("Error while parsing json from file: %s", json_path);
-        return 1;
+        logger_log_info("Loading: %s", json_path);
+
+        SCOPED_PROFILE_MS_START(json_loadf);
+        Json* doc = json_loadf(json_path);
+        SCOPED_PROFILE_MS_END(json_loadf);
+
+        if(doc == NULL)
+        {
+            logger_log_error("Error while parsing json from file: %s", json_path);
+            string_free(json_path);
+            return 1;
+        }
+
+        json_free(doc);
+
+        string_free(json_path);
     }
 
     logger_log_info("Finished Json test");

@@ -69,12 +69,14 @@ function(set_target_options target_name)
         # 5045 is "Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified", again we don't care
         # 4324 is " structure was padded due to alignment specifier", again we don't care (it appears only in HashSet::Bucket for now)
         # 4146 is " unary minus operator applied to unsigned type", again we don't care (it appears only in lsb_u64)
-        set(COMPILE_OPTIONS /W4 /wd4710 /wd5045 /wd4324 /wd4146 /utf-8 ${AVX_FLAGS} $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi /Zi /Gm- /Zc:inline>)
+        set(COMPILE_OPTIONS /W4 /wd4710 /wd5045 /wd4324 /wd4146 /utf-8 ${AVX_FLAGS} /Zi
+                            $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi /Gm->
+                            $<$<CONFIG:Debug,RelWithDebInfo>:/Ob0>)
 
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
 
         # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
-        target_link_options(${target_name} PRIVATE /ignore:4300 /NODEFAULTLIB:library)
+        target_link_options(${target_name} PRIVATE /ignore:4300 /NODEFAULTLIB:library $<$<CONFIG:Debug,RelWithDebInfo>:/PROFILE /OPT:NOREF>)
     endif()
 
     # Provides the macro definition DEBUG_BUILD

@@ -54,6 +54,7 @@ dkms.conf
 
 # Folders
 .vscode
+.vs
 build
 bin
 .cache
