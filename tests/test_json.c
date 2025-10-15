@@ -13,16 +13,36 @@ int main(void)
 
     logger_log_info("Starting Json test");
 
-    Json* doc = json_new();
+    const char* json_str = "{\"menu\": {"
+"\"id\": \"file\","
+"\"value\": \"File\","
+"\"popup\": {"
+"\"menuitem\": ["
+"{\"value\": \"New\", \"onclick\": \"CreateNewDoc()\"},"
+"{\"value\": \"Open\", \"onclick\": \"OpenDoc()\"},"
+"{\"value\": \"Close\", \"onclick\": \"CloseDoc()\"}"
+"]"
+"}"
+"}}";
 
-    size_t json_str_size = 0;
-    char* json_str = json_dumps(doc, 2, &json_str_size);
+    Json* doc = json_loads(json_str, strlen(json_str));
 
-    /* TODO: fix when implemented */
-    if(json_str == NULL)
-        return 0;
+    if(doc == NULL)
+    {
+        logger_log_error("Error while parsing json string");
+        return 1;
+    }
 
-    logger_log_info("Json doc: %s", json_str);
+    size_t json_dump_size = 0;
+    char* json_dump = json_dumps(doc, 2, &json_dump_size);
+
+    if(json_dump == NULL)
+    {
+        logger_log_error("Error while dumping json");
+        return 1;
+    }
+
+    logger_log_info("Json doc: %s", json_dump);
 
     json_free(doc);
 

@@ -20,6 +20,7 @@ ROMANO_CPP_ENTER
 #define JSON_INVALID_F64 ((double)(0xFFFFFFFF7FF7FFFF))
 
 typedef union JsonValueUnion {
+    bool b;
     uint64_t u64;
     int64_t i64;
     double f64;
@@ -33,8 +34,8 @@ typedef struct JsonObject {
 } JsonValue;
 
 typedef struct JsonKeyValue {
-    JsonValue key;
-    JsonValue value;
+    const char* key;
+    JsonValue* value;
 } JsonKeyValue;
 
 typedef struct JsonArrayElement {
@@ -78,6 +79,24 @@ ROMANO_API JsonValue* json_null_new(Json* json);
 /*
  */
 ROMANO_API void json_null_set(Json* json, JsonValue* value);
+
+/* Bool */
+
+/*
+ */
+ROMANO_API bool json_is_bool(JsonValue* value);
+
+/*
+ */
+ROMANO_API JsonValue* json_bool_new(Json* json, bool b);
+
+/*
+ */
+ROMANO_API bool json_bool_get(JsonValue* value);
+
+/*
+ */
+ROMANO_API void json_bool_set(Json* json, JsonValue* value, bool b);
 
 /* U64 */
 
@@ -179,7 +198,7 @@ ROMANO_API JsonValue* json_array_get(JsonValue* value);
 
 /*
  */
-ROMANO_API void json_array_append(Json* json, JsonValue* array, JsonValue* value);
+ROMANO_API void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool reference);
 
 /*
  */
@@ -212,9 +231,10 @@ ROMANO_API JsonValue* json_dict_get(JsonValue* value);
 
 /*
  */
-ROMANO_API void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* value);
+ROMANO_API void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* value, bool reference);
 
 /*
+ * Returns a ptr to the associated value. If not found, returns NULL
  */
 ROMANO_API JsonValue* json_dict_find(Json* json, JsonValue* dict, const char* key);
 

@@ -37,6 +37,8 @@ typedef enum ErrorCode {
 
     /* Json errors */
     ErrorCode_JsonUnexpectedCharacter,
+    ErrorCode_JsonExpectedKey,
+    ErrorCode_JsonExpectedColon,
 } ErrorCode;
 
 /*
