@@ -6,6 +6,7 @@
 #include "libromano/arena.h"
 #include "libromano/logger.h"
 #include "libromano/error.h"
+#include "libromano/fmt.h"
 
 #if defined(ROMANO_LINUX)
 #include <errno.h>
@@ -1032,7 +1033,7 @@ bool json_write_realloc(JsonWriter* writer, size_t needed_size)
     while(total_needed_size >= new_capacity)
         new_capacity <<= 1;
 
-    new_str = realloc(writer->str, writer->str_capacity);
+    new_str = realloc(writer->str, new_capacity * sizeof(char));
 
     if(new_str == NULL)
     {
@@ -1056,12 +1057,12 @@ ROMANO_FORCE_INLINE bool json_write_char(JsonWriter* writer, char c)
     return true;
 }
 
-bool json_write_indent(JsonWriter* writer)
+ROMANO_FORCE_INLINE bool json_write_indent(JsonWriter* writer)
 {
     if(!json_write_realloc(writer, writer->indent))
         return false;
 
-    memset(writer->str + writer->str_sz, ' ', writer->indent);
+    memset(writer->str + writer->str_sz, ' ', writer->indent * sizeof(char));
     writer->str_sz += writer->indent;
 
     return true;
@@ -1198,15 +1199,12 @@ bool json_write_dict(JsonWriter* writer, JsonValue* dict)
 
 bool json_write_literal(JsonWriter* writer, const char* lit, size_t lit_sz)
 {
-    if(!json_write_realloc(writer, lit_sz + 2))
+    if(!json_write_realloc(writer, lit_sz))
         return false;
 
-    memcpy(writer->str + writer->str_sz + 1, lit, lit_sz);
+    memcpy(writer->str + writer->str_sz, lit, lit_sz);
 
-    writer->str[writer->str_sz] = '"';
-    writer->str[writer->str_sz + lit_sz] = '"';
-
-    writer->str_sz += lit_sz + 2;
+    writer->str_sz += lit_sz;
 
     return true;
 }
@@ -1215,7 +1213,7 @@ bool json_write_u64(JsonWriter* writer, uint64_t u64)
 {
     int buffer_sz;
 
-    buffer_sz = snprintf(NULL, 0, "%llu", u64);
+    buffer_sz = fmt_size_u64(u64);
 
     if(buffer_sz < 0)
     {
@@ -1226,11 +1224,9 @@ bool json_write_u64(JsonWriter* writer, uint64_t u64)
     if(!json_write_realloc(writer, (size_t)buffer_sz))
         return false;
 
-    if(snprintf(writer->str + writer->str_sz, buffer_sz + 1, "%llu", u64) < 0)
-    {
-        g_current_error = ErrorCode_FormattingError;
-        return false;
-    }
+    fmt_u64(writer->str + writer->str_sz, u64);
+
+    writer->str_sz += buffer_sz;
 
     return true;
 }
@@ -1239,7 +1235,7 @@ bool json_write_i64(JsonWriter* writer, int64_t i64)
 {
     int buffer_sz;
 
-    buffer_sz = snprintf(NULL, 0, "%lld", i64);
+    buffer_sz = fmt_size_i64(i64);
 
     if(buffer_sz < 0)
     {
@@ -1250,11 +1246,9 @@ bool json_write_i64(JsonWriter* writer, int64_t i64)
     if(!json_write_realloc(writer, (size_t)buffer_sz))
         return false;
 
-    if(snprintf(writer->str + writer->str_sz, buffer_sz + 1, "%lli", i64) < 0)
-    {
-        g_current_error = ErrorCode_FormattingError;
-        return false;
-    }
+    fmt_i64(writer->str + writer->str_sz, i64);
+
+    writer->str_sz += buffer_sz;
 
     return true;
 }
@@ -1263,7 +1257,7 @@ bool json_write_f64(JsonWriter* writer, double f64)
 {
     int buffer_sz;
 
-    buffer_sz = snprintf(NULL, 0, "%f", f64);
+    buffer_sz = fmt_size_f64(f64, 3);
 
     if(buffer_sz < 0)
     {
@@ -1274,13 +1268,47 @@ bool json_write_f64(JsonWriter* writer, double f64)
     if(!json_write_realloc(writer, (size_t)buffer_sz))
         return false;
 
-    if(snprintf(writer->str + writer->str_sz, buffer_sz + 1, "%f", f64) < 0)
-    {
-        g_current_error = ErrorCode_FormattingError;
-        return false;
-    }
+    fmt_f64(writer->str + writer->str_sz, f64, 3);
+
+    writer->str_sz += buffer_sz;
 
     return true;
+}
+
+ROMANO_FORCE_INLINE bool json_char_is_escaped(char c)
+{
+    switch(c)
+    {
+        case '\'':
+        case '\"':
+        case '\\':
+        case '\n':
+        case '\r':
+        case '\t':
+        case '\b':
+        case '\f':
+        case '\v':
+            return true;
+        default:
+            return false;
+    }
+}
+
+ROMANO_FORCE_INLINE char json_escaped_to_char(char c)
+{
+    switch(c)
+    {
+        case '\'': return 0x27;
+        case '\"': return '"';
+        case '\\': return '\\';
+        case '\n': return 'n';
+        case '\r': return 'r';
+        case '\t': return 't';
+        case '\b': return 'b';
+        case '\f': return 'f';
+        case '\v': return 'v';
+        default: return c;
+    }
 }
 
 bool json_write_str(JsonWriter* writer, const char* str)
@@ -1293,8 +1321,8 @@ bool json_write_str(JsonWriter* writer, const char* str)
 
     while(str[i] != '\0')
     {
-        if(str[i] == '"' || str[i] == '\\')
-            str_sz++;
+        if(json_char_is_escaped(str[i]))
+            str_sz += 2;
 
         str_sz++;
         i++;
@@ -1309,10 +1337,17 @@ bool json_write_str(JsonWriter* writer, const char* str)
 
     while(str[i] != '\0')
     {
-        if(str[i] == '"' || str[i] == '\\')
-            writer->str[writer->str_sz++] = '\\';
+        if(json_char_is_escaped(str[i]))
+        {
+            if(str[i] != '\'')
+                writer->str[writer->str_sz++] = '\\';
 
-        writer->str[writer->str_sz++] = str[i];
+            writer->str[writer->str_sz++] = json_escaped_to_char(str[i]);
+        }
+        else 
+        {
+            writer->str[writer->str_sz++] = str[i];
+        }
 
         i++;
     }
@@ -1466,7 +1501,47 @@ char* json_dumps(Json* json, size_t indent_size, size_t* dumps_size)
 
 bool json_dumpf(Json* json, size_t indent_size, const char* file_path)
 {
-    return false;
+    char* written;
+    size_t written_sz;
+    size_t fwritten_sz;
+    FILE* file;
+
+    written = json_write(json, indent_size, &written_sz);
+
+    if(written == NULL)
+        return false;
+
+    file = fopen(file_path, "wb");
+
+    if(file == NULL)
+    {
+        free(written);
+
+        g_current_error = error_get_last_from_system();
+
+        logger_log_error("Error while trying to write json file: %s (%d)",
+                         file_path,
+                         (int)g_current_error);
+
+        return false;
+    }
+
+    fwritten_sz = fwrite(written, sizeof(char), written_sz, file);
+
+    free(written);
+
+    if(fwritten_sz < written_sz)
+    {
+        g_current_error = error_get_last_from_system();
+
+        logger_log_error("Error while trying to write json file: %s (%d)",
+                         file_path,
+                         (int)g_current_error);
+
+        return false;
+    }
+
+    return true;
 }
 
 void json_free(Json* json)

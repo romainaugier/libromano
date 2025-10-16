@@ -44,9 +44,9 @@ int main(void)
 
         FileContent* content = fs_file_content_new(json_path, false);
 
-        SCOPED_PROFILE_MS_START(json_loadf);
+        SCOPED_PROFILE_MS_START(json_loads);
         Json* doc = json_loads(content->content, content->content_sz);
-        SCOPED_PROFILE_MS_END(json_loadf);
+        SCOPED_PROFILE_MS_END(json_loads);
 
         if(doc == NULL)
         {
@@ -55,9 +55,20 @@ int main(void)
             return 1;
         }
 
+        String json_out_path = string_newf("%s/json/out_%s", TESTS_DATA_DIR, jsons[i]);
+
+        size_t dumps_size;
+
+        SCOPED_PROFILE_MS_START(json_dumps);
+        char* dumps = json_dumps(doc, 2, &dumps_size);
+        SCOPED_PROFILE_MS_END(json_dumps);
+
+        free(dumps);
+
         json_free(doc);
 
         string_free(json_path);
+        string_free(json_out_path);
         
         fs_file_content_free(content);
     }
