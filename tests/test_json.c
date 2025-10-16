@@ -42,20 +42,24 @@ int main(void)
 
         logger_log_info("Loading: %s", json_path);
 
+        FileContent* content = fs_file_content_new(json_path, false);
+
         SCOPED_PROFILE_MS_START(json_loadf);
-        Json* doc = json_loadf(json_path);
+        Json* doc = json_loads(content->content, content->content_sz);
         SCOPED_PROFILE_MS_END(json_loadf);
 
         if(doc == NULL)
         {
             logger_log_error("Error while parsing json from file: %s", json_path);
-            string_free(json_path);
+            fs_file_content_free(content);
             return 1;
         }
 
         json_free(doc);
 
         string_free(json_path);
+        
+        fs_file_content_free(content);
     }
 
     logger_log_info("Finished Json test");

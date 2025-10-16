@@ -192,11 +192,6 @@ ROMANO_API bool json_is_array(JsonValue* value);
 ROMANO_API JsonValue* json_array_new(Json* json);
 
 /*
- * If the JsonValue is not an array, returns NULL
- */
-ROMANO_API JsonValue* json_array_get(JsonValue* value);
-
-/*
  */
 ROMANO_API void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool reference);
 
@@ -223,11 +218,6 @@ ROMANO_API bool json_is_dict(JsonValue* value);
 /*
  */
 ROMANO_API JsonValue* json_dict_new(Json* json, JsonValue* value);
-
-/*
- * Returns the ptr to the dict. If the JsonValue is not a dict, returns NULL
- */
-ROMANO_API JsonValue* json_dict_get(JsonValue* value);
 
 /*
  */

@@ -26,7 +26,6 @@ extern ErrorCode g_current_error;
  */
 
 typedef enum JsonTag {
-    /* Value type */
     JsonTag_Null = BIT(0),
     JsonTag_Bool = BIT(1),
     JsonTag_U64 = BIT(2),
@@ -261,7 +260,7 @@ void json_str_set(Json* json, JsonValue* value, const char* str)
     char* str_ptr;
 
     json_set_tags(value->tags, JsonTag_Str);
-    
+
     str_sz = strlen(str);
     str_ptr = arena_push(&json->string_arena, NULL, str_sz * sizeof(char));
     memcpy(str_ptr, str, str_sz * sizeof(char));
@@ -272,6 +271,11 @@ void json_str_set(Json* json, JsonValue* value, const char* str)
 
 /* Array */
 
+typedef struct JsonArrayInfo {
+    JsonArrayElement* head;
+    JsonArrayElement* tail;
+} JsonArrayInfo;
+
 bool json_is_array(JsonValue* value)
 {
     return value->tags & JsonTag_Array;
@@ -280,44 +284,40 @@ bool json_is_array(JsonValue* value)
 JsonValue* json_array_new(Json* json)
 {
     JsonValue* array;
+    JsonArrayInfo* info;
 
     array = arena_push(&json->value_arena, NULL, sizeof(JsonValue));
     memset(array, 0, sizeof(JsonValue));
 
+    info = arena_push(&json->value_arena, NULL, sizeof(JsonArrayInfo));
+    memset(info, 0, sizeof(JsonArrayInfo));
+
     json_set_tags(array->tags, JsonTag_Array);
+    array->value.ptr = (void*)info;
 
     return array;
 }
 
-JsonValue* json_array_get(JsonValue* value)
-{
-    if((value->tags & JsonTag_Array) == 0)
-        return NULL;
-
-    return value;
-}
-
 void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool reference)
 {
-    JsonArrayIterator iterator;
     JsonArrayElement* new_element;
+    JsonArrayInfo* info;
     JsonValue* new_value;
+
+    info = (JsonArrayInfo*)array->value.ptr;
 
     new_element = arena_push(&json->value_arena, NULL, sizeof(JsonArrayElement));
     new_element->next = NULL;
 
-    if(array->value.ptr == NULL)
+    if(info->head == NULL)
     {
-        array->value.ptr = new_element;
+        info->head = new_element;
+        info->tail = new_element;
     }
-    else 
+    else
     {
-        iterator.current = (JsonArrayElement*)(array->value.ptr);
-
-        while(iterator.current->next != NULL)
-            iterator.current = iterator.current->next;
-
-        iterator.current->next = new_element;
+        info->tail->next = new_element;
+        info->tail = new_element;
     }
 
     if(!reference)
@@ -332,19 +332,22 @@ void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool refe
 void json_array_pop(Json* json, JsonValue* array, size_t index)
 {
     JsonArrayIterator iterator;
+    JsonArrayInfo* info;
     JsonArrayElement* previous;
     size_t i;
 
     if(index >= json_array_get_size(array))
         return;
 
+    info = (JsonArrayInfo*)array->value.ptr;
+
     if(index == 0)
     {
-        array->value.ptr = (void*)((JsonArrayElement*)(array->value.ptr))->next;
+        info->head = info->head->next;
         return;
     }
 
-    iterator.current = (JsonArrayElement*)(array->value.ptr);
+    iterator.current = info->head;
     previous = NULL;
     i = 0;
 
@@ -355,13 +358,23 @@ void json_array_pop(Json* json, JsonValue* array, size_t index)
         i++;
     }
 
-    previous->next = iterator.current->next;
+    if(previous == NULL)
+    {
+        info->head = iterator.current;
+    }
+    else
+    {
+        previous->next = iterator.current->next;
+
+        if(iterator.current == info->tail)
+            info->tail = iterator.current->next;
+    }
 }
 
 JsonValue* json_array_get_next(Json* json, JsonValue* array, JsonArrayIterator* iterator)
 {
     if(iterator->current == NULL)
-        iterator->current = (JsonArrayElement*)array->value.ptr;
+        iterator->current = ((JsonArrayInfo*)array->value.ptr)->head;
     else
         iterator->current = iterator->current->next;
 
@@ -378,6 +391,11 @@ size_t json_array_get_size(JsonValue* value)
 
 /* Dict */
 
+typedef struct JsonDictInfo {
+    JsonDictElement* head;
+    JsonDictElement* tail;
+} JsonDictInfo;
+
 bool json_is_dict(JsonValue* value)
 {
     return value->tags & JsonTag_Dict;
@@ -386,47 +404,43 @@ bool json_is_dict(JsonValue* value)
 JsonValue* json_dict_new(Json* json, JsonValue* value)
 {
     JsonValue* dict;
+    JsonDictInfo* info;
 
     dict = arena_push(&json->value_arena, NULL, sizeof(JsonValue));
     memset(dict, 0, sizeof(JsonValue));
 
+    info = arena_push(&json->value_arena, NULL, sizeof(JsonDictInfo));
+    memset(info, 0, sizeof(JsonDictInfo));
+
     json_set_tags(dict->tags, JsonTag_Dict);
+    dict->value.ptr = (void*)info;
 
     return dict;
 }
 
-JsonValue* json_dict_get(JsonValue* value)
-{
-    if((value->tags & JsonTag_Dict) == 0)
-        return NULL;
-
-    return value;
-}
-
 void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* value, bool reference)
 {
-    JsonDictIterator iterator;
+    JsonDictInfo* info;
     JsonDictElement* element;
     JsonKeyValue* new_key_value;
     JsonValue* new_value;
     size_t key_sz;
     char* new_key;
 
+    info = (JsonDictInfo*)dict->value.ptr;
+
     element = (JsonDictElement*)arena_push(&json->value_arena, NULL, sizeof(JsonDictElement));
     element->next = NULL;
 
-    if(dict->value.ptr == NULL)
+    if(info->head == NULL)
     {
-        dict->value.ptr = element;
+        info->head = element;
+        info->tail = element;
     }
-    else 
+    else
     {
-        iterator.current = (JsonDictElement*)(dict->value.ptr);
-
-        while(iterator.current->next != NULL)
-            iterator.current = iterator.current->next;
-
-        iterator.current->next = element;
+        info->tail->next = element;
+        info->tail = element;
     }
 
     key_sz = strlen(key);
@@ -450,9 +464,12 @@ void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* v
 
 JsonValue* json_dict_find(Json* json, JsonValue* dict, const char* key)
 {
+    JsonDictInfo* info;
     JsonDictIterator iterator;
 
-    iterator.current = (JsonDictElement*)(dict->value.ptr);
+    info = (JsonDictInfo*)dict->value.ptr;
+
+    iterator.current = info->head;
 
     while(iterator.current != NULL)
     {
@@ -467,8 +484,13 @@ JsonValue* json_dict_find(Json* json, JsonValue* dict, const char* key)
 
 void json_dict_pop(Json* json, JsonValue* dict, const char* key)
 {
+    JsonDictInfo* info;
     JsonDictIterator iterator;
     JsonDictElement* previous;
+    bool found;
+
+    found = false;
+    info = (JsonDictInfo*)dict->value.ptr;
 
     iterator.current = (JsonDictElement*)(dict->value.ptr);
     previous = NULL;
@@ -476,22 +498,39 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
     while(iterator.current != NULL)
     {
         if(strcmp(iterator.current->key_value->key, key) == 0)
+        {
+            found = true;
             break;
+        }
 
         previous = iterator.current;
         iterator.current = iterator.current->next;
     }
 
+    if(!found)
+        return;
+
     if(previous == NULL)
-        dict->value.ptr = iterator.current;
+    {
+        info->head = iterator.current;
+    }
     else
-        previous->next = iterator.current == NULL ? NULL : iterator.current->next;
+    {
+        previous->next = iterator.current->next;
+
+        if(iterator.current == info->tail)
+            info->tail = iterator.current->next;
+    }
 }
 
 JsonKeyValue* json_dict_get_next(Json* json, JsonValue* dict, JsonDictIterator* iterator)
 {
+    JsonDictInfo* info;
+
+    info = (JsonDictInfo*)dict->value.ptr;
+
     if(iterator->current == NULL)
-        iterator->current = (JsonDictElement*)dict->value.ptr;
+        iterator->current = info->head;
     else
         iterator->current = iterator->current->next;
 
@@ -511,7 +550,7 @@ size_t json_dict_get_size(JsonValue* value)
 
 /***************/
 /* Json Parser */
-/***************/ 
+/***************/
 
 typedef struct JsonParser {
     const char* str;
@@ -522,9 +561,9 @@ typedef struct JsonParser {
 
 JsonValue* json_parse_value(JsonParser* p);
 
-ROMANO_FORCE_INLINE void json_skip_whitespace(JsonParser* p) 
+ROMANO_FORCE_INLINE void json_skip_whitespace(JsonParser* p)
 {
-    while(p->pos < p->len) 
+    while(p->pos < p->len)
     {
         char c = p->str[p->pos];
 
@@ -535,26 +574,26 @@ ROMANO_FORCE_INLINE void json_skip_whitespace(JsonParser* p)
     }
 }
 
-JsonValue* json_parse_string(JsonParser* p) 
+JsonValue* json_parse_string(JsonParser* p)
 {
     if(p->pos >= p->len || p->str[p->pos] != '"')
         return NULL;
 
     p->pos++;
-    
+
     size_t start = p->pos;
     size_t len = 0;
     bool has_escape = false;
-    
-    while(p->pos < p->len) 
+
+    while(p->pos < p->len)
     {
         char c = p->str[p->pos];
 
-        if(c == '"') 
+        if(c == '"')
         {
             break;
-        } 
-        else if(c == '\\') 
+        }
+        else if(c == '\\')
         {
             has_escape = true;
             p->pos++;
@@ -564,15 +603,15 @@ JsonValue* json_parse_string(JsonParser* p)
 
             char escape = p->str[p->pos];
 
-            if(escape == 'u') 
+            if(escape == 'u')
             {
                 p->pos += 4;
 
                 if(p->pos >= p->len)
                     return NULL;
             }
-        } 
-        else if((unsigned char)c < 0x20) 
+        }
+        else if((unsigned char)c < 0x20)
         {
             return NULL;
         }
@@ -580,31 +619,31 @@ JsonValue* json_parse_string(JsonParser* p)
         p->pos++;
         len++;
     }
-    
+
     if(p->pos >= p->len)
         return NULL;
-    
+
     JsonValue* value = arena_push(&p->json->value_arena, NULL, sizeof(JsonValue));
     char* str;
-    
-    if(!has_escape) 
+
+    if(!has_escape)
     {
         str = arena_push(&p->json->string_arena, NULL, len + 1);
         memcpy(str, p->str + start, len);
         str[len] = '\0';
-    } 
-    else 
+    }
+    else
     {
         str = arena_push(&p->json->string_arena, NULL, len + 1);
         size_t j = 0;
 
-        for(size_t i = start; i < p->pos; i++) 
+        for(size_t i = start; i < p->pos; i++)
         {
-            if(p->str[i] == '\\') 
+            if(p->str[i] == '\\')
             {
                 i++;
 
-                switch(p->str[i]) 
+                switch(p->str[i])
                 {
                     case '"': str[j++] = '"'; break;
                     case '\\': str[j++] = '\\'; break;
@@ -614,7 +653,7 @@ JsonValue* json_parse_string(JsonParser* p)
                     case 'n': str[j++] = '\n'; break;
                     case 'r': str[j++] = '\r'; break;
                     case 't': str[j++] = '\t'; break;
-                    case 'u': 
+                    case 'u':
                     {
                         /* TODO: unicode handling */
                         i += 4;
@@ -623,7 +662,7 @@ JsonValue* json_parse_string(JsonParser* p)
                     }
                 }
             }
-            else 
+            else
             {
                 str[j++] = p->str[i];
             }
@@ -632,7 +671,7 @@ JsonValue* json_parse_string(JsonParser* p)
         str[j] = '\0';
         len = j;
     }
-    
+
     p->pos++;
     json_set_tags(value->tags, JsonTag_Str);
     value->value.str = str;
@@ -640,7 +679,29 @@ JsonValue* json_parse_string(JsonParser* p)
     return value;
 }
 
-JsonValue* json_parse_number(JsonParser* p) 
+ROMANO_FORCE_INLINE bool is_digit(unsigned int c)
+{
+    return (c - 48) < 10;
+}
+
+static const double pow10_table[] = {
+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
+    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+    1e20, 1e21, 1e22
+};
+
+static const uint64_t pow10_int_table[] = {
+    1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL,
+    10000000ULL, 100000000ULL, 1000000000ULL, 10000000000ULL,
+    100000000000ULL, 1000000000000ULL, 10000000000000ULL,
+    100000000000000ULL, 1000000000000000ULL, 10000000000000000ULL,
+    100000000000000000ULL, 1000000000000000000ULL, 10000000000000000000ULL
+};
+
+#define POW10_TABLE_SIZE (sizeof(pow10_table) / sizeof(pow10_table[0]))
+#define POW10_INT_TABLE_SIZE (sizeof(pow10_int_table) / sizeof(pow10_int_table[0]))
+
+JsonValue* json_parse_number(JsonParser* p)
 {
     size_t start = p->pos;
     bool is_negative = false;
@@ -650,165 +711,162 @@ JsonValue* json_parse_number(JsonParser* p)
     double fraction = 0.0;
     int exponent = 0;
     bool exp_negative = false;
-    
-    if(p->pos < p->len && p->str[p->pos] == '-') 
+    if(p->pos < p->len && p->str[p->pos] == '-')
     {
         is_negative = true;
         p->pos++;
     }
-    
-    if(p->pos >= p->len || !isdigit(p->str[p->pos]))
+    if(p->pos >= p->len || !is_digit(p->str[p->pos]))
         return NULL;
-    
-    while(p->pos < p->len && isdigit(p->str[p->pos])) 
+    while(p->pos < p->len && is_digit(p->str[p->pos]))
     {
         int_val = int_val * 10 + (p->str[p->pos] - '0');
         float_val = float_val * 10 + (p->str[p->pos] - '0');
         p->pos++;
     }
-    
-    if(p->pos < p->len && p->str[p->pos] == '.') 
+    if(p->pos < p->len && p->str[p->pos] == '.')
     {
         is_float = true;
         p->pos++;
-        
-        if (p->pos >= p->len || !isdigit(p->str[p->pos]))
+        if (p->pos >= p->len || !is_digit(p->str[p->pos]))
             return NULL;
-        
-        double divisor = 10.0;
-
-        while(p->pos < p->len && isdigit(p->str[p->pos])) 
+        int frac_digits = 0;
+        uint64_t frac_int = 0;
+        while(p->pos < p->len && is_digit(p->str[p->pos]) && frac_digits < POW10_INT_TABLE_SIZE)
         {
-            fraction += (p->str[p->pos] - '0') / divisor;
-            divisor *= 10.0;
+            frac_int = frac_int * 10 + (p->str[p->pos] - '0');
+            frac_digits++;
             p->pos++;
         }
-
+        while(p->pos < p->len && is_digit(p->str[p->pos]))
+            p->pos++;
+        if(frac_digits > 0 && frac_digits < POW10_TABLE_SIZE)
+            fraction = (double)frac_int / pow10_table[frac_digits];
+        else if(frac_digits > 0)
+            fraction = (double)frac_int / pow(10.0, frac_digits);
         float_val += fraction;
     }
-    
-    if(p->pos < p->len && (p->str[p->pos] == 'e' || p->str[p->pos] == 'E')) 
+    if(p->pos < p->len && (p->str[p->pos] == 'e' || p->str[p->pos] == 'E'))
     {
         is_float = true;
         p->pos++;
-        
-        if(p->pos < p->len && p->str[p->pos] == '-') 
+        if(p->pos < p->len && p->str[p->pos] == '-')
         {
             exp_negative = true;
             p->pos++;
-        } 
-        else if(p->pos < p->len && p->str[p->pos] == '+') 
+        }
+        else if(p->pos < p->len && p->str[p->pos] == '+')
         {
             p->pos++;
         }
-        
-        if(p->pos >= p->len || !isdigit(p->str[p->pos]))
+        if(p->pos >= p->len || !is_digit(p->str[p->pos]))
             return NULL;
-        
-        while(p->pos < p->len && isdigit(p->str[p->pos])) 
+        while(p->pos < p->len && is_digit(p->str[p->pos]))
         {
             exponent = exponent * 10 + (p->str[p->pos] - '0');
             p->pos++;
         }
     }
-    
-    if(is_float) 
+    if(is_float)
     {
-        if(exp_negative) 
-        {
+        if(exp_negative)
             exponent = -exponent;
-        }
-
-        float_val *= pow(10.0, exponent);
-
-        if(is_negative) 
+        if(exponent >= -(int)POW10_TABLE_SIZE && exponent < (int)POW10_TABLE_SIZE)
         {
-            float_val = -float_val;
+            if(exponent >= 0)
+                float_val *= pow10_table[exponent];
+            else
+                float_val /= pow10_table[-exponent];
         }
-
+        else
+        {
+            float_val *= pow(10.0, exponent);
+        }
+        if(is_negative)
+            float_val = -float_val;
         return json_f64_new(p->json, float_val);
-    } 
-    else 
+    }
+    else
     {
-        if(is_negative) 
+        if(is_negative)
         {
             return json_i64_new(p->json, -int_val);
-        } 
-        else 
+        }
+        else
         {
             return json_u64_new(p->json, (uint64_t)int_val);
         }
     }
 }
 
-JsonValue* json_parse_array(JsonParser* p) 
+JsonValue* json_parse_array(JsonParser* p)
 {
     if(p->pos >= p->len || p->str[p->pos] != '[')
         return NULL;
 
     p->pos++;
-    
+
     JsonValue* array = json_array_new(p->json);
     json_skip_whitespace(p);
-    
-    if(p->pos < p->len && p->str[p->pos] == ']') 
+
+    if(p->pos < p->len && p->str[p->pos] == ']')
     {
         p->pos++;
         return array;
     }
-    
-    while(p->pos < p->len) 
+
+    while(p->pos < p->len)
     {
         JsonValue* element = json_parse_value(p);
 
         if(element == NULL)
             return NULL;
-        
-        json_array_append(p->json, array, element, false);
+
+        json_array_append(p->json, array, element, true);
         json_skip_whitespace(p);
-        
+
         if(p->pos >= p->len)
             return NULL;
-        
-        if(p->str[p->pos] == ',') 
+
+        if(p->str[p->pos] == ',')
         {
             p->pos++;
             json_skip_whitespace(p);
         }
-        else if (p->str[p->pos] == ']') 
+        else if (p->str[p->pos] == ']')
         {
             p->pos++;
             return array;
-        } 
-        else 
+        }
+        else
         {
             return NULL;
         }
     }
-    
+
     return NULL;
 }
 
-JsonValue* parse_dict(JsonParser* p) 
+JsonValue* parse_dict(JsonParser* p)
 {
     if(p->pos >= p->len || p->str[p->pos] != '{')
         return NULL;
 
     p->pos++;
-    
+
     JsonValue* dict = json_dict_new(p->json, NULL);
     json_skip_whitespace(p);
-    
-    if(p->pos < p->len && p->str[p->pos] == '}') 
+
+    if(p->pos < p->len && p->str[p->pos] == '}')
     {
         p->pos++;
         return dict;
     }
-    
-    while(p->pos < p->len) 
+
+    while(p->pos < p->len)
     {
         json_skip_whitespace(p);
-        
+
         if(p->pos >= p->len || p->str[p->pos] != '"')
         {
             g_current_error = ErrorCode_JsonExpectedKey;
@@ -821,9 +879,9 @@ JsonValue* parse_dict(JsonParser* p)
             return NULL;
 
         const char* key = json_str_get(key_val);
-        
+
         json_skip_whitespace(p);
-        
+
         if(p->pos >= p->len || p->str[p->pos] != ':')
         {
             g_current_error = ErrorCode_JsonExpectedColon;
@@ -832,52 +890,52 @@ JsonValue* parse_dict(JsonParser* p)
 
         p->pos++;
         json_skip_whitespace(p);
-        
+
         JsonValue* value = json_parse_value(p);
 
         if(value == NULL)
             return NULL;
-        
-        json_dict_append(p->json, dict, key, value, false);
+
+        json_dict_append(p->json, dict, key, value, true);
         json_skip_whitespace(p);
-        
+
         if(p->pos >= p->len)
             return NULL;
-        
-        if(p->str[p->pos] == ',') 
+
+        if(p->str[p->pos] == ',')
         {
             p->pos++;
             json_skip_whitespace(p);
         }
-        else if(p->str[p->pos] == '}') 
+        else if(p->str[p->pos] == '}')
         {
             p->pos++;
             return dict;
         }
-        else 
+        else
         {
             return NULL;
         }
     }
-    
+
     return NULL;
 }
 
-JsonValue* json_parse_literal(JsonParser* p) 
+JsonValue* json_parse_literal(JsonParser* p)
 {
-    if(p->pos + 4 <= p->len && memcmp(p->str + p->pos, "null", 4) == 0) 
+    if(p->pos + 4 <= p->len && memcmp(p->str + p->pos, "null", 4) == 0)
     {
         p->pos += 4;
         return json_null_new(p->json);
     }
 
-    if(p->pos + 4 <= p->len && memcmp(p->str + p->pos, "true", 4) == 0) 
+    if(p->pos + 4 <= p->len && memcmp(p->str + p->pos, "true", 4) == 0)
     {
         p->pos += 4;
         return json_bool_new(p->json, true);
     }
 
-    if(p->pos + 5 <= p->len && memcmp(p->str + p->pos, "false", 5) == 0) 
+    if(p->pos + 5 <= p->len && memcmp(p->str + p->pos, "false", 5) == 0)
     {
         p->pos += 5;
         return json_bool_new(p->json, false);
@@ -886,15 +944,15 @@ JsonValue* json_parse_literal(JsonParser* p)
     return NULL;
 }
 
-JsonValue* json_parse_value(JsonParser* p) 
+JsonValue* json_parse_value(JsonParser* p)
 {
     json_skip_whitespace(p);
 
     if(p->pos >= p->len)
         return NULL;
-    
+
     char c = p->str[p->pos];
-    
+
     if(c == '"')
         return json_parse_string(p);
     else if (c == '{')
@@ -905,42 +963,42 @@ JsonValue* json_parse_value(JsonParser* p)
         return json_parse_number(p);
     else if (c == 't' || c == 'f' || c == 'n')
         return json_parse_literal(p);
-    
+
     return NULL;
 }
 
-Json* json_parse(const char* str, size_t str_sz) 
+Json* json_parse(const char* str, size_t str_sz)
 {
     if(str == NULL || str_sz == 0)
         return NULL;
-    
+
     Json* json = json_new();
 
-    if(json == NULL) 
+    if(json == NULL)
         return NULL;
-    
+
     JsonParser parser;
     parser.str = str;
     parser.pos = 0;
     parser.len = str_sz;
     parser.json = json;
-    
+
     JsonValue* root = json_parse_value(&parser);
 
-    if(!root) 
+    if(!root)
     {
         json_free(json);
         return NULL;
     }
-    
+
     json_skip_whitespace(&parser);
 
-    if(parser.pos != parser.len) 
+    if(parser.pos != parser.len)
     {
         json_free(json);
         return NULL;
     }
-    
+
     json_set_root(json, root);
 
     return json;
