@@ -133,19 +133,19 @@ ROMANO_FORCE_INLINE uint8_t abs_u8(const int8_t x)
     return (uint8_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint16_t abs_u16(const int16_t x)
+ROMANO_FORCE_INLINE uint16_t abs_i16(const int16_t x)
 {
     const uint16_t mask = x >> 15U;
     return (uint16_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint32_t abs_u32(const int32_t x)
+ROMANO_FORCE_INLINE uint32_t abs_i32(const int32_t x)
 {
     const uint32_t mask = x >> 31U;
     return (uint32_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint64_t abs_u64(const int64_t x)
+ROMANO_FORCE_INLINE uint64_t abs_i64(const int64_t x)
 {
     const uint64_t mask = x >> 63U;
     return (uint64_t)((mask ^ x) - mask);
