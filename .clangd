@@ -1,0 +1,6 @@
+CompileFlags:
+    Add:
+    - "-Iinclude"
+    - "-Iconcurrentqueue/cqinstall/include"
+    - "-DDEBUG_BUILD=1"
+    - "-DTESTS_DATA_DIR=../tests_data"
