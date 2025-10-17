@@ -9,6 +9,8 @@
 
 #include "libromano/common.h"
 
+ROMANO_CPP_ENTER
+
 /*
  * Returns the size needed to format i64
  */
@@ -38,5 +40,7 @@ ROMANO_API int fmt_size_f64(double f64, int precision);
  * buffer should be at least 312 bytes, and there will be no null terminator added
  */
 ROMANO_API int fmt_f64(char* buffer, double f64, int precision);
+
+ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_FMT) */

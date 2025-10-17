@@ -8,10 +8,7 @@
 #define __LIBROMANO_JSON
 
 #include "libromano/common.h"
-#include "libromano/bit.h"
 #include "libromano/arena.h"
-
-#include <string.h>
 
 ROMANO_CPP_ENTER
 

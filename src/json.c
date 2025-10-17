@@ -7,6 +7,7 @@
 #include "libromano/logger.h"
 #include "libromano/error.h"
 #include "libromano/fmt.h"
+#include "libromano/bit.h"
 
 #if defined(ROMANO_LINUX)
 #include <errno.h>
@@ -1354,7 +1355,7 @@ bool json_write_str(JsonWriter* writer, const char* str)
 
             writer->str[writer->str_sz++] = json_escaped_to_char(str[i]);
         }
-        else 
+        else
         {
             writer->str[writer->str_sz++] = str[i];
         }
