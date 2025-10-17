@@ -39,7 +39,7 @@ typedef enum JsonTag {
 
 #define JSON_TAGS_MASK ((1 << 9) - 1)
 
-#define JSON_SZ_MASK (0xFFFFFFFF << 32)
+#define JSON_SZ_MASK (0xFFFFFFFFULL << 32)
 
 #define json_set_tags(tags, tag) \
     tags &= ~JSON_TAGS_MASK;     \
@@ -47,9 +47,11 @@ typedef enum JsonTag {
 
 #define json_set_sz(tags, sz) \
     tags &= ~JSON_SZ_MASK;    \
-    tags &= ((sz && 0xFFFFFFFF) << 32);
+    tags &= (((uint64_t)sz && 0xFFFFFFFFULL) << 32);
 
-#define json_get_sz(tags) ((tags >> 32) & 0xFFFFFFFF)
+#define json_get_sz(tags) (((uint64_t)tags >> 32) & 0xFFFFFFFFULL)
+#define json_incr_sz(tags) ((tags += (1ULL << 32)))
+#define json_decr_sz(tags) ((tags -= (1ULL << 32)))
 
 /* NULL */
 
@@ -328,6 +330,8 @@ void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool refe
     }
 
     new_element->value = reference ? value : new_value;
+
+    json_incr_sz(array->tags);
 }
 
 void json_array_pop(Json* json, JsonValue* array, size_t index)
@@ -370,6 +374,8 @@ void json_array_pop(Json* json, JsonValue* array, size_t index)
         if(iterator.current == info->tail)
             info->tail = iterator.current->next;
     }
+
+    json_decr_sz(array->tags);
 }
 
 JsonValue* json_array_get_next(Json* json, JsonValue* array, JsonArrayIterator* iterator)
@@ -461,6 +467,8 @@ void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* v
     new_key_value->value = reference ? value : new_value;
 
     element->key_value = new_key_value;
+
+    json_incr_sz(dict->tags);
 }
 
 JsonValue* json_dict_find(Json* json, JsonValue* dict, const char* key)
@@ -522,6 +530,8 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
         if(iterator.current == info->tail)
             info->tail = iterator.current->next;
     }
+
+    json_decr_sz(dict->tags);
 }
 
 JsonKeyValue* json_dict_get_next(Json* json, JsonValue* dict, JsonDictIterator* iterator)
