@@ -86,9 +86,11 @@ def main() -> int:
         file.write("    int f64_fmt_sz;\n")
         file.write("\n")
 
-        for _ in range(50):
-            precision = random.randint(1, 16)
-            num = random.random()
+        for _ in range(100):
+            shift = random.randint(1, 63)
+            base = random.randint(0, (1 << shift))
+            precision = random.randint(1, 15)
+            num = base + random.random()
 
             num_size = len(f"{num:.{precision}f}")
 
