@@ -331,8 +331,8 @@ int fmt_f64(char* buffer, double f64, int precision)
             int_part += 1.0;
             p = buffer + is_negative;
 
-            if(is_negative)
-                *p++ = '-';
+            // if(is_negative)
+            //     *p++ = '-';
 
             p = utoa_fast((uint64_t)int_part, p);
             *p++ = '.';

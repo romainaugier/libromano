@@ -65,6 +65,8 @@ int main(void)
 
         free(dumps);
 
+        ROMANO_ASSERT(json_dumpf(doc, 2, json_out_path), "Error while dumping json");
+
         json_free(doc);
 
         string_free(json_path);
