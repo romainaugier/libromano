@@ -2,7 +2,7 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#pragma once 
+#pragma once
 
 #if !defined(__LIBROMANO_ERROR)
 #define __LIBROMANO_ERROR
@@ -21,14 +21,14 @@ typedef enum ErrorCode {
     ErrorCode_NoError = 0,
 
     /* Memory error */
-    ErrorCode_MemAllocError = 0x0FFFFFFF, 
-    ErrorCode_FormattingError, 
-    ErrorCode_SizeOverflow, 
-    ErrorCode_WrongIPAddressFormat, 
+    ErrorCode_MemAllocError = 0x0FFFFFFF,
+    ErrorCode_FormattingError,
+    ErrorCode_SizeOverflow,
+    ErrorCode_WrongIPAddressFormat,
 
     /* Other error codes will be set from system error
-     * For Windows see: 
-     * https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499- 
+     * For Windows see:
+     * https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
      * Codes range from 0 (no error) to 15999
      * For Linux see:
      * https://en.wikipedia.org/wiki/Errno.h
@@ -39,6 +39,16 @@ typedef enum ErrorCode {
     ErrorCode_JsonUnexpectedCharacter,
     ErrorCode_JsonExpectedKey,
     ErrorCode_JsonExpectedColon,
+
+    /* Regex errors */
+    ErrorCode_RegexUnexpectedCharacter,
+    ErrorCode_RegexInvalidCharacterRange,
+    ErrorCode_RegexUnexpectedEndOfExpression,
+    ErrorCode_RegexMismatchedParentheses,
+    ErrorCode_RegexInvalidOperator,
+    ErrorCode_RegexInvalidToken,
+    ErrorCode_RegexUnexpectedTokens,
+    ErrorCode_RegexUnknownOpCode,
 } ErrorCode;
 
 /*

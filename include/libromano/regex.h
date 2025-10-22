@@ -8,6 +8,7 @@
 #define __LIBROMANO_REGEX
 
 #include "libromano/common.h"
+#include "libromano/bit.h"
 
 /*
     Very simple regular expression matching using Thompson's NFA algorithm
@@ -16,15 +17,19 @@
 
 ROMANO_CPP_ENTER
 
-struct _Regex;
+typedef enum RegexFlags {
+    RegexFlags_DebugCompilation = BIT(0),
+} RegexFlags;
 
-typedef struct _Regex Regex;
+struct Regex;
 
-ROMANO_API Regex* regex_compile(const char* pattern);
+typedef struct Regex Regex;
+
+ROMANO_API Regex* regex_compile(const char* pattern, RegexFlags flags);
 
 ROMANO_API bool regex_match(Regex* regex, const char* string);
 
-ROMANO_API void regex_destroy(Regex* regex);
+ROMANO_API void regex_free(Regex* regex);
 
 ROMANO_CPP_END
 
