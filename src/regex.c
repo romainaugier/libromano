@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 
 extern ErrorCode g_current_error;
 
