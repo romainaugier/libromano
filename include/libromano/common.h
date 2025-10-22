@@ -72,7 +72,7 @@
 #define ROMANO_PLATFORM_STR "BSD_X86_64"
 #elif defined(ROMANO_X86)
 #define ROMANO_PLATFORM_STR "BSD_X86"
-#else 
+#else
 #error "Unknown platform"
 #endif /* defined(ROMANO_X64) */
 #else
@@ -143,7 +143,7 @@
 #define ROMANO_LIB_ENTRY
 #define ROMANO_LIB_EXIT
 #elif defined(ROMANO_GCC)
-#define ROMANO_FORCE_INLINE inline __attribute__((always_inline)) 
+#define ROMANO_FORCE_INLINE inline __attribute__((always_inline))
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANO_CLANG)
@@ -195,18 +195,13 @@
 #define CONCAT_(prefix, suffix)     prefix##suffix
 #define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
 
-#define ROMANO_ASSERT(expr, message) if(!(expr)) { fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); abort(); }
+/* https://stackoverflow.com/questions/3385515/static-assert-in-c */
+#define ROMANO_STATIC_ASSERT(COND, MSG) typedef char static_assertion_##MSG[(!!(COND))*2-1]
+#define COMPILE_TIME_ASSERT3(X,L) ROMANO_STATIC_ASSERT(X,static_assertion_at_line_##L)
+#define COMPILE_TIME_ASSERT2(X,L) COMPILE_TIME_ASSERT3(X,L)
+#define ROMANO_COMPILE_TIME_ASSERT(X) COMPILE_TIME_ASSERT2(X,__LINE__)
 
-#define ROMANO_STATIC_ASSERT(expr)                      \
-    struct CONCAT(__outscope_assert_, __COUNTER__)      \
-    {                                                   \
-        char                                            \
-        outscope_assert                                 \
-        [2*(expr)-1];                                   \
-                                                        \
-    } CONCAT(__outscope_assert_, __COUNTER__)
-
-#define ROMANO_NOT_IMPLEMENTED fprintf(stderr, "Called function " ROMANO_FUNCTION " that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1)
+#define ROMANO_NOT_IMPLEMENTED do { fprintf(stderr, "Called function " ROMANO_FUNCTION " that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1); } while(0)
 
 #if defined(ROMANO_MSVC)
 #define ROMANO_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
@@ -219,13 +214,15 @@
 #if defined(ROMANO_CLANG)
 #define dump_struct(s) __builtin_dump_struct(s, printf)
 #else
-#define dump_struct(s) 
+#define dump_struct(s)
 #endif /* defined(ROMANO_CLANG) */
 
 #if defined(DEBUG_BUILD)
 #define ROMANO_DEBUG 1
+#define ROMANO_ASSERT(expr, message) if(!(expr)) { fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); abort(); }
 #else
 #define ROMANO_DEBUG 0
+#define ROMANO_ASSERT(expr, message)
 #endif /* defined(DEBUG_BUILD) */
 
 #endif /* !defined(__LIBROMANO) */
