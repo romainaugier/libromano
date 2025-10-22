@@ -15,6 +15,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 extern ErrorCode g_current_error;
 
