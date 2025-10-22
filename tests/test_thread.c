@@ -4,6 +4,7 @@
 
 #include "libromano/thread.h"
 #include "libromano/logger.h"
+#include "libromano/backtrace.h"
 #include "libromano/profiling.h"
 
 #include <stdio.h>
@@ -50,6 +51,8 @@ void* tpool_func(void* data)
 
 int main(void)
 {
+    backtrace_set_signal_handler();
+
     size_t i = 0;
 
     logger_init();
