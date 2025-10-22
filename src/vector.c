@@ -24,7 +24,7 @@ Vector* vector_new(const size_t initial_capacity, const size_t element_size)
     new_vector = (Vector*)malloc(sizeof(Vector));
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
-    
+
     new_vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)new_vector->data)[0] = 0;
@@ -39,7 +39,7 @@ void vector_init(Vector* vector, const size_t initial_capacity, const size_t ele
     size_t capacity;
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
-    
+
     vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)vector->data)[0] = 0;
@@ -58,7 +58,7 @@ void vector_resize(Vector* vector, const size_t new_capacity)
 
     old_capacity = vector_capacity(vector);
     element_size = vector_element_size(vector);
-    
+
     if(new_capacity == 0 || new_capacity <= old_capacity)
     {
         return;
@@ -78,7 +78,7 @@ void _vector_grow(Vector* vector)
     size_t new_capacity;
 
     ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
-    
+
     new_capacity = (size_t)round((float)vector_capacity(vector) * GOLDEN_RATIO);
 
     vector_resize(vector, new_capacity);
@@ -167,7 +167,7 @@ void vector_remove(Vector* vector, const size_t position)
     void* element_address;
 
     ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
-    
+
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);
 
@@ -210,11 +210,11 @@ void vector_pop_front(Vector* vector)
 void* vector_at(Vector* vector, const size_t index)
 {
     size_t element_size;
-    
+
     ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
-    
+
     element_size = vector_element_size(vector);
-    
+
     return (void*)((char*)((size_t*)vector->data + 3) + index * element_size);
 }
 
@@ -232,7 +232,7 @@ void vector_shrink_to_fit(Vector* vector)
     void* new_address;
 
     ROMANO_ASSERT(vector != NULL, "Vector has not been initialized");
-    
+
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);
 
@@ -258,7 +258,7 @@ void vector_shuffle(Vector* vector, uint64_t seed)
     size = vector_size(vector);
     element_size = vector_element_size(vector);
 
-    for (i = 0; i < (size - 1); ++i) 
+    for (i = 0; i < (size - 1); ++i)
     {
         rnd = murmur_64(seed + i);
         j = i + rnd / (UINT64_MAX / (size - i) + 1);
@@ -312,7 +312,7 @@ void vector_release_with_dtor(Vector* vector, vector_free_func dtor)
             dtor(vector_at(vector, i));
         }
     }
-    
+
     vector_release(vector);
 }
 
