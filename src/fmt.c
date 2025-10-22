@@ -10,12 +10,12 @@
 
 /* https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/ */
 
-ROMANO_FORCE_INLINE int floor_log10_pow2(int e) 
+ROMANO_FORCE_INLINE int floor_log10_pow2(int e)
 {
     return (e * 1262611) >> 22;
 }
 
-ROMANO_FORCE_INLINE int ceil_log10_pow2(int e) 
+ROMANO_FORCE_INLINE int ceil_log10_pow2(int e)
 {
     return e == 0 ? 0 : floor_log10_pow2(e) + 1;
 }
@@ -25,7 +25,7 @@ typedef struct {
 } digit_count_table_holder_t;
 
 /* Function to generate digit count table */
-void generate_digit_count_table(uint64_t* table) 
+void generate_digit_count_table(uint64_t* table)
 {
     static const uint64_t pow10[] = {
         1ULL,
@@ -50,7 +50,7 @@ void generate_digit_count_table(uint64_t* table)
         10000000000000000000ULL
     };
 
-    for(int i = 0; i < 64; i++) 
+    for(int i = 0; i < 64; i++)
     {
         uint64_t ub = (uint64_t)ceil_log10_pow2(i);
 
@@ -127,12 +127,12 @@ static const uint64_t g_digit_count_table[64] = {
     89766816766159920,
 };
 
-ROMANO_FORCE_INLINE int floor_log2(uint64_t n) 
+static ROMANO_FORCE_INLINE int floor_log2(uint64_t n)
 {
     return 63 ^ clz_u64(n);
 }
 
-ROMANO_FORCE_INLINE int count_digits(uint64_t n) 
+static ROMANO_FORCE_INLINE int count_digits(uint64_t n)
 {
     return n == 0 ? 1 : ((int)((g_digit_count_table[floor_log2(n)] + (n >> (floor_log2(n) / 4))) >> 52));
 }
@@ -158,7 +158,7 @@ static char* utoa_fast(uint64_t val, char* buf)
     ndigits = count_digits(val);
     p_end = buf + ndigits - 1;
 
-    while(val >= 100) 
+    while(val >= 100)
     {
         unsigned int r = val % 100;
         val /= 100;
@@ -166,12 +166,12 @@ static char* utoa_fast(uint64_t val, char* buf)
         *p_end-- = digit_pairs[r * 2];
     }
 
-    if(val >= 10) 
+    if(val >= 10)
     {
         *p_end-- = digit_pairs[val * 2 + 1];
         *p_end = digit_pairs[val * 2];
-    } 
-    else 
+    }
+    else
     {
         *p_end = '0' + val;
     }
@@ -209,36 +209,36 @@ int fmt_size_f64(double f64, int precision)
     int size;
 
     size = 0;
-    
+
     if(isnan(f64))
         return 4;
 
     if(isinf(f64))
         return f64 < 0 ? 5 : 4;
-    
-    if(f64 < 0) 
+
+    if(f64 < 0)
     {
         size++;
         f64 = -f64;
     }
-    
+
     if(f64 == 0.0)
         return precision > 0 ? 2 + precision : 2;
-    
+
     if(precision < 0)
         precision = 6;
 
     if(precision > 17)
         precision = 17;
-    
+
     if(f64 >= 1.0)
         size += (int)log10(f64) + 1;
     else
         size++;
-    
+
     if(precision > 0)
         size += 1 + precision;
-    
+
     return size;
 }
 
@@ -246,16 +246,16 @@ int fmt_f64(char* buffer, double f64, int precision)
 {
     char* p = buffer;
 
-    if(isnan(f64)) 
+    if(isnan(f64))
     {
         memcpy(p, "nan", 3);
         p += 3;
         return 3;
     }
 
-    if(isinf(f64)) 
+    if(isinf(f64))
     {
-        if(f64 < 0) 
+        if(f64 < 0)
         {
             *p++ = '-';
             memcpy(p, "inf", 3);
@@ -271,17 +271,17 @@ int fmt_f64(char* buffer, double f64, int precision)
 
     int is_negative = f64 < 0 || f64 == -0.0;
 
-    if(is_negative) 
+    if(is_negative)
     {
         *p++ = '-';
         f64 = fabs(f64);
     }
 
-    if(f64 == 0.0) 
+    if(f64 == 0.0)
     {
         *p++ = '0';
 
-        if(precision > 0) 
+        if(precision > 0)
         {
             *p++ = '.';
             memset(p, '0', precision);
@@ -300,7 +300,7 @@ int fmt_f64(char* buffer, double f64, int precision)
     double int_part;
     double frac_part = modf(f64, &int_part);
 
-    if(int_part > (double)UINT64_MAX) 
+    if(int_part > (double)UINT64_MAX)
     {
         memcpy(p, "ovf", 3);
         p += 3;
@@ -309,7 +309,7 @@ int fmt_f64(char* buffer, double f64, int precision)
 
     p = utoa_fast((uint64_t)int_part, p);
 
-    if(precision > 0) 
+    if(precision > 0)
     {
         *p++ = '.';
 
@@ -325,7 +325,7 @@ int fmt_f64(char* buffer, double f64, int precision)
 
         uint64_t frac_int = (uint64_t)frac_part;
 
-        if(frac_int >= (uint64_t)pow10[precision]) 
+        if(frac_int >= (uint64_t)pow10[precision])
         {
             frac_int -= (uint64_t)pow10[precision];
             int_part += 1.0;
@@ -338,25 +338,25 @@ int fmt_f64(char* buffer, double f64, int precision)
             *p++ = '.';
         }
 
-        if(frac_int == 0) 
+        if(frac_int == 0)
         {
             memset(p, '0', precision);
             p += precision;
         }
-        else 
+        else
         {
             char temp[20];
             char* t = utoa_fast(frac_int, temp);
             int len = t - temp;
 
-            if(len < precision) 
+            if(len < precision)
             {
                 memset(p, '0', precision - len);
                 p += precision - len;
                 memcpy(p, temp, len);
                 p += len;
-            } 
-            else 
+            }
+            else
             {
                 memcpy(p, temp, precision);
                 p += precision;
