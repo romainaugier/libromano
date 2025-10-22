@@ -754,6 +754,9 @@ bool fs_walk(const char* path,
 
             walk_iterator->_dir = NULL;
 
+            free(walk_iterator->_current_dir);
+            walk_iterator->_current_dir = NULL;
+
             if(old_errno != errno)
                 return false;
         }
