@@ -25,6 +25,14 @@ ROMANO_API uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t*
  */
 ROMANO_API uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_symbols);
 
+/*
+ */
+ROMANO_API void backtrace_signal_handler(int sig);
+
+/*
+ */
+ROMANO_API void backtrace_set_signal_handler();
+
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_BACKTRACE) */

@@ -9,7 +9,13 @@
 #if defined(ROMANO_WIN)
 #include <winnt.h>
 #include <DbgHelp.h>
+#elif defined(ROMANO_LINUX)
+#include <execinfo.h>
+#include <unistd.h>
+#include <signal.h>
 #endif /* defined(ROMANO_WIN) */
+
+#include <string.h>
 
 extern ErrorCode g_current_error;
 
@@ -24,7 +30,7 @@ static ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
     if(new_stack_frame <= stack_frame)
         return NULL;
 
-    if(new_stack_frame & (sizeof(uintptr_t) - 1))
+    if((uintptr_t)new_stack_frame & (sizeof(uintptr_t) - 1))
         return NULL;
 
     return new_stack_frame;
@@ -44,7 +50,7 @@ uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t* out_stack)
 
     while(stack_frame != NULL && num < max)
     {
-        if(stackframe[1] == NULL)
+        if((uintptr_t*)stack_frame[1] == NULL)
             break;
 
 
@@ -71,19 +77,48 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
     char* sym_name;
     uint32_t num;
     uint32_t i;
+    uint32_t j;
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_LINUX)
+    char** symbols;
+
+#elif defined(ROMANO_WIN)
     HANDLE process;
     SYMBOL_INFO* symbol;
 
     char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_LINUX) */
 
     out_stack = mem_alloca(max * sizeof(uintptr_t));
 
     num = backtrace_call_stack(skip, max, out_stack);
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_LINUX)
+    symbols = backtrace_symbols((void* const*)out_stack, (int)num);
+
+    for(i = 0; i < num; i++)
+    {
+        sym_name = calloc(strlen(symbols[i]) + 1, sizeof(char));
+
+        if(sym_name == NULL)
+        {
+            for(j = 0; j < i; j++)
+            {
+                free(out_symbols[j]);
+            }
+
+            g_current_error = ErrorCode_MemAllocError;
+            return 0;
+        }
+
+        strcpy(sym_name, symbols[i]);
+
+        out_symbols[i] = sym_name;
+    }
+
+    free(symbols);
+
+#elif defined(ROMANO_WIN)
     process = GetCurrentProcess();
 
     symbol = (SYMBOL_INFO*)buffer;
@@ -100,6 +135,11 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 
             if(sym_name == NULL)
             {
+                for(j = 0; j < i; j++)
+                {
+                    free(out_symbols[j]);
+                }
+
                 g_current_error = ErrorCode_MemAllocError;
                 return 0;
             }
@@ -114,6 +154,11 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 
             if(sym_name == NULL)
             {
+                for(j = 0; j < i; j++)
+                {
+                    free(out_symbols[j]);
+                }
+
                 g_current_error = ErrorCode_MemAllocError;
                 return 0;
             }
@@ -125,7 +170,40 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
     }
 
     SymCleanup(process);
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_LINUX) */
 
     return num;
+}
+
+#define SIG_MAX_SYMBOLS 64
+
+void backtrace_signal_handler(int sig)
+{
+#if defined(ROMANO_LINUX)
+    char* symbols[SIG_MAX_SYMBOLS];
+    uint32_t i;
+    uint32_t num_symbols;
+
+    fprintf(stderr, "%s", strsignal(sig));
+
+    for(i = 0; i < num_symbols; i++)
+    {
+        fprintf(stderr, "Stack Frame %u: %s", i, symbols[i]);
+        free(symbols[i]);
+    }
+
+    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols);
+
+    exit(1);
+#endif /* defined(ROMANO_LINUX) */
+}
+
+void backtrace_set_signal_handler()
+{
+#if defined(ROMANO_LINUX)
+    signal(SIGSEGV, backtrace_signal_handler);
+    signal(SIGFPE, backtrace_signal_handler);
+    signal(SIGABRT, backtrace_signal_handler);
+    signal(SIGILL, backtrace_signal_handler);
+#endif /* defined(ROMANO_LINUX) */
 }
