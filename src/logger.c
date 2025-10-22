@@ -16,73 +16,72 @@
 #include <stdarg.h>
 #include <assert.h>
 
-typedef enum 
+typedef enum
 {
     LogMode_Console = BIT(0),
     LogMode_File = BIT(1)
 } log_mode;
 
-static volatile int _logger_initialized = 0;
-static volatile int _loglevel = LogLevel_Info;
-static volatile int _log_mode = LogMode_Console;
-static const char* _log_file_path = NULL;
-static FILE* _log_file = NULL;
+static volatile int g_logger_initialized = 0;
+static volatile int g_loglevel = LogLevel_Info;
+static volatile int g_log_mode = LogMode_Console;
+static const char* g_log_file_path = NULL;
+static FILE* g_log_file = NULL;
 
 static const char* const levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
 
 void logger_init(void)
 {
-    if(_logger_initialized)
+    if(g_logger_initialized)
     {
         return;
     }
 
-    _logger_initialized = 1;
+    g_logger_initialized = 1;
 }
 
 void logger_set_level(const log_level level)
 {
-    _loglevel = level < 5 ? level : 4;
-
+    g_loglevel = level < 5 ? level : 4;
 }
 
 void logger_enable_console(void)
 {
-    _log_mode |= LogMode_Console;
+    g_log_mode |= LogMode_Console;
 }
 
 void logger_disable_console(void)
 {
-    _log_mode &= LogMode_Console;
+    g_log_mode &= ~LogMode_Console;
 }
 
 void logger_enable_file(const char* file_path)
 {
-    _log_mode |= LogMode_File;
-    _log_file_path = file_path;
+    g_log_mode |= LogMode_File;
+    g_log_file_path = file_path;
 
     /* _log_file = fopen(_log_file_path, "a"); */
 }
 
 void logger_disable_file(void)
 {
-    _log_mode &= LogMode_File;
+    g_log_mode &= ~LogMode_File;
 }
 
 void logger_log(log_level level, const char* format, ...)
 {
-    ROMANO_ASSERT(_logger_initialized, "Logger has not been initialized");
+    ROMANO_ASSERT(g_logger_initialized, "Logger has not been initialized");
 
     level = level < 5 ? level : 4;
 
-    if(level <= _loglevel)
+    if(level <= g_loglevel)
     {
         time_t raw_time;
         struct timeval current_time;
         struct tm* local_time;
         char buffer[ROMANO_LOG_BUFFER_SIZE];
         va_list args;
-        
+
         time(&raw_time);
 
         gettimeofday(&current_time, NULL);
@@ -93,17 +92,17 @@ void logger_log(log_level level, const char* format, ...)
         vsnprintf(buffer, ROMANO_LOG_BUFFER_SIZE, format, args);
         va_end(args);
 
-        if(_log_mode & LogMode_Console)
+        if(g_log_mode & LogMode_Console)
         {
             FILE* output_stream = stdout;
 
-            if(level == LogLevel_Error || level == LogLevel_Fatal) 
+            if(level == LogLevel_Error || level == LogLevel_Fatal)
             {
                 output_stream = stderr;
             }
 
             fprintf(output_stream,
-                    "[%s] %02d:%02d:%02d:%03ld : %s\n", 
+                    "[%s] %02d:%02d:%02d:%03ld : %s\n",
                     levels_as_str[level],
                     local_time->tm_hour,
                     local_time->tm_min,
@@ -112,13 +111,13 @@ void logger_log(log_level level, const char* format, ...)
                     buffer);
         }
 
-        if(_log_mode & LogMode_File)
+        if(g_log_mode & LogMode_File)
         {
-            _log_file = fopen(_log_file_path, "a");
+            g_log_file = fopen(g_log_file_path, "a");
 
-            ROMANO_ASSERT(_log_file != NULL, "Log file has not been created");
+            ROMANO_ASSERT(g_log_file != NULL, "Log file has not been created");
 
-            fprintf(_log_file,
+            fprintf(g_log_file,
                     "[%s] %02d:%02d:%02d:%03ld : %s\n",
                     levels_as_str[level],
                     local_time->tm_hour,
@@ -127,16 +126,18 @@ void logger_log(log_level level, const char* format, ...)
                     current_time.tv_usec / 1000,
                     buffer);
 
-            fclose(_log_file);
+            fclose(g_log_file);
         }
     }
 }
 
 void logger_release(void)
 {
-    if(_log_file != NULL)
+    if(g_log_file != NULL)
     {
         /* fclose(_log_file); */
     }
-}
 
+    if(g_log_mode & LogMode_Console)
+        fflush(stdout);
+}
