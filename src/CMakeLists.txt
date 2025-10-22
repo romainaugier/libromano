@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: BSD-3-Clause 
-# Copyright (c) 2023 - Present Romain Augier 
-# All rights reserved. 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
 
 include(GNUInstallDirs)
 include(target_options)
@@ -37,7 +37,7 @@ if(UNIX)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
 elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf)
+    target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf dbghelp)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE concurrentqueue::concurrentqueue_c_api)
