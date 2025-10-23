@@ -5,6 +5,7 @@
 #include "libromano/thread.h"
 #include "libromano/atomic.h"
 #include "libromano/vector.h"
+#include "libromano/error.h"
 
 #include "concurrentqueue/concurrentqueue.h"
 
@@ -20,6 +21,8 @@ typedef DWORD thread_id;
 typedef pthread_t thread_handle;
 typedef int thread_id;
 #endif /* defined(ROMANO_WIN) */
+
+extern ErrorCode g_current_error;
 
 size_t get_num_procs(void)
 {
@@ -97,7 +100,7 @@ void mutex_free(Mutex* mutex)
 #elif defined(ROMANO_LINUX)
     pthread_mutex_destroy(mutex);
 #endif /* defined(ROMANO_WIN) */
-    
+
     free(mutex);
 }
 
@@ -202,30 +205,41 @@ struct Thread {
 #endif /* defined(ROMANO_LINUX) */
 };
 
-Thread* thread_create(ThreadFunc func, void* arg)
+void thread_init(Thread* thread, ThreadFunc func, void* arg)
 {
-    Thread* new_thread = (Thread*)malloc(sizeof(Thread));
-
-    memset(new_thread, 0, sizeof(Thread));
+    ROMANO_ASSERT(thread != NULL, "thread is NULL");
 
 #if defined(ROMANO_WIN)
-    new_thread->_thread_handle = CreateThread(NULL,
+    thread->_thread_handle = CreateThread(NULL,
                                               0,
                                               (LPTHREAD_START_ROUTINE)func,
                                               arg,
                                               CREATE_SUSPENDED,
-                                              &new_thread->_id);
+                                              &thread->_id);
 #elif defined(ROMANO_LINUX)
-    new_thread->_func = func;
-    new_thread->_data = arg;
+    thread->_func = func;
+    thread->_data = arg;
 #endif /* defined(ROMANO_WIN) */
+}
+
+Thread* thread_create(ThreadFunc func, void* arg)
+{
+    Thread* new_thread = (Thread*)calloc(1, sizeof(Thread));
+
+    if(new_thread == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return NULL;
+    }
+
+    thread_init(new_thread, func, arg);
 
     return new_thread;
 }
 
 void thread_start(Thread* thread)
 {
-    ROMANO_ASSERT(thread != NULL, "thread has not been initialized");
+    ROMANO_ASSERT(thread != NULL, "thread is NULL");
 
 #if defined(ROMANO_WIN)
     ResumeThread(thread->_thread_handle);
@@ -239,6 +253,9 @@ void thread_start(Thread* thread)
 
 void thread_sleep(const int sleep_duration_ms)
 {
+    if(sleep_duration_ms == 0)
+        return;
+
 #if defined(ROMANO_WIN)
     Sleep((DWORD)sleep_duration_ms);
 #elif defined(ROMANO_LINUX)
@@ -261,7 +278,7 @@ size_t thread_get_id(void)
 
 void thread_detach(Thread* thread)
 {
-    ROMANO_ASSERT(thread != NULL, "");
+    ROMANO_ASSERT(thread != NULL, "thread is NULL");
 
 #if defined(ROMANO_WIN)
     CloseHandle(thread->_thread_handle);
@@ -274,10 +291,10 @@ void thread_detach(Thread* thread)
 
 void thread_join(Thread* thread)
 {
+    ROMANO_ASSERT(thread != NULL, "thread is NULL");
+
     if(thread == NULL)
-    {
         return;
-    }
 
 #if defined(ROMANO_WIN)
     WaitForSingleObject(thread->_thread_handle, INFINITE);
@@ -300,6 +317,7 @@ typedef struct Work Work;
 struct ThreadPool
 {
     MoodycamelCQHandle work_queue;
+    Thread** threads;
 
     uint32_t working_threads_count;
     uint32_t workers_count;
@@ -309,11 +327,11 @@ struct ThreadPool
 Work* work_new(ThreadFunc func, void* arg)
 {
     Work* new_work;
-    
+
     ROMANO_ASSERT(func != NULL, "");
 
     new_work = malloc(sizeof(Work));
-    
+
     new_work->func = func;
     new_work->arg = arg;
 
@@ -335,9 +353,7 @@ void* threadpool_worker_func(void* arg)
     while(1)
     {
         if(atomic_load_32((Atomic32*)&threadpool->stop))
-        {
             break;
-        }
 
         if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
         {
@@ -360,28 +376,45 @@ ThreadPool* threadpool_init(uint32_t workers_count)
 {
     ThreadPool* threadpool;
     size_t i;
-    
-    workers_count = workers_count == 0 ? (uint32_t)get_num_procs() : workers_count;
-    
-    threadpool = malloc(sizeof(struct ThreadPool));
 
-    threadpool->workers_count = workers_count;
-    threadpool->working_threads_count = 0;
-    threadpool->stop = 0;
+    workers_count = workers_count == 0 ? (uint32_t)get_num_procs() : workers_count;
+
+    threadpool = (ThreadPool*)calloc(1, sizeof(ThreadPool));
+
+    if(threadpool == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return NULL;
+    }
+
+    atomic_store_32((Atomic32*)&threadpool->workers_count, workers_count);
 
     if(!moodycamel_cq_create(&threadpool->work_queue))
     {
+        g_current_error = ErrorCode_MemAllocError;
+
+        free(threadpool);
+
+        return NULL;
+    }
+
+    threadpool->threads = (Thread**)calloc(workers_count, sizeof(Thread*));
+
+    if(threadpool->threads == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+
+        moodycamel_cq_destroy(&threadpool->work_queue);
+
+        free(threadpool);
+
         return NULL;
     }
 
     for(i = 0; i < workers_count; i++)
     {
-        Thread* new_thread;
-        
-        new_thread = thread_create(threadpool_worker_func, (void*)threadpool);
-        
-        thread_start(new_thread);
-        thread_detach(new_thread);
+        threadpool->threads[i] = thread_create(threadpool_worker_func, (void*)threadpool);
+        thread_start(threadpool->threads[i]);
     }
 
     return threadpool;
@@ -405,38 +438,35 @@ void threadpool_wait(ThreadPool* threadpool)
     ROMANO_ASSERT(threadpool != NULL, "");
 
     while(1)
-    {
-        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count) == 0 && 
+        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count) == 0 &&
            moodycamel_cq_size_approx(threadpool->work_queue) == 0)
-        {
             break;
-        }
-    }
 }
 
 void threadpool_release(ThreadPool* threadpool)
 {
     Work* work;
-    
+    uint32_t workers_count;
+    uint32_t i;
+
     ROMANO_ASSERT(threadpool != NULL, "");
+
+    workers_count = (uint32_t)atomic_load_32((Atomic32*)&threadpool->workers_count);
 
     atomic_store_32((Atomic32*)&threadpool->stop, 1);
 
-    threadpool->stop = 1;
-
     while(moodycamel_cq_size_approx(threadpool->work_queue) > 0)
-    {
         if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
-        {
             work_free(work);
-        }
-    }
 
-    threadpool_wait(threadpool);
+    for(i = 0; i < workers_count; i++)
+        thread_join(threadpool->threads[i]);
+
+    free(threadpool->threads);
 
     moodycamel_cq_destroy(threadpool->work_queue);
 
     free(threadpool);
+
     threadpool = NULL;
 }
-

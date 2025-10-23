@@ -32,7 +32,7 @@ ROMANO_NO_INLINE int func2()
 
 int main(void)
 {
-    backtrace_set_signal_handler();
+    backtrace_install_signal_handler();
 
     logger_init();
     logger_set_level(LogLevel_Debug);

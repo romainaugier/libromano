@@ -51,7 +51,7 @@ void* tpool_func(void* data)
 
 int main(void)
 {
-    backtrace_set_signal_handler();
+    backtrace_install_signal_handler();
 
     size_t i = 0;
 
@@ -70,7 +70,7 @@ int main(void)
     thread_join(t2);
 
     logger_log(LogLevel_Info, "Initializing threadpool");
-    
+
     ThreadPool* tp = threadpool_init(0);
 
     int* work_data = malloc(sizeof(int) * WORK_COUNT);
@@ -100,4 +100,3 @@ int main(void)
 
     return 0;
 }
-

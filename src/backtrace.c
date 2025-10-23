@@ -221,33 +221,54 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 
 #define SIG_MAX_SYMBOLS 32
 
+#if defined(ROMANO_LINUX)
 void backtrace_signal_handler(int sig)
 {
-#if defined(ROMANO_LINUX)
     char* symbols[SIG_MAX_SYMBOLS];
     uint32_t i;
     uint32_t num_symbols;
 
-    fprintf(stderr, "%s", strsignal(sig));
-
-    for(i = 0; i < num_symbols; i++)
-    {
-        fprintf(stderr, "Stack Frame %u: %s", i, symbols[i]);
-        free(symbols[i]);
-    }
+    fprintf(stderr, "Exception caught: %s\n", strsignal(sig));
 
     num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols);
 
-    exit(1);
-#endif /* defined(ROMANO_LINUX) */
-}
+    for(i = 0; i < num_symbols; i++)
+    {
+        fprintf(stderr, "Stack Frame %u: %s\n", i, symbols[i]);
+        free(symbols[i]);
+    }
 
-void backtrace_set_signal_handler()
+    exit(1);
+}
+#elif defined(ROMANO_WIN)
+LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
+{
+    char* symbols[SIG_MAX_SYMBOLS];
+    uint32_t i;
+    uint32_t num_symbols;
+
+    fprintf(stderr, "Exception caught: 0x%llx\n", exception_info->ExceptionRecord->ExceptionCode);
+
+    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols);
+
+    for(i = 0; i < num_symbols; i++)
+    {
+        fprintf(stderr, "Stack Frame %u: %s\n", i, symbols[i]);
+        free(symbols[i]);
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif /* defined(ROMANO_LINUX) */
+
+void backtrace_install_signal_handler()
 {
 #if defined(ROMANO_LINUX)
     signal(SIGSEGV, backtrace_signal_handler);
     signal(SIGFPE, backtrace_signal_handler);
     signal(SIGABRT, backtrace_signal_handler);
     signal(SIGILL, backtrace_signal_handler);
+#elif defined(ROMANO_WIN)
+    SetUnhandledExceptionFilter(backtrace_signal_handler);
 #endif /* defined(ROMANO_LINUX) */
 }
