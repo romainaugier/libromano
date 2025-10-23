@@ -78,6 +78,11 @@ ROMANO_API void thread_start(Thread* thread);
 /* Sleeps for x milliseconds */
 ROMANO_API void thread_sleep(const int sleep_duration_ms);
 
+/*
+ *
+ */
+ROMANO_API void thread_yield(void);
+
 /* Returns the current thread id */
 ROMANO_API size_t thread_get_id(void);
 

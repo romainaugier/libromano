@@ -17,9 +17,11 @@
 #if defined(ROMANO_WIN)
 typedef HANDLE thread_handle;
 typedef DWORD thread_id;
+#include <processthreadsapi.h>
 #elif defined(ROMANO_LINUX)
 typedef pthread_t thread_handle;
 typedef int thread_id;
+#include <sched.h>
 #endif /* defined(ROMANO_WIN) */
 
 extern ErrorCode g_current_error;
@@ -264,6 +266,17 @@ void thread_sleep(const int sleep_duration_ms)
     wait_duration.tv_nsec = (sleep_duration_ms % 1000) * 1000000;
 
     nanosleep(&wait_duration, NULL);
+#endif /* defined(ROMANO_WIN) */
+}
+
+void thread_yield(void)
+{
+#if defined(ROMANO_WIN)
+    SwitchToThread();
+#elif defined(ROMANO_LINUX)
+    sched_yield();
+#else
+#error "thread_yield no implemented on current platform"
 #endif /* defined(ROMANO_WIN) */
 }
 
