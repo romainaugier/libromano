@@ -345,6 +345,12 @@ Work* work_new(ThreadFunc func, void* arg)
 
     new_work = malloc(sizeof(Work));
 
+    if(new_work == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return NULL;
+    }
+
     new_work->func = func;
     new_work->arg = arg;
 
@@ -354,6 +360,9 @@ Work* work_new(ThreadFunc func, void* arg)
 void work_free(Work* work)
 {
     ROMANO_ASSERT(work != NULL, "");
+
+    work->func = NULL;
+    work->arg = NULL;
 
     free(work);
 }
@@ -368,8 +377,10 @@ void* threadpool_worker_func(void* arg)
         if(atomic_load_32((Atomic32*)&threadpool->stop))
             break;
 
-        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
+        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue*)&work))
         {
+            ROMANO_ASSERT(work != NULL && work->func != NULL, "Invalid work item");
+
             atomic_add_32((Atomic32*)&threadpool->working_threads_count, 1);
 
             work->func(work->arg);
@@ -433,7 +444,7 @@ ThreadPool* threadpool_init(uint32_t workers_count)
     return threadpool;
 }
 
-int threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg)
+bool threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg)
 {
     Work* work;
 
@@ -441,9 +452,13 @@ int threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg)
 
     work = work_new(func, arg);
 
-    moodycamel_cq_enqueue(threadpool->work_queue, (MoodycamelValue)work);
+    if(!moodycamel_cq_enqueue(threadpool->work_queue, (MoodycamelValue)work))
+    {
+        work_free(work);
+        return false;
+    }
 
-    return 1;
+    return true;
 }
 
 void threadpool_wait(ThreadPool* threadpool)
@@ -468,12 +483,12 @@ void threadpool_release(ThreadPool* threadpool)
 
     atomic_store_32((Atomic32*)&threadpool->stop, 1);
 
+    for(i = 0; i < workers_count; i++)
+        thread_join(threadpool->threads[i]);
+
     while(moodycamel_cq_size_approx(threadpool->work_queue) > 0)
         if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
             work_free(work);
-
-    for(i = 0; i < workers_count; i++)
-        thread_join(threadpool->threads[i]);
 
     free(threadpool->threads);
 
