@@ -24,7 +24,7 @@ typedef enum
     LogMode_File = BIT(1)
 } log_mode;
 
-static volatile int g_logger_lock;
+static volatile Atomic32 g_logger_lock = 0;
 static volatile int g_logger_initialized = 0;
 static volatile int g_loglevel = LogLevel_Info;
 static volatile int g_log_mode = LogMode_Console;
@@ -118,7 +118,7 @@ void logger_log(log_level level, const char* format, ...)
     {
         time_t raw_time;
         struct timeval current_time;
-        struct tm* local_time;
+        struct tm local_time;
         char buffer[ROMANO_LOG_BUFFER_SIZE];
         va_list args;
 
@@ -126,7 +126,11 @@ void logger_log(log_level level, const char* format, ...)
 
         gettimeofday(&current_time, NULL);
 
-        local_time = localtime(&raw_time);
+#if defined(ROMANO_WIN)
+        localtime_s(&local_time, &raw_time);
+#elif defined(ROMANO_LINUX)
+        localtime_r(&raw_time, &local_time);
+#endif /* defined(ROMANO_WIN) */
 
         va_start(args, format);
         vsnprintf(buffer, ROMANO_LOG_BUFFER_SIZE, format, args);
@@ -144,9 +148,9 @@ void logger_log(log_level level, const char* format, ...)
             fprintf(output_stream,
                     "[%s] %02d:%02d:%02d:%03d : %s\n",
                     levels_as_str[level],
-                    local_time->tm_hour,
-                    local_time->tm_min,
-                    local_time->tm_sec,
+                    local_time.tm_hour,
+                    local_time.tm_min,
+                    local_time.tm_sec,
                     current_time.tv_usec / 1000,
                     buffer);
         }
@@ -160,9 +164,9 @@ void logger_log(log_level level, const char* format, ...)
             fprintf(g_log_file,
                     "[%s] %02d:%02d:%02d:%03d : %s\n",
                     levels_as_str[level],
-                    local_time->tm_hour,
-                    local_time->tm_min,
-                    local_time->tm_sec,
+                    local_time.tm_hour,
+                    local_time.tm_min,
+                    local_time.tm_sec,
                     current_time.tv_usec / 1000,
                     buffer);
 
