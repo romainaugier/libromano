@@ -15,7 +15,7 @@ ROMANO_CPP_ENTER
  * Captures the current callstack
  * Returns the number of frames captured
  */
-ROMANO_API uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t* out_stack);
+ROMANO_API uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack);
 
 /*
  * Captures the current callstack as symbol names

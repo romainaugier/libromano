@@ -5,6 +5,7 @@
 #include "libromano/backtrace.h"
 #include "libromano/memory.h"
 #include "libromano/error.h"
+#include "libromano/logger.h"
 
 #if defined(ROMANO_WIN)
 #include <winnt.h>
@@ -38,19 +39,19 @@ static ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
 #endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
 #endif /* defined(ROMANO_LINUX) */
 
-uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t* out_stack)
+uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack)
 {
 #if defined(ROMANO_LINUX)
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    uintptr_t* stack_frame;
+    void* stack_frame;
     uint32_t num;
 
-    stack_frame = (uintptr_t*)__builtin_frame_address(0);
+    stack_frame = (void*)__builtin_frame_address(0);
     num = 0;
 
     while(stack_frame != NULL && num < max)
     {
-        if((uintptr_t*)stack_frame[1] == NULL)
+        if(stack_frame[1] == NULL)
             break;
 
 
@@ -65,7 +66,7 @@ uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t* out_stack)
     return num;
 #endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
 #elif defined(ROMANO_WIN)
-    return RtlCaptureStackBackTrace(skip, max, (PVOID*)&out_stack, NULL);
+    return RtlCaptureStackBackTrace(skip, max, out_stack, NULL);
 #endif /* defined(ROMANO_LINUX) */
 
     return 0;
@@ -73,7 +74,7 @@ uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, uintptr_t* out_stack)
 
 uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_symbols)
 {
-    uintptr_t* out_stack;
+    void** out_stack;
     char* sym_name;
     uint32_t num;
     uint32_t i;
@@ -84,12 +85,15 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 
 #elif defined(ROMANO_WIN)
     HANDLE process;
-    SYMBOL_INFO* symbol;
+    PSYMBOL_INFO p_symbol;
 
-    char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+    char buffer[sizeof(SYMBOL_INFO) + (MAX_SYM_NAME + 1) * sizeof(char)];
+
+    char module_path[MAX_PATH];
+    DWORD module_path_sz;
 #endif /* defined(ROMANO_LINUX) */
 
-    out_stack = mem_alloca(max * sizeof(uintptr_t));
+    out_stack = mem_alloca(max * sizeof(void*));
 
     num = backtrace_call_stack(skip, max, out_stack);
 
@@ -121,17 +125,46 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 #elif defined(ROMANO_WIN)
     process = GetCurrentProcess();
 
-    symbol = (SYMBOL_INFO*)buffer;
-    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-    symbol->MaxNameLen = MAX_SYM_NAME;
+    p_symbol = (PSYMBOL_INFO)buffer;
+    p_symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+    p_symbol->MaxNameLen = MAX_SYM_NAME;
 
-    SymInitialize(process, NULL, TRUE);
+    SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+
+    memset(module_path, 0, MAX_PATH * sizeof(char));
+    module_path_sz = GetModuleFileNameA(NULL, module_path, MAX_PATH);
+
+    if(module_path_sz == 0)
+    {
+        g_current_error = error_get_last_from_system();
+
+        logger_log_error("Error when calling GetModuleFileNameA (%d)", g_current_error);
+
+        return 0;
+    }
+
+    while(module_path[module_path_sz - 1] != '\\')
+    {
+        module_path[module_path_sz - 1] = '\0';
+        module_path_sz--;
+    }
+
+    module_path[module_path_sz - 1] = '\0';
+
+    if(!SymInitialize(process, module_path, TRUE))
+    {
+        g_current_error = error_get_last_from_system();
+
+        logger_log_error("Error when calling SymInitialize (%d)", g_current_error);
+
+        return 0;
+    }
 
     for(i = 0; i < num; i++)
     {
-        if(SymFromAddr(process, (DWORD64)out_stack[i], 0, symbol))
+        if(SymFromAddr(process, (DWORD64)out_stack[i], 0, p_symbol))
         {
-            sym_name = calloc(strlen(symbol->Name) + 1, sizeof(char));
+            sym_name = calloc(p_symbol->NameLen + 1, sizeof(char));
 
             if(sym_name == NULL)
             {
@@ -141,15 +174,23 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
                 }
 
                 g_current_error = ErrorCode_MemAllocError;
+
+                SymCleanup(process);
+
                 return 0;
             }
 
-            strcpy(sym_name, symbol->Name);
+            strncpy(sym_name, p_symbol->Name, p_symbol->NameLen);
+            sym_name[p_symbol->NameLen] = '\0';
 
             out_symbols[i] = sym_name;
         }
         else
         {
+            g_current_error = error_get_last_from_system();
+
+            logger_log_error("Error when calling SymFromAddr (%d)", g_current_error);
+
             sym_name = calloc(8, sizeof(char));
 
             if(sym_name == NULL)
@@ -160,6 +201,9 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
                 }
 
                 g_current_error = ErrorCode_MemAllocError;
+
+                SymCleanup(process);
+
                 return 0;
             }
 
@@ -175,7 +219,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
     return num;
 }
 
-#define SIG_MAX_SYMBOLS 64
+#define SIG_MAX_SYMBOLS 32
 
 void backtrace_signal_handler(int sig)
 {
