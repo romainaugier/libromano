@@ -51,14 +51,14 @@ uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack)
 
     while(stack_frame != NULL && num < max)
     {
-        if((uintptr_t*)stack_frame[1] == NULL)
+        if(((uintptr_t*)stack_frame)[1] == NULL)
             break;
 
 
         if(skip > 0)
             skip--;
         else
-            out_stack[num++] = (uintptr_t*)stack_frame[1];
+            out_stack[num++] = ((uintptr_t*)stack_frame)[1];
 
         stack_frame = next_stack_frame((uintptr_t*)stack_frame);
     }
