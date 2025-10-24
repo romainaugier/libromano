@@ -323,6 +323,7 @@ struct Work
 {
     ThreadFunc func;
     void* arg;
+    ThreadPoolWaiter* waiter;
 };
 
 typedef struct Work Work;
@@ -337,7 +338,7 @@ struct ThreadPool
     uint32_t stop;
 };
 
-Work* work_new(ThreadFunc func, void* arg)
+Work* work_new(ThreadFunc func, void* arg, ThreadPoolWaiter* waiter)
 {
     Work* new_work;
 
@@ -353,6 +354,10 @@ Work* work_new(ThreadFunc func, void* arg)
 
     new_work->func = func;
     new_work->arg = arg;
+    new_work->waiter = waiter;
+
+    if(waiter != NULL)
+        atomic_add_32((Atomic32*)&waiter->counter, 1);
 
     return new_work;
 }
@@ -363,6 +368,9 @@ void work_free(Work* work)
 
     work->func = NULL;
     work->arg = NULL;
+
+    if(work->waiter != NULL)
+        atomic_sub_32((Atomic32*)&work->waiter->counter, 1);
 
     free(work);
 }
@@ -394,6 +402,14 @@ void* threadpool_worker_func(void* arg)
     atomic_sub_32((Atomic32*)&threadpool->workers_count, 1);
 
     return NULL;
+}
+
+ThreadPoolWaiter threadpool_waiter_new()
+{
+    ThreadPoolWaiter waiter;
+    waiter.counter = 0;
+
+    return waiter;
 }
 
 ThreadPool* threadpool_init(uint32_t workers_count)
@@ -444,13 +460,16 @@ ThreadPool* threadpool_init(uint32_t workers_count)
     return threadpool;
 }
 
-bool threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg)
+bool threadpool_work_add(ThreadPool* threadpool,
+                         ThreadFunc func,
+                         void* arg,
+                         ThreadPoolWaiter* waiter)
 {
     Work* work;
 
     ROMANO_ASSERT(threadpool != NULL, "");
 
-    work = work_new(func, arg);
+    work = work_new(func, arg, waiter);
 
     if(!moodycamel_cq_enqueue(threadpool->work_queue, (MoodycamelValue)work))
     {
@@ -466,9 +485,19 @@ void threadpool_wait(ThreadPool* threadpool)
     ROMANO_ASSERT(threadpool != NULL, "");
 
     while(1)
+    {
         if(atomic_load_32((Atomic32*)&threadpool->working_threads_count) == 0 &&
            moodycamel_cq_size_approx(threadpool->work_queue) == 0)
             break;
+
+        thread_yield();
+    }
+}
+
+void threadpool_waiter_wait(ThreadPoolWaiter* waiter)
+{
+    while(atomic_load_32((Atomic32*)&waiter->counter) != 0)
+        thread_yield();
 }
 
 void threadpool_release(ThreadPool* threadpool)

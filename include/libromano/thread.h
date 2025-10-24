@@ -95,17 +95,28 @@ ROMANO_API void thread_join(Thread* thread);
 struct ThreadPool;
 typedef struct ThreadPool ThreadPool;
 
-struct ThreadPoolWaiter;
-typedef struct ThreadPoolWaiter ThreadpoolWaiter;
+typedef struct ThreadPoolWaiter {
+    int32_t counter;
+} ThreadPoolWaiter;
+
+ROMANO_API ThreadPoolWaiter threadpool_waiter_new();
 
 /* Creates a threadpool with x workers and waits for work */
 ROMANO_API ThreadPool* threadpool_init(uint32_t workers_count);
 
-/* Adds some work to the threadpool  */
-ROMANO_API bool threadpool_work_add(ThreadPool* threadpool, ThreadFunc func, void* arg);
+/*
+ * Adds some work to the threadpool.
+ * If no waiter is needed, pass NULL as the ThreadPool waiter
+ */
+ROMANO_API bool threadpool_work_add(ThreadPool* threadpool,
+                                    ThreadFunc func,
+                                    void* arg,
+                                    ThreadPoolWaiter* waiter);
 
 /* Wait for all the work to be done */
 ROMANO_API void threadpool_wait(ThreadPool* threadpool);
+
+ROMANO_API void threadpool_waiter_wait(ThreadPoolWaiter* waiter);
 
 /* Release all the workers and the threadpool */
 ROMANO_API void threadpool_release(ThreadPool* threadpool);

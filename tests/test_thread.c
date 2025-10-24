@@ -40,9 +40,7 @@ void* t2_func(void* data)
 
 void* tpool_func(void* data)
 {
-    int work_id = *(int*)data;
-
-    logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), work_id);
+    logger_log(LogLevel_Info, "Hello from threadpool thread %llu and work id %i", thread_get_id(), *(int*)data);
 
     thread_sleep(10);
 
@@ -73,6 +71,8 @@ int main(void)
 
     ThreadPool* tp = threadpool_init(0);
 
+    ThreadPoolWaiter waiter = threadpool_waiter_new();
+
     int* work_data = malloc(sizeof(int) * WORK_COUNT);
 
     logger_log(LogLevel_Info, "Adding work to the threadpool");
@@ -81,12 +81,12 @@ int main(void)
     {
         work_data[i] = (int)i;
 
-        threadpool_work_add(tp, tpool_func, (void*)&work_data[i]);
+        threadpool_work_add(tp, tpool_func, (void*)&work_data[i], &waiter);
     }
 
     logger_log(LogLevel_Info, "Waiting for threadpool to complete work");
 
-    threadpool_wait(tp);
+    threadpool_waiter_wait(&waiter);
 
     logger_log(LogLevel_Info, "Threadpool work done");
 
