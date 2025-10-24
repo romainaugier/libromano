@@ -12,20 +12,42 @@ int main(void)
     logger_init();
     logger_set_level(LogLevel_Debug);
 
-    const char* data = "Ma";
+    const char* const data[5] = {
+        "light work.",
+        "light work",
+        "light wor",
+        "light wo",
+        "light w",
+    };
 
-    size_t encoded_sz;
-    char* encoded = base64_encode((void*)data, strlen(data), &encoded_sz);
+    const char* const data_result[5] = {
+        "bGlnaHQgd29yay4=",
+        "bGlnaHQgd29yaw==",
+        "bGlnaHQgd29y",
+        "bGlnaHQgd28=",
+        "bGlnaHQgdw==",
+    };
 
-    if(encoded == NULL)
+    for(size_t i = 0; i < 5; i++)
     {
-        logger_log_error("Error while encoding using base64");
-        return 1;
+        size_t encoded_sz;
+
+        const char* data_to_encode = data[i];
+
+        char* encoded = base64_encode((void*)data_to_encode, strlen(data_to_encode), &encoded_sz);
+
+        if(encoded == NULL)
+        {
+            logger_log_error("Error while encoding using base64");
+            return 1;
+        }
+
+        logger_log_debug("base64 encoding: %s -> %.*s", data_to_encode, encoded_sz, encoded);
+
+        ROMANO_ASSERT(strncmp(encoded, data_result[i], encoded_sz) == 0, "Base64 encoding is wrong");
+
+        free(encoded);
     }
-
-    logger_log_debug("base64 encoding: %s -> %.*s", data, encoded_sz, encoded);
-
-    free(encoded);
 
     logger_release();
 

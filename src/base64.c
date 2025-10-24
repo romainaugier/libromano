@@ -6,7 +6,7 @@
 
 ROMANO_FORCE_INLINE size_t base64_get_encode_size(size_t data_sz)
 {
-    return (data_sz + 3) & ~0x3;
+    return ((data_sz + 2) / 3) * 4;
 }
 
 ROMANO_FORCE_INLINE size_t base64_get_decode_size(size_t data_sz)
@@ -23,44 +23,59 @@ bool base64_encode_scalar(const void* ROMANO_RESTRICT data,
                           char* ROMANO_RESTRICT out_buffer,
                           size_t* out_sz)
 {
-    size_t loop_sz;
+    const uint8_t* in;
+    size_t rem;
     size_t i;
-    size_t j;
+    size_t g;
+    size_t full_groups;
     uint32_t chunk;
 
-    loop_sz = data_sz % 3;
+    in = (const uint8_t*)data;
 
-    for(i = 0; i < loop_sz; i += 3)
+    *out_sz = 0;
+
+    full_groups = data_sz / 3;
+
+    for(g = 0; g < full_groups; g++)
+    {
+        i = g * 3;
+
+        chunk = ((uint32_t)in[i + 0] << 16) |
+                ((uint32_t)in[i + 1] <<  8) |
+                ((uint32_t)in[i + 2]      );
+
+        out_buffer[(*out_sz)++] = encode_table[(chunk >> 18) & 0x3F];
+        out_buffer[(*out_sz)++] = encode_table[(chunk >> 12) & 0x3F];
+        out_buffer[(*out_sz)++] = encode_table[(chunk >>  6) & 0x3F];
+        out_buffer[(*out_sz)++] = encode_table[(chunk >>  0) & 0x3F];
+    }
+
+    rem = data_sz % 3;
+
+    if(rem != 0)
     {
         chunk = 0;
-        chunk |= ((uint8_t*)data)[i + 0] << 0;
-        chunk |= ((uint8_t*)data)[i + 1] << 8;
-        chunk |= ((uint8_t*)data)[i + 2] << 16;
+        i = full_groups * 3;
 
-        for(j = 0; j < 4; j++)
+        if(rem >= 1)
+            chunk |= ((uint32_t)in[i + 0] << 16);
+
+        if(rem >= 2)
+            chunk |= ((uint32_t)in[i + 1] <<  8);
+
+        out_buffer[(*out_sz)++] = encode_table[(chunk >> 18) & 0x3F];
+        out_buffer[(*out_sz)++] = encode_table[(chunk >> 12) & 0x3F];
+
+        if(rem == 1)
         {
-            out_buffer[*out_sz] = encode_table[(chunk >> (j * 6)) & 0x3F];
-            (*out_sz)++;
+            out_buffer[(*out_sz)++] = '=';
+            out_buffer[(*out_sz)++] = '=';
         }
-    }
-
-    chunk = 0;
-
-    j = i;
-
-    for(; i < data_sz; i++)
-        chunk |= ((uint8_t*)data)[i] << (i * 8);
-
-    for(; j < data_sz + 1; j++)
-    {
-        out_buffer[*out_sz] = encode_table[(chunk >> (j * 6)) & 0x3F];
-        (*out_sz)++;
-    }
-
-    while((*out_sz % 4) != 0)
-    {
-        out_buffer[*out_sz] = '=';
-        (*out_sz)++;
+        else
+        {
+            out_buffer[(*out_sz)++] = encode_table[(chunk >> 6) & 0x3F];
+            out_buffer[(*out_sz)++] = '=';
+        }
     }
 
     return true;
