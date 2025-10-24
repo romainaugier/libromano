@@ -78,11 +78,10 @@ int main(void)
     logger_log(LogLevel_Info, "Adding work to the threadpool");
 
     for(i = 0; i < WORK_COUNT; i++)
-    {
         work_data[i] = (int)i;
 
+    for(i = 0; i < WORK_COUNT; i++)
         threadpool_work_add(tp, tpool_func, (void*)&work_data[i], &waiter);
-    }
 
     logger_log(LogLevel_Info, "Waiting for threadpool to complete work");
 
