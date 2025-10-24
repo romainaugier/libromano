@@ -44,7 +44,7 @@ Arena* arena_new(const size_t block_size)
     return arena;
 }
 
-ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena, 
+ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena,
                                             const size_t new_size)
 {
     return (arena->current_block->offset + new_size) >= arena->current_block->capacity;
@@ -66,7 +66,7 @@ void* arena_push(Arena* arena, void* data, const size_t data_size)
         arena_resize(arena);
 
     void* data_address = (void*)((char*)arena->current_block->address + arena->current_block->offset);
-    
+
     if(data != NULL)
         memcpy(data_address, data, data_size);
 
