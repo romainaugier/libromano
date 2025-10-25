@@ -3,35 +3,12 @@
 /* All rights reserved. */
 
 #include "libromano/base64.h"
-#include "libromano/bit.h"
-#include "libromano/memory.h"
 
 #include <string.h>
 
 ROMANO_FORCE_INLINE size_t base64_get_encode_size(size_t data_sz)
 {
     return ((data_sz + 2) / 3) * 4;
-}
-
-ROMANO_FORCE_INLINE size_t base64_get_decode_size(const char* ROMANO_RESTRICT data, size_t data_sz)
-{
-    size_t padding;
-
-    if(data_sz == 0)
-        return 0;
-
-    if(data_sz % 4 != 0)
-        return 0;
-
-    padding = 0;
-
-    if(data[data_sz - 1] == '=')
-        padding++;
-
-    if(data[data_sz - 2] == '=')
-        padding++;
-
-    return (data_sz / 4) * 3 - padding;
 }
 
 static const char* encode_table = {
@@ -134,6 +111,27 @@ static const uint8_t decode_table[80] = {
     32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
     42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 };
+
+ROMANO_FORCE_INLINE size_t base64_get_decode_size(const char* ROMANO_RESTRICT data, size_t data_sz)
+{
+    size_t padding;
+
+    if(data_sz == 0)
+        return 0;
+
+    if(data_sz % 4 != 0)
+        return 0;
+
+    padding = 0;
+
+    if(data[data_sz - 1] == '=')
+        padding++;
+
+    if(data[data_sz - 2] == '=')
+        padding++;
+
+    return (data_sz / 4) * 3 - padding;
+}
 
 bool base64_decode_scalar(const char* ROMANO_RESTRICT data,
                           size_t data_sz,
