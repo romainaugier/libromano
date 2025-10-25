@@ -3,15 +3,35 @@
 /* All rights reserved. */
 
 #include "libromano/base64.h"
+#include "libromano/bit.h"
+#include "libromano/memory.h"
+
+#include <string.h>
 
 ROMANO_FORCE_INLINE size_t base64_get_encode_size(size_t data_sz)
 {
     return ((data_sz + 2) / 3) * 4;
 }
 
-ROMANO_FORCE_INLINE size_t base64_get_decode_size(size_t data_sz)
+ROMANO_FORCE_INLINE size_t base64_get_decode_size(const char* ROMANO_RESTRICT data, size_t data_sz)
 {
-    return (size_t)((double)data_sz * 1.25) + 1;
+    size_t padding;
+
+    if(data_sz == 0)
+        return 0;
+
+    if(data_sz % 4 != 0)
+        return 0;
+
+    padding = 0;
+
+    if(data[data_sz - 1] == '=')
+        padding++;
+
+    if(data[data_sz - 2] == '=')
+        padding++;
+
+    return (data_sz / 4) * 3 - padding;
 }
 
 static const char* encode_table = {
@@ -104,13 +124,81 @@ char* base64_encode(const void* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
     return buffer;
 }
 
-static const uint8_t decode_table[64] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
+static const uint8_t decode_table[80] = {
+    62, -1, -1, -1, 63, 52, 53, 54, 55, 56,
+    57, 58, 59, 60, 61, -1, -1, -1, -2, -1,
+    -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,
+     8,  9, 10, 11, 12, 13, 14, 15, 16, 17,
+    18, 19, 20, 21, 22, 23, 24, 25, -1, -1,
+    -1, -1, -1, -1, 26, 27, 28, 29, 30, 31,
+    32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+    42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 };
 
-void* base64_decode(const char* ROMANO_RESTRICT data, size_t data_siz, size_t* out_sz)
+bool base64_decode_scalar(const char* ROMANO_RESTRICT data,
+                          size_t data_sz,
+                          uint8_t* ROMANO_RESTRICT out_buffer,
+                          size_t* out_buffer_sz)
 {
+    size_t i;
+    size_t j;
+    uint32_t chunk;
+    uint32_t padding;
 
+    for(i = 0; i < (data_sz - 4); i += 4)
+    {
+        chunk = 0;
+
+        chunk |= ((uint32_t)decode_table[data[i + 0] - '+']) << 18;
+        chunk |= ((uint32_t)decode_table[data[i + 1] - '+']) << 12;
+        chunk |= ((uint32_t)decode_table[data[i + 2] - '+']) << 6;
+        chunk |= ((uint32_t)decode_table[data[i + 3] - '+']) << 0;
+
+        out_buffer[(*out_buffer_sz)++] = (chunk >> 16);
+        out_buffer[(*out_buffer_sz)++] = (chunk >> 8) & 0xFF;
+        out_buffer[(*out_buffer_sz)++] = (chunk >> 0) & 0xFF;
+    }
+
+    padding = (uint32_t)(data[data_sz - 1] == '=') + (uint32_t)(data[data_sz - 2] == '=');
+
+    chunk = 0;
+
+    for(j = 0; j < (4 - padding); j++)
+        chunk |= ((uint32_t)decode_table[data[i + j] - '+']) << ((3 - j) * 6);
+
+    out_buffer[(*out_buffer_sz)++] = (chunk >> 16) & 0xFF;
+
+    if(padding < 2)
+        out_buffer[(*out_buffer_sz)++] = (chunk >> 8) & 0xFF;
+
+    if(padding < 1)
+        out_buffer[(*out_buffer_sz)++] = (chunk >> 0) & 0xFF;
+
+    return true;
+}
+
+void* base64_decode(const char* ROMANO_RESTRICT data, size_t data_sz, size_t* out_sz)
+{
+    uint8_t* buffer;
+    size_t buffer_sz;
+
+    if(data_sz % 4 != 0)
+        return NULL;
+
+    buffer_sz = base64_get_decode_size(data, data_sz);
+    *out_sz = 0;
+
+    buffer = (uint8_t*)calloc(buffer_sz, sizeof(uint8_t));
+
+    if(buffer == NULL)
+    {
+        return NULL;
+    }
+
+    if(!base64_decode_scalar(data, data_sz, buffer, out_sz))
+    {
+        return NULL;
+    }
+
+    return (void*)buffer;
 }

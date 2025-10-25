@@ -72,9 +72,11 @@ uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack)
     return 0;
 }
 
-uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_symbols)
+uint32_t backtrace_call_stack_symbols(uint32_t skip,
+                                      uint32_t max,
+                                      char** out_symbols,
+                                      void** out_addresses)
 {
-    void** out_stack;
     char* sym_name;
     uint32_t num;
     uint32_t i;
@@ -93,12 +95,10 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
     DWORD module_path_sz;
 #endif /* defined(ROMANO_LINUX) */
 
-    out_stack = mem_alloca(max * sizeof(void*));
-
-    num = backtrace_call_stack(skip, max, out_stack);
+    num = backtrace_call_stack(skip, max, out_addresses);
 
 #if defined(ROMANO_LINUX)
-    symbols = backtrace_symbols((void* const*)out_stack, (int)num);
+    symbols = backtrace_symbols((void* const*)out_addresses, (int)num);
 
     for(i = 0; i < num; i++)
     {
@@ -224,17 +224,23 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_sy
 #if defined(ROMANO_LINUX)
 void backtrace_signal_handler(int sig)
 {
+    void* addresses[SIG_MAX_SYMBOLS];
     char* symbols[SIG_MAX_SYMBOLS];
     uint32_t i;
     uint32_t num_symbols;
 
     fprintf(stderr, "Exception caught: %s\n", strsignal(sig));
 
-    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols);
+    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols, addresses);
 
     for(i = 0; i < num_symbols; i++)
     {
-        fprintf(stderr, "Stack Frame %u: %s\n", i, symbols[i]);
+        fprintf(stderr,
+                "#%u 0x%px in %s\n",
+                i,
+                ((uintptr_t**)addresses)[i],
+                symbols[i]);
+
         free(symbols[i]);
     }
 

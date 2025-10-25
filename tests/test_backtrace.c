@@ -12,13 +12,14 @@ ROMANO_NO_INLINE int func1()
 {
     uint32_t i;
     uint32_t num_symbols;
+    void* addresses[MAX_SYMBOLS];
     char* symbols[MAX_SYMBOLS];
 
-    num_symbols = backtrace_call_stack_symbols(0, MAX_SYMBOLS, symbols);
+    num_symbols = backtrace_call_stack_symbols(0, MAX_SYMBOLS, symbols, addresses);
 
     for(i = 0; i < num_symbols; i++)
     {
-        logger_log_debug("Stack Frame %u: %s", i, symbols[i]);
+        logger_log_debug("#%u 0x%p : %s", i, ((uintptr_t**)addresses)[i], symbols[i]);
         free(symbols[i]);
     }
 

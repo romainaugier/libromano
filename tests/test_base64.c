@@ -46,7 +46,26 @@ int main(void)
 
         ROMANO_ASSERT(strncmp(encoded, data_result[i], encoded_sz) == 0, "Base64 encoding is wrong");
 
+        size_t decoded_sz;
+
+        char* decoded = (char*)base64_decode(encoded, encoded_sz, &decoded_sz);
+
+        if(decoded == NULL)
+        {
+            logger_log_error("Error while decoding using base64");
+            return 1;
+        }
+
+        logger_log_debug("base64 decoding: %.*s -> %.*s",
+                         encoded_sz,
+                         encoded,
+                         decoded_sz,
+                         decoded);
+
+        ROMANO_ASSERT(strncmp(decoded, data_to_encode, decoded_sz) == 0, "Base64 decoding is wrong");
+
         free(encoded);
+        free(decoded);
     }
 
     logger_release();

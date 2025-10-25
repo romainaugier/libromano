@@ -16,7 +16,7 @@ ROMANO_API char* base64_encode(const void* ROMANO_RESTRICT data,
                                size_t* out_sz);
 
 ROMANO_API void* base64_decode(const char* ROMANO_RESTRICT data,
-                               size_t data_siz,
+                               size_t data_sz,
                                size_t* out_sz);
 
 ROMANO_CPP_END

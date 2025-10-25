@@ -23,7 +23,10 @@ ROMANO_API uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out
  * the function name for each frame
  * Returns the number of frames captured
  */
-ROMANO_API uint32_t backtrace_call_stack_symbols(uint32_t skip, uint32_t max, char** out_symbols);
+ROMANO_API uint32_t backtrace_call_stack_symbols(uint32_t skip,
+                                                 uint32_t max,
+                                                 char** out_symbols,
+                                                 void** out_addresses);
 
 /*
  */
