@@ -29,13 +29,13 @@ typedef struct _PROCESSOR_POWER_INFORMATION
 #include <time.h>
 #endif /* defined(ROMANO_WIN) */
 
-static uint64_t _get_frequency_counter = 0;
-static uint32_t _frequency = 0;
-static uint32_t _refresh = 10000;
+static uint64_t g_get_frequency_counter = 0;
+static uint32_t g_frequency = 0;
+static uint32_t g_refresh = 10000;
 
 uint32_t _get_cpu_frequency(void)
 {
-    if(_get_frequency_counter % _refresh == 0)
+    if(g_get_frequency_counter % g_refresh == 0)
     {
 #if defined(ROMANO_WIN)
         PROCESSOR_POWER_INFORMATION* ppi;
@@ -85,20 +85,21 @@ uint32_t _get_cpu_frequency(void)
 
         const double frequency = (double)(end - start) * 1000;
 
-        _frequency = (uint32_t)(frequency / 1000000);
+        g_frequency = (uint32_t)(frequency / 1000000);
 #endif /* defined(ROMANO_WIN) */
     }
 
-    _get_frequency_counter++;
+    g_get_frequency_counter++;
 
-    return _frequency;
+    return g_frequency;
 }
 
-static uint32_t _cpu_freq_mhz = 0;
+static uint32_t g_cpu_freq_mhz = 0;
 
 void cpu_check(void)
 {
     /* CPU Frequency */
+
     int regs[4];
     memset(regs, 0, 4 * sizeof(int));
 
@@ -107,11 +108,11 @@ void cpu_check(void)
     if(regs[0] >= 0x16)
     {
         cpuid(regs, 0x16);
-        _cpu_freq_mhz = regs[0];
+        g_cpu_freq_mhz = regs[0];
     }
     else
     {
-        _cpu_freq_mhz = _get_cpu_frequency();
+        g_cpu_freq_mhz = _get_cpu_frequency();
     }
 }
 
@@ -138,7 +139,7 @@ void cpu_get_name(char* name)
 
 uint32_t cpu_get_frequency(void)
 {
-    return _cpu_freq_mhz;
+    return g_cpu_freq_mhz;
 }
 
 uint32_t cpu_get_current_frequency(void)
@@ -148,7 +149,7 @@ uint32_t cpu_get_current_frequency(void)
 
 void cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency)
 {
-    _refresh = refresh_frequency;
+    g_refresh = refresh_frequency;
 }
 
 uint64_t cpu_rdtsc(void)
