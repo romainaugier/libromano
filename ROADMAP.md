@@ -18,6 +18,7 @@
 - :heavy_check_mark: json
 - :heavy_check_mark: logger
 - :heavy_check_mark: sockets
+- :heavy_check_mark: base64 encoding/decoding
 - :x: websockets
 - :heavy_check_mark: socket server
 - :heavy_check_mark: filesystem interaction (python-like functions to interact with the filesystem)
