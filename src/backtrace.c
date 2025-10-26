@@ -249,17 +249,23 @@ void backtrace_signal_handler(int sig)
 #elif defined(ROMANO_WIN)
 LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
 {
+    void* addresses[SIG_MAX_SYMBOLS];
     char* symbols[SIG_MAX_SYMBOLS];
     uint32_t i;
     uint32_t num_symbols;
 
     fprintf(stderr, "Exception caught: 0x%llx\n", exception_info->ExceptionRecord->ExceptionCode);
 
-    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols);
+    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols, addresses);
 
     for(i = 0; i < num_symbols; i++)
     {
-        fprintf(stderr, "Stack Frame %u: %s\n", i, symbols[i]);
+        fprintf(stderr,
+                "#%u 0x%px in %s\n",
+                i,
+                ((uintptr_t**)addresses)[i],
+                symbols[i]);
+
         free(symbols[i]);
     }
 
