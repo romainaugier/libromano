@@ -181,6 +181,8 @@
 #define NULL (void*)0
 #endif /* !defined NULL */
 
+#define ROMANO_UNUSED(x) (void)(x)
+
 #if defined(ROMANO_MSVC)
 #define ROMANO_NO_VECTORIZATION __pragma(loop(no_vector))
 #else

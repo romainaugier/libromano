@@ -16,7 +16,7 @@ typedef enum
     BucketFlag_KeyInterned = 0x1,
 } BucketFlag;
 
-ROMANO_PACKED_STRUCT(struct _Bucket 
+ROMANO_PACKED_STRUCT(struct _Bucket
 {
     void* key;
     uint32_t key_size;
@@ -45,7 +45,7 @@ ROMANO_FORCE_INLINE bool bucket_has_flag(const Bucket* bucket, const uint32_t fl
 }
 
 void bucket_new(Bucket* bucket,
-                const void* key, 
+                const void* key,
                 const uint32_t key_size,
                 void* value,
                 const uint32_t value_size,
@@ -115,7 +115,7 @@ ROMANO_FORCE_INLINE uint32_t bucket_get_value_size(const Bucket* bucket)
     return bucket->value_size;
 }
 
-ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket, 
+ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
                                              void* value,
                                              const uint32_t value_size)
 {
@@ -173,7 +173,7 @@ ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
     {
         bucket->value = value;
     }
-    
+
     bucket->value_size = value_size;
 }
 
@@ -238,8 +238,8 @@ ROMANO_FORCE_INLINE bool bucket_compare_key(const Bucket* bucket,
                                             const uint32_t key_size,
                                             const uint32_t hash)
 {
-    return (bucket->hash == hash) && 
-           (bucket_get_key_size(bucket) == key_size) && 
+    return (bucket->hash == hash) &&
+           (bucket_get_key_size(bucket) == key_size) &&
            (memcmp(bucket_get_key(bucket), key, key_size) == 0);
 }
 
@@ -251,7 +251,7 @@ void bucket_free(Bucket* bucket)
     {
         return;
     }
-    
+
     if(!bucket_has_flag(bucket, BucketFlag_KeyInterned))
     {
         free(bucket_get_key(bucket));
@@ -282,9 +282,9 @@ ROMANO_FORCE_INLINE uint32_t hashmap_hash(const HashMap* hashmap, const void* ke
     return hashmap->hash_func(key, key_size, hashmap->hashkey);
 }
 
-ROMANO_FORCE_INLINE size_t hashmap_index(const HashMap* hashmap, const uint32_t hash) 
+ROMANO_FORCE_INLINE size_t hashmap_index(const HashMap* hashmap, const uint32_t hash)
 {
-    return hash & (hashmap->capacity - 1); 
+    return hash & (hashmap->capacity - 1);
 }
 
 ROMANO_FORCE_INLINE size_t hashmap_get_new_capacity(HashMap* hashmap)
@@ -302,18 +302,17 @@ void hashmap_grow(HashMap* hashmap,
     Bucket* bucket;
 
     size_t i;
-    size_t index;
     size_t old_capacity;
 
     ROMANO_ASSERT(hashmap != NULL, "");
 
     old_buckets = hashmap->buckets;
     old_capacity = hashmap->capacity;
-    
+
     hashmap->buckets = (Bucket*)calloc(capacity, sizeof(Bucket));
     hashmap->capacity = capacity;
     hashmap->size = 0;
-    
+
     if(rehash)
     {
         hashmap->hashkey ^= random_next_uint32();
@@ -358,7 +357,7 @@ HashMap* hashmap_new(size_t initial_capacity)
     }
 
     hashmap_grow(hashmap,
-                 initial_capacity, 
+                 initial_capacity,
                  false);
 
     return hashmap;
@@ -379,7 +378,7 @@ void hashmap_set_hash_func(HashMap* hashmap, hashmap_hash_func func)
     hashmap->hash_func = func;
 }
 
-void hashmap_move_entry(HashMap* hashmap, 
+void hashmap_move_entry(HashMap* hashmap,
                         Bucket* entry,
                         const bool rehash)
 {
@@ -744,7 +743,7 @@ void hashmap_free(HashMap* hashmap)
             {
                 continue;
             }
-            
+
             bucket_free(&hashmap->buckets[i]);
         }
 

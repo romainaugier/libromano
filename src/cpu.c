@@ -10,7 +10,7 @@
 #include <windows.h>
 #include <powerbase.h>
 
-typedef struct _PROCESSOR_POWER_INFORMATION 
+typedef struct _PROCESSOR_POWER_INFORMATION
 {
    ULONG Number;
    ULONG MaxMhz;
@@ -43,7 +43,6 @@ uint32_t _get_cpu_frequency(void)
         size_t size;
         LPBYTE p_buffer = NULL;
         ULONG current;
-        ULONG max;
         UINT num_cpus;
         SYSTEM_INFO system_info;
         system_info.dwNumberOfProcessors = 0;

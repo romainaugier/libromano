@@ -23,7 +23,7 @@
 
 #define ALIGNMENT 32
 
-/* 
+/*
     M -> rows
     N -> columns
 */
@@ -117,6 +117,7 @@ float matrixf_get_at(MatrixF* A, const int i, const int j)
 
 float matrixf_trace(MatrixF* A)
 {
+    /* TODO: implement trace */
     return 0.0f;
 }
 
@@ -130,7 +131,7 @@ void matrixf_transpose(MatrixF* A)
     uint32_t i;
     uint32_t j;
 
-    float* new_data; 
+    float* new_data;
 
     const int M = A->M;
     const int N = A->N;
@@ -139,13 +140,13 @@ void matrixf_transpose(MatrixF* A)
     {
         for(i = 0; i < M; i++)
         {
-            for(j = 0; j < N; j++) 
+            for(j = 0; j < N; j++)
             {
                 SWAP_FLOAT(A->data[i * M + j], A->data[j * M + i]);
             }
         }
     }
-    else 
+    else
     {
         new_data = (float*)mem_aligned_alloc((N * M) * sizeof(float), ALIGNMENT);
 
@@ -175,7 +176,7 @@ MatrixF matrixf_transpose_from(MatrixF* A)
     const int N = A->N;
 
     MatrixF res = matrixf_create(N, M);
-    
+
     for(i = 0; i < M; i++)
     {
         for(j = 0; j < N; j++)
@@ -187,7 +188,7 @@ MatrixF matrixf_transpose_from(MatrixF* A)
     return res;
 }
 
-void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A, 
+void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
                          const float* ROMANO_RESTRICT B,
                          float* ROMANO_RESTRICT C,
                          const uint32_t M,
@@ -220,7 +221,7 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
 #define SSE_N_BLOCK_SIZE 4
 #define AVX_N_BLOCK_SIZE 8
 
-void _matrixf_mul_sse(const float* ROMANO_RESTRICT A, 
+void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
                       const float* ROMANO_RESTRICT B,
                       float* ROMANO_RESTRICT C,
                       const uint32_t M,
@@ -310,7 +311,7 @@ void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
     }
 }
 
-void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A, 
+void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
                        const float* ROMANO_RESTRICT B,
                        float* ROMANO_RESTRICT C,
                        const uint32_t M,
@@ -400,7 +401,7 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
     }
 }
 
-typedef void (*matmul_func)(const float* ROMANO_RESTRICT, 
+typedef void (*matmul_func)(const float* ROMANO_RESTRICT,
                             const float* ROMANO_RESTRICT,
                             float* ROMANO_RESTRICT,
                             const uint32_t,
@@ -423,7 +424,7 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 
     float sum;
 
-    ROMANO_ASSERT(A->N == B->M, "");    
+    ROMANO_ASSERT(A->N == B->M, "");
 
     M = A->M;
     N = A->N;
@@ -543,7 +544,7 @@ void _matrixf_debug_full(MatrixF* A, const uint32_t M, const uint32_t N)
     {
         for(j = 0; j < N; j++)
         {
-            printf(j == (N - 1) ? "%.3f" : "%.3f ", GET_AT_WITH_N((*A), N, i, j));             
+            printf(j == (N - 1) ? "%.3f" : "%.3f ", GET_AT_WITH_N((*A), N, i, j));
         }
 
         printf("\n");
@@ -612,7 +613,7 @@ void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns)
 {
     const uint32_t M = A->M;
     const uint32_t N = A->N;
-    
+
     printf("Matrix f32: %u x %u\n", M, N);
 
     if(max_rows == 0 || max_columns == 0)

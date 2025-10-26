@@ -4,14 +4,11 @@
 
 #include "libromano/json.h"
 #include "libromano/arena.h"
+#include "libromano/common.h"
 #include "libromano/logger.h"
 #include "libromano/error.h"
 #include "libromano/fmt.h"
 #include "libromano/bit.h"
-
-#if defined(ROMANO_LINUX)
-#include <errno.h>
-#endif
 
 #include <ctype.h>
 #include <math.h>
@@ -76,6 +73,8 @@ JsonValue* json_null_new(Json* json)
 
 void json_null_set(Json* json, JsonValue* value)
 {
+    ROMANO_UNUSED(json);
+
     json_set_tags(value->tags, JsonTag_Null);
 }
 
@@ -109,6 +108,8 @@ bool json_bool_get(JsonValue* value)
 
 void json_bool_set(Json* json, JsonValue* value, bool b)
 {
+    ROMANO_UNUSED(json);
+
     json_set_tags(value->tags, JsonTag_Bool);
     value->value.b = b;
 }
@@ -143,6 +144,8 @@ uint64_t json_u64_get(JsonValue* value)
 
 void json_u64_set(Json* json, JsonValue* value, uint64_t u64)
 {
+    ROMANO_UNUSED(json);
+
     json_set_tags(value->tags, JsonTag_U64);
     value->value.u64 = u64;
 }
@@ -178,6 +181,8 @@ int64_t json_i64_get(JsonValue* value)
 
 void json_i64_set(Json* json, JsonValue* value, int64_t i64)
 {
+    ROMANO_UNUSED(json);
+
     json_set_tags(value->tags, JsonTag_I64);
     value->value.i64 = i64;
 }
@@ -212,6 +217,8 @@ double json_f64_get(JsonValue* value)
 
 void json_f64_set(Json* json, JsonValue* value, double f64)
 {
+    ROMANO_UNUSED(json);
+
     json_set_tags(value->tags, JsonTag_F64);
     value->value.f64 = f64;
 }
@@ -338,6 +345,8 @@ void json_array_append(Json* json, JsonValue* array, JsonValue* value, bool refe
 
 void json_array_pop(Json* json, JsonValue* array, size_t index)
 {
+    ROMANO_UNUSED(json);
+
     JsonArrayIterator iterator;
     JsonArrayInfo* info;
     JsonArrayElement* previous;
@@ -415,6 +424,8 @@ JsonValue* json_dict_new(Json* json, JsonValue* value)
     JsonValue* dict;
     JsonDictInfo* info;
 
+    ROMANO_UNUSED(value);
+
     dict = arena_push(&json->value_arena, NULL, sizeof(JsonValue));
     memset(dict, 0, sizeof(JsonValue));
 
@@ -478,6 +489,8 @@ JsonValue* json_dict_find(Json* json, JsonValue* dict, const char* key)
     JsonDictInfo* info;
     JsonDictIterator iterator;
 
+    ROMANO_UNUSED(json);
+
     info = (JsonDictInfo*)dict->value.ptr;
 
     iterator.current = info->head;
@@ -499,6 +512,8 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
     JsonDictIterator iterator;
     JsonDictElement* previous;
     bool found;
+
+    ROMANO_UNUSED(json);
 
     found = false;
     info = (JsonDictInfo*)dict->value.ptr;
@@ -539,6 +554,8 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
 JsonKeyValue* json_dict_get_next(Json* json, JsonValue* dict, JsonDictIterator* iterator)
 {
     JsonDictInfo* info;
+
+    ROMANO_UNUSED(json);
 
     info = (JsonDictInfo*)dict->value.ptr;
 
@@ -589,14 +606,23 @@ ROMANO_FORCE_INLINE void json_skip_whitespace(JsonParser* p)
 
 JsonValue* json_parse_string(JsonParser* p)
 {
+    JsonValue* value;
+    char* str;
+    size_t i;
+    size_t j;
+    size_t start;
+    size_t len;
+    bool has_escape;
+    char escape;
+
     if(p->pos >= p->len || p->str[p->pos] != '"')
         return NULL;
 
     p->pos++;
 
-    size_t start = p->pos;
-    size_t len = 0;
-    bool has_escape = false;
+    start = p->pos;
+    len = 0;
+    has_escape = false;
 
     while(p->pos < p->len)
     {
@@ -614,7 +640,7 @@ JsonValue* json_parse_string(JsonParser* p)
             if(p->pos >= p->len)
                 return NULL;
 
-            char escape = p->str[p->pos];
+            escape = p->str[p->pos];
 
             if(escape == 'u')
             {
@@ -636,8 +662,7 @@ JsonValue* json_parse_string(JsonParser* p)
     if(p->pos >= p->len)
         return NULL;
 
-    JsonValue* value = arena_push(&p->json->value_arena, NULL, sizeof(JsonValue));
-    char* str;
+    value = arena_push(&p->json->value_arena, NULL, sizeof(JsonValue));
 
     if(!has_escape)
     {
@@ -648,9 +673,9 @@ JsonValue* json_parse_string(JsonParser* p)
     else
     {
         str = arena_push(&p->json->string_arena, NULL, len + 1);
-        size_t j = 0;
+        j = 0;
 
-        for(size_t i = start; i < p->pos; i++)
+        for(i = start; i < p->pos; i++)
         {
             if(p->str[i] == '\\')
             {

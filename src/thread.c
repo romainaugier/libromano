@@ -184,6 +184,8 @@ void ConditionalVariable_release(ConditionalVariable* cond_var)
 
 #if defined(ROMANO_LINUX)
     pthread_cond_destroy(cond_var);
+#else
+    ROMANO_UNUSED(cond_var);
 #endif /* defined(ROMANO_LINUX) */
 }
 
