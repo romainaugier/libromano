@@ -71,7 +71,7 @@ uint32_t _get_cpu_frequency(void)
 
         LocalFree(p_buffer);
 
-        _frequency = (uint32_t)current;
+        g_frequency = (uint32_t)current;
 #elif defined(ROMANO_LINUX)
         const uint64_t start = cpu_rdtsc();
 
