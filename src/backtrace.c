@@ -162,7 +162,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
     for(i = 0; i < num; i++)
     {
-        if(SymFromAddr(process, (DWORD64)out_stack[i], 0, p_symbol))
+        if(SymFromAddr(process, (DWORD64)out_addresses[i], 0, p_symbol))
         {
             sym_name = calloc(p_symbol->NameLen + 1, sizeof(char));
 
