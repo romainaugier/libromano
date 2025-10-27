@@ -16,10 +16,6 @@ uint32_t hash_fnv1a(const char* str, const size_t n)
     char* s = (char*)str;
     size_t i;
 
-#if defined(ROMANO_CLANG) || defined(ROMANO_GCC)
-#pragma nounroll
-#endif /* defined(ROMANO_CLANG) || defined(ROMANO_GCC) */
-
     for(i = 0; i < n; i++)
     {
         result ^= (uint32_t)s[i];
@@ -32,31 +28,27 @@ uint32_t hash_fnv1a(const char* str, const size_t n)
 /* fnv1a_pippip hash */
 #define _PADr_KAZE(x, n) (((x) << (n)) >> (n))
 
-uint32_t hash_fnv1a_pippip(const char *str, const size_t n) 
+uint32_t hash_fnv1a_pippip(const char *str, const size_t n)
 {
-	const uint32_t PRIME = 591798841u; 
-    uint32_t hash32; 
+	const uint32_t PRIME = 591798841u;
+    uint32_t hash32;
     uint64_t hash64 = 14695981039346656037u;
 	size_t cycles, nd_head;
 
     if (n > 8)
     {
-        cycles = ((n - 1) >> 4) + 1; 
+        cycles = ((n - 1) >> 4) + 1;
         nd_head = n - (cycles << 3);
 
-#if defined(ROMANO_CLANG) || defined(ROMANO_GCC)
-#pragma nounroll
-#endif /* defined(ROMANO_CLANG) || defined(ROMANO_GCC) */
-
-        for(; cycles--; str += 8) 
+        for(; cycles--; str += 8)
         {
-            hash64 = (hash64 ^ (*(uint64_t *)(str)) ) * PRIME;        
-            hash64 = (hash64 ^ (*(uint64_t *)(str + nd_head))) * PRIME;        
+            hash64 = (hash64 ^ (*(uint64_t *)(str)) ) * PRIME;
+            hash64 = (hash64 ^ (*(uint64_t *)(str + nd_head))) * PRIME;
         }
     }
     else
     {
-        hash64 = (hash64 ^ _PADr_KAZE(*(uint64_t *)(str + 0), (8 - n) << 3)) * PRIME;        
+        hash64 = (hash64 ^ _PADr_KAZE(*(uint64_t *)(str + 0), (8 - n) << 3)) * PRIME;
     }
 
     hash32 = (uint32_t)(hash64 ^ (hash64 >> 32));
@@ -80,9 +72,9 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 	const size_t orig_len = len;
 	uint32_t h = seed;
 
-	if(ROMANO_LIKELY(((uintptr_t)key & 3) == 0)) 
+	if(ROMANO_LIKELY(((uintptr_t)key & 3) == 0))
     {
-		while(len2 >= sizeof(uint32_t)) 
+		while(len2 >= sizeof(uint32_t))
         {
 			uint32_t k = *(const uint32_t *)(const void *)data;
 
@@ -99,10 +91,10 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 			data += sizeof(uint32_t);
 			len2 -= sizeof(uint32_t);
 		}
-	} 
-    else 
+	}
+    else
     {
-		while(len2 >= sizeof(uint32_t)) 
+		while(len2 >= sizeof(uint32_t))
         {
 			uint32_t k;
 
@@ -129,7 +121,7 @@ uint32_t hash_murmur3(const void *key, const size_t len, const uint32_t seed)
 	 */
 	uint32_t k = 0;
 
-	switch(len2) 
+	switch(len2)
     {
         case 3:
             k ^= data[2] << 16;
