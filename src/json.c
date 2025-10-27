@@ -741,7 +741,6 @@ static const uint64_t pow10_int_table[] = {
 
 JsonValue* json_parse_number(JsonParser* p)
 {
-    size_t start = p->pos;
     bool is_negative = false;
     bool is_float = false;
     int64_t int_val = 0;
