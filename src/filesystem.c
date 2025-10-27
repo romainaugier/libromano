@@ -32,6 +32,7 @@ bool fs_file_content_init(FileContent* content,
                           bool read_binary)
 {
     FILE* file_handle;
+    size_t read_sz;
 
     ROMANO_ASSERT(content != NULL, "NULL file content");
 
@@ -61,9 +62,9 @@ bool fs_file_content_init(FileContent* content,
         return false;
     }
 
-    fread(content->content, sizeof(char), content->content_sz, file_handle);
+    read_sz = fread(content->content, sizeof(char), content->content_sz, file_handle);
 
-    if(ferror(file_handle))
+    if(read_sz == 0 || ferror(file_handle))
     {
         g_current_error = error_get_last_from_system();
         fclose(file_handle);
@@ -215,20 +216,20 @@ bool fs_chmod(const char* path,
 
     if(attrs == INVALID_FILE_ATTRIBUTES)
         return false;
-    
+
     /* TODO: add more attributes */
     if(mode & FsChMod_Owner_Write)
         attrs &= ~FILE_ATTRIBUTE_READONLY;
     else
         attrs |= FILE_ATTRIBUTE_READONLY;
-    
+
     if(!SetFileAttributesA(path, attrs))
         return false;
-    
+
 #elif defined(ROMANO_LINUX)
     if(chmod(path, (mode_t)(mode & 0x01FF)) != 0)
         return false;
-    
+
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
@@ -287,15 +288,15 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
 }
 
 #if defined(ROMANO_LINUX)
-/* 
- * Used by nftw in fs_remove 
+/*
+ * Used by nftw in fs_remove
  */
 int fs_remove_callback(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf)
 {
     (void)sb;
     (void)typeflag;
     (void)ftwbuf;
-    
+
     int rv = remove(fpath);
 
     if(rv != 0)
@@ -334,7 +335,7 @@ bool fs_remove(const char* path)
 
         return true;
     }
-    else 
+    else
     {
         if(!DeleteFileA(path))
         {
@@ -518,10 +519,10 @@ bool walk_should_skip_entry(FSWalkMode mode,
                             const char* entry_name,
                             DWORD attrs)
 {
-    if((attrs & FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldDirs) == 0) 
+    if((attrs & FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldDirs) == 0)
         return true;
 
-    if((attrs & ~FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldFiles) == 0) 
+    if((attrs & ~FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldFiles) == 0)
         return true;
 
     if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
@@ -616,7 +617,7 @@ bool fs_walk(const char* path,
 
             break;
         }
-        else 
+        else
         {
             if(!FindNextFileA(walk_iterator->_h_find, &find_data))
             {
