@@ -20,9 +20,12 @@ ROMANO_CPP_ENTER
 typedef SOCKET Socket;
 typedef SOCKADDR_IN SockAddrIn;
 typedef SOCKADDR SockAddr;
+typedef SOCKADDR_STORAGE SockAddrStorage;
 typedef IN_ADDR InAddr;
 typedef FD_SET FdSet;
 typedef int SockLen;
+typedef SOCKADDR_IN6 SockAddrIn6;
+typedef SOCKADDR SockAddr6;
 #define ROMANO_INVALID_SOCKET INVALID_SOCKET
 #define ROMANO_SOCKET_ERROR SOCKET_ERROR
 #elif defined(ROMANO_LINUX)
@@ -45,20 +48,13 @@ typedef int SockLen;
 typedef int Socket;
 typedef struct sockaddr_in SockAddrIn;
 typedef struct sockaddr SockAddr;
+typedef struct sockaddr_storage SockAddrStorage;
 typedef struct in_addr InAddr;
 typedef fd_set FdSet;
 typedef socklen_t SockLen;
-#endif /* defined(ROMANO_WIN) */
-
-#if defined(ROMANO_ENABLE_IPV6)
-#if defined(ROMANO_WIN)
-typedef SOCKADDR_IN6 SockAddrIn6;
-typedef SOCKADDR SockAddr6;
-#elif defined(ROMANO_LINUX)
 typedef struct sockaddr_in6 SockAddrIn6;
 typedef struct sockaddr SockAddr6;
 #endif /* defined(ROMANO_WIN) */
-#endif /* defined(ROMANO_ENABLE_IPV6) */
 
 /*
  * Initialize the socket context, and returns true on success
@@ -163,6 +159,45 @@ ROMANO_API int32_t socket_get_error(void);
  * Deletes the given socket
  */
 ROMANO_API void socket_free(Socket s);
+
+typedef struct DNSResolveResult {
+    SockAddrStorage* addrs;
+    size_t count;
+} DNSResolveResult;
+
+ROMANO_API void socket_dns_result_init(DNSResolveResult* res);
+
+ROMANO_API void socket_dns_result_release(DNSResolveResult* res);
+
+/*
+ * Returns the number of addresses found when a hostname has been resolved
+ */
+ROMANO_API size_t socket_dns_result_get_count(const DNSResolveResult* res);
+
+/*
+ * Returns the ith address of the dns resolve result
+ */
+ROMANO_API const SockAddrStorage* socket_dns_result_get(const DNSResolveResult* res,
+                                                        size_t i);
+
+/*
+ * Resolve the hostname for ipv4
+ */
+ROMANO_API bool socket_resolve_dns_ipv4(const char* hostname,
+                                        DNSResolveResult* res);
+
+/*
+ * Resolve the hostname for ipv6
+ */
+ROMANO_API bool socket_resolve_dns_ipv6(const char* hostname,
+                                        DNSResolveResult* res);
+
+/*
+ * You can use INET6_ADDRSTRLEN as buffer_sz
+ */
+ROMANO_API void socket_addr_to_string(const SockAddrStorage* addr,
+                                      char* buffer,
+                                      size_t buffer_sz);
 
 /*
  * Release the socket context

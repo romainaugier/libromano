@@ -5,6 +5,7 @@
 #include "libromano/socket.h"
 #include "libromano/common.h"
 #include "libromano/logger.h"
+#include "libromano/error.h"
 
 #if defined(ROMANO_WIN)
 static LONG g_init_count = 0;
@@ -13,6 +14,8 @@ static LONG g_init_count = 0;
 #else
 #warning Sockets not defined on this platform
 #endif /* defined(ROMANO_WIN) */
+
+extern ErrorCode g_current_error;
 
 bool socket_init_ctx(void)
 {
@@ -203,6 +206,206 @@ void socket_free(Socket s)
 {
     if(s != ROMANO_INVALID_SOCKET)
         closesocket(s);
+}
+
+void socket_dns_result_init(DNSResolveResult* res)
+{
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+    res->addrs = NULL;
+    res->count = 0;
+}
+
+void socket_dns_result_release(DNSResolveResult* res)
+{
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+    if(res->addrs != NULL)
+    {
+        free(res->addrs);
+        res->addrs = NULL;
+    }
+
+    res->addrs = 0;
+}
+
+size_t socket_dns_result_get_count(const DNSResolveResult* res)
+{
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+    return res->count;
+}
+
+const SockAddrStorage* socket_dns_result_get(const DNSResolveResult* res,
+                                             size_t i)
+{
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+    if(i >= res->count)
+        return NULL;
+
+    return &res->addrs[i];
+}
+
+bool copy_addrinfo(struct addrinfo* list, DNSResolveResult* res)
+{
+    struct addrinfo* ai;
+    SockAddrStorage* addrs;
+    size_t count;
+    size_t i;
+
+    ROMANO_ASSERT(list != NULL, "list is NULL");
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+    count = 0;
+
+    for(ai = list; ai != NULL; ai = ai->ai_next)
+        count++;
+
+    addrs = (SockAddrStorage*)calloc(count, sizeof(SockAddrStorage));
+
+    if(addrs == NULL)
+    {
+#if defined(ROMANO_WIN)
+        FreeAddrInfoA(list);
+#elif defined(ROMANO_LINUX)
+        freeaddrinfo(list);
+#endif /* defined(ROMANO_WIN) */
+
+        g_current_error = ErrorCode_MemAllocError;
+
+        return false;
+    }
+
+    for(ai = list, i = 0; ai != NULL; ai = ai->ai_next, i++)
+        memcpy(&addrs[i], ai->ai_addr, ai->ai_addrlen);
+
+    res->addrs = addrs;
+    res->count = count;
+
+#if defined(ROMANO_WIN)
+    FreeAddrInfoA(list);
+#elif defined(ROMANO_LINUX)
+    freeaddrinfo(list);
+#endif /* defined(ROMANO_WIN) */
+
+    return true;
+}
+
+#if defined(ROMANO_WIN)
+bool resolve_dns_windows(const char* hostname, int family, DNSResolveResult* res)
+{
+    struct addrinfo hints;
+    struct addrinfo* list;
+    int err;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = family;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_ADDRCONFIG;
+
+    list = NULL;
+
+    err = GetAddrInfoA(hostname, NULL, &hints, &list);
+
+    if(err != 0)
+    {
+        g_current_error = (ErrorCode)err;
+        return false;
+    }
+
+    return copy_addrinfo(list, res);
+}
+#elif defined(ROMANO_LINUX)
+bool resolve_dns_posix(const char* hostname, int family, DNSResolveResult* res)
+{
+    struct addrinfo hints;
+    struct addrinfo* list;
+    int err;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = family;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_ADDRCONFIG;
+
+    list = NULL;
+
+    err = getaddrinfo(hostname, NULL, &hints, &list);
+
+    if(err != 0)
+    {
+        g_current_error = (ErrorCode)err;
+        return false;
+    }
+
+    return copy_addrinfo(list, res);
+}
+#else
+#error "DNS resolve not supported on current platform"
+#endif /* defined(ROMANO_WIN) */
+
+bool socket_resolve_dns_ipv4(const char* hostname,
+                             DNSResolveResult* res)
+{
+    ROMANO_ASSERT(hostname != NULL, "hostname is NULL");
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+#if defined(ROMANO_WIN)
+    return resolve_dns_windows(hostname, AF_INET, res);
+#elif defined(ROMANO_LINUX)
+    return resolve_dns_posix(hostname, AF_INET, res);
+#endif /* defined(ROMANO_WIN) */
+
+    return false;
+}
+
+bool socket_resolve_dns_ipv6(const char* hostname,
+                             DNSResolveResult* res)
+{
+    ROMANO_ASSERT(hostname != NULL, "hostname is NULL");
+    ROMANO_ASSERT(res != NULL, "res is NULL");
+
+#if defined(ROMANO_WIN)
+    return resolve_dns_windows(hostname, AF_INET6, res);
+#elif defined(ROMANO_LINUX)
+    return resolve_dns_posix(hostname, AF_INET6, res);
+#endif /* defined(ROMANO_WIN) */
+
+    return false;
+}
+
+void socket_addr_to_string(const SockAddrStorage* addr,
+                           char* buffer,
+                           size_t buffer_sz)
+{
+    const SockAddrIn* s4;
+    const SockAddrIn6* s6;
+
+#if defined(ROMANO_WIN)
+    if(addr->ss_family == AF_INET)
+    {
+        s4 = (const SockAddrIn*)addr;
+        InetNtopA(AF_INET, &s4->sin_addr, buffer, buffer_sz);
+    }
+    else if(addr->ss_family == AF_INET6)
+    {
+        s6 = (const SockAddrIn6*)addr;
+        InetNtopA(AF_INET6, &s6->sin6_addr, buffer, buffer_sz);
+    }
+#elif defined(ROMANO_LINUX)
+    if(addr->ss_family == AF_INET)
+    {
+        s4 = (const SockAddrIn*)addr;
+        inet_ntop(AF_INET, &s4->sin_addr, buffer, buffer_sz);
+    }
+    else if(addr->ss_family == AF_INET6)
+    {
+        s6 = (const SockAddrIn6*)addr;
+        inet_ntop(AF_INET6, &s6->sin6_addr, buffer, buffer_sz);
+    }
+#else
+#error "socket_addr_to_string not supported on current platform"
+#endif /* defined(ROMANO_WIN) */
 }
 
 void socket_release_ctx(void)
