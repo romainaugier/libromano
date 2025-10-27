@@ -66,7 +66,7 @@ int main(void)
         memset(client_msg, 0, CLIENT_MSG_SIZE);
         snprintf(client_msg, CLIENT_MSG_SIZE, "Test message %d", i);
 
-        client_socket = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        client_socket = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         if(client_socket == INVALID_SOCKET)
         {
@@ -77,39 +77,39 @@ int main(void)
         memset(&client_addr, 0, sizeof(SockAddrIn));
         client_addr.sin_family = AF_INET;
 
-        if(inet_pton(AF_INET, "127.0.0.1", &client_addr.sin_addr.s_addr) <= 0)
+        if(socket_inet_pton(AF_INET, "127.0.0.1", &client_addr.sin_addr.s_addr) <= 0)
         {
             logger_log(LogLevel_Warning, "Invalid ip address");
-            socket_destroy(client_socket);
+            socket_free(client_socket);
             continue;
         }
 
         client_addr.sin_port = htons(50111);
 
-        client_result = connect(client_socket, (SockAddr*)&client_addr, sizeof(client_addr));
+        client_result = socket_connect(client_socket, (SockAddr*)&client_addr, sizeof(client_addr));
 
         if(client_result == SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Invalid connection (%d)", socket_get_error());
-            socket_destroy(client_socket);
+            socket_free(client_socket);
             continue;
         }
 
-        client_result = send(client_socket, client_msg, (int)strlen(client_msg), 0);
+        client_result = socket_send(client_socket, client_msg, (int)strlen(client_msg), 0);
 
         if(client_result == SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Error during data send (%d)", socket_get_error());
-            socket_destroy(client_socket);
+            socket_free(client_socket);
             continue;
         }
 
-        client_result = shutdown(client_socket, SD_SEND);
+        client_result = socket_shutdown(client_socket, SD_SEND);
 
         if(client_result == SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Error during connection shutdown (%d)", socket_get_error());
-            socket_destroy(client_socket);
+            socket_free(client_socket);
             continue;
         }
 
@@ -117,7 +117,7 @@ int main(void)
 
         while(1)
         {
-            client_result = recv(client_socket, client_buffer, CLIENT_BUFFER_SIZE, MSG_WAITALL);
+            client_result = socket_recv(client_socket, client_buffer, CLIENT_BUFFER_SIZE, MSG_WAITALL);
 
             if(!client_result)
             {
@@ -127,7 +127,7 @@ int main(void)
             logger_log(LogLevel_Info, "Received data : %s", client_buffer);
         }
 
-        socket_destroy(client_socket);
+        socket_free(client_socket);
 
         thread_sleep(50);
     }

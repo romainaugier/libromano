@@ -21,8 +21,8 @@
 void socket_loop(void)
 {
     socket_init_ctx();
-    
-    Socket sock = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    Socket sock = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(sock == INVALID_SOCKET)
     {
@@ -36,18 +36,18 @@ void socket_loop(void)
     server.sin_port = htons(45666);
     server.sin_addr.s_addr = INADDR_ANY;
 
-    if(bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(socket_bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", error_get_last_from_system());
-        closesocket(sock);
+        socket_free(sock);
         socket_release_ctx();
         return;
     }
 
-    if(listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
+    if(socket_listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", error_get_last_from_system());
-        closesocket(sock);
+        socket_free(sock);
         socket_release_ctx();
         return;
     }
@@ -56,7 +56,7 @@ void socket_loop(void)
 
     while(end_server == 0)
     {
-        Socket new_connection = accept(sock, NULL, NULL);
+        Socket new_connection = socket_accept(sock, NULL, NULL);
 
         if(new_connection == INVALID_SOCKET)
         {
@@ -68,12 +68,12 @@ void socket_loop(void)
         {
             char reception_buffer[RECEPTION_BUFFER_SIZE];
 
-            int32_t result = recv(new_connection, reception_buffer, RECEPTION_BUFFER_SIZE, 0);
+            size_t result = socket_recv(new_connection, reception_buffer, RECEPTION_BUFFER_SIZE, 0);
 
             if(result > 0)
             {
                 logger_log(LogLevel_Info, "Receiving data : %s", reception_buffer);
-                
+
                 if(strcmp(reception_buffer, "stop") == 0)
                 {
                     end_server = 1;
@@ -96,7 +96,7 @@ void socket_loop(void)
                     {
                         logger_log(LogLevel_Info, "Password is verified");
                         logger_log(LogLevel_Info, "Executing command");
-                    
+
                         int return_code = system(buffer_split[1]);
 
                         logger_log(LogLevel_Info, "Command returned : %d", return_code);
@@ -122,20 +122,20 @@ void socket_loop(void)
             }
         }
 
-        closesocket(new_connection);
+        socket_free(new_connection);
     }
 
-    closesocket(sock);
+    socket_free(sock);
 }
 
 int main(void)
 {
 #if ROMANO_TEST_SOCKET_SERVER
     thread t = thread_create(socket_loop, NULL);
+
     thread_start(&t);
 
     thread_join(&t);
 #endif //defined(ROMANO_TEST_SOCKET_SERVER)
     return 0;
 }
-

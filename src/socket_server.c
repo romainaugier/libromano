@@ -30,7 +30,7 @@ extern ErrorCode g_current_error;
 
 #define GET_CALLBACK_PTR(callbacks_ptr, i) ((socket_server_callback_func*)((char*)callbacks_ptr + 1 * sizeof(size_t)))[i]
 
-#define RECV_SIZE 128 
+#define RECV_SIZE 128
 #define SEND_SIZE 32
 
 struct SocketServer
@@ -91,7 +91,7 @@ void socket_server_log(SocketServer* socket_server,
 
     va_list args;
     char log_buffer[ROMANO_SOCKET_SERVER_LOG_BUFFER_SIZE];
-    
+
     if(socket_server->log_callback != NULL)
     {
         va_start(args, format);
@@ -133,10 +133,10 @@ void* socket_server_main_loop(void* _socket_server)
     size_t i;
 
     SocketServer* socket_server = (SocketServer*)_socket_server;
-    
+
     ROMANO_ASSERT(socket_server != NULL, "");
-    
-    socket = socket_create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    socket = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(socket == INVALID_SOCKET)
     {
@@ -156,9 +156,9 @@ void* socket_server_main_loop(void* _socket_server)
     {
         server.sin_addr.s_addr = INADDR_ANY;
     }
-    else 
+    else
     {
-        int ret = inet_pton(AF_INET, "127.0.0.1", &server.sin_addr.s_addr);
+        int ret = socket_inet_pton(AF_INET, "127.0.0.1", &server.sin_addr.s_addr);
 
         if(ret <= 0)
         {
@@ -171,18 +171,18 @@ void* socket_server_main_loop(void* _socket_server)
         }
     }
 
-    if(bind(socket, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(socket_bind(socket, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
     {
-        socket_destroy(socket);
+        socket_free(socket);
         socket_server_log(socket_server, socket_get_error(), "Error during socket binding");
         return NULL;
     }
 
     socket_server_log(socket_server, 0, "Server socket bound to port");
 
-    if(listen(socket, socket_server->max_connections) == SOCKET_ERROR)
+    if(socket_listen(socket, socket_server->max_connections) == SOCKET_ERROR)
     {
-        socket_destroy(socket);
+        socket_free(socket);
         socket_server_log(socket_server, socket_get_error(), "Error during socket listening");
         return NULL;
     }
@@ -211,17 +211,17 @@ void* socket_server_main_loop(void* _socket_server)
             mutex_unlock(socket_server->mutex);
             break;
         }
-        
+
         mutex_unlock(socket_server->mutex);
 
-        select_status = select(socket + 1, &read_fds, NULL, NULL, &time_interval);
+        select_status = socket_select(socket + 1, &read_fds, NULL, NULL, &time_interval);
 
         if(select_status == 0 || select_status == SOCKET_ERROR)
         {
             continue;
         }
 
-        new_connection = accept(socket, NULL, NULL);
+        new_connection = socket_accept(socket, NULL, NULL);
 
         if(new_connection == INVALID_SOCKET)
         {
@@ -237,7 +237,7 @@ void* socket_server_main_loop(void* _socket_server)
 
         while(1)
         {
-            result = recv(new_connection, temp_data_buffer, RECV_SIZE, MSG_WAITALL);
+            result = socket_recv(new_connection, temp_data_buffer, RECV_SIZE, MSG_WAITALL);
 
             if(!result || data_buffer == NULL)
             {
@@ -253,7 +253,7 @@ void* socket_server_main_loop(void* _socket_server)
 
                 if(data_buffer == NULL)
                 {
-                    socket_server_log(socket_server, 1, "Error during recv data buffer allocation"); 
+                    socket_server_log(socket_server, 1, "Error during recv data buffer allocation");
                     break;
                 }
             }
@@ -275,9 +275,9 @@ void* socket_server_main_loop(void* _socket_server)
 
             socket_server_log(socket_server, 0, "Sending client infos about the size of received packet");
 
-            snprintf(send_buffer, SEND_SIZE, "%d", rec_data_size);
+            snprintf(send_buffer, SEND_SIZE, "%llu", rec_data_size);
 
-            sent_data_size = send(new_connection, (const char*)send_buffer, (int)strlen(send_buffer), 0);
+            sent_data_size = socket_send(new_connection, (const char*)send_buffer, (int)strlen(send_buffer), 0);
 
             if(!sent_data_size)
             {
@@ -291,10 +291,10 @@ void* socket_server_main_loop(void* _socket_server)
 
         socket_server_log(socket_server, 0, "Finished executing callbacks, removing connection");
 
-        socket_destroy(new_connection);
+        socket_free(new_connection);
     }
 
-    socket_destroy(socket);
+    socket_free(socket);
 
     mutex_lock(socket_server->mutex);
     UNSET_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
@@ -382,9 +382,9 @@ int32_t socket_server_get_last_error(SocketServer* socket_server)
 }
 
 bool socket_server_is_running(SocketServer* socket_server)
-{ 
+{
     ROMANO_ASSERT(socket_server != NULL, "socket_server is NULL");
-    
+
     return (bool)HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
 }
 
