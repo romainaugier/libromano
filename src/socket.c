@@ -6,13 +6,6 @@
 #include "libromano/common.h"
 #include "libromano/logger.h"
 
-#include <WS2tcpip.h>
-#include <WinSock2.h>
-#include <minwindef.h>
-#include <stdlib.h>
-#include <winnt.h>
-#include <ws2ipdef.h>
-
 #if defined(ROMANO_WIN)
 static LONG g_init_count = 0;
 #elif defined(ROMANO_LINUX)
