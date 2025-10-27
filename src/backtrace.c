@@ -238,7 +238,7 @@ void backtrace_signal_handler(int sig)
         fprintf(stderr,
                 "#%u 0x%px in %s\n",
                 i,
-                ((uintptr_t**)addresses)[i],
+                (void*)((uintptr_t**)addresses)[i],
                 symbols[i]);
 
         free(symbols[i]);
