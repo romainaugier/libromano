@@ -73,7 +73,7 @@ void socket_set_nonblocking(Socket s, bool enable)
     u_long mode = enable ? 1 : 0;
     ioctlsocket(s, FIONBIO, &mode);
 #else
-    int flags = fnctl(s, F_GETFL, 0);
+    int flags = fcntl(s, F_GETFL, 0);
 
     if(flags == -1)
         return;
