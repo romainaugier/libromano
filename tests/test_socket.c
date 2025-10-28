@@ -36,7 +36,7 @@ void socket_loop(void)
     server.sin_port = htons(45666);
     server.sin_addr.s_addr = INADDR_ANY;
 
-    if(socket_bind(sock, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(socket_bind(sock, (SockAddr*)&server, sizeof(server)) == ROMANO_SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", error_get_last_from_system());
         socket_free(sock);
@@ -44,7 +44,7 @@ void socket_loop(void)
         return;
     }
 
-    if(socket_listen(sock, MAX_CONNECTIONS) == SOCKET_ERROR)
+    if(socket_listen(sock, MAX_CONNECTIONS) == ROMANO_SOCKET_ERROR)
     {
         logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", error_get_last_from_system());
         socket_free(sock);
@@ -58,7 +58,7 @@ void socket_loop(void)
     {
         Socket new_connection = socket_accept(sock, NULL, NULL);
 
-        if(new_connection == INVALID_SOCKET)
+        if(new_connection == ROMANO_INVALID_SOCKET)
         {
             logger_log(LogLevel_Error, "Cannot accept socket (%d)", error_get_last_from_system());
             continue;
