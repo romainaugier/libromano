@@ -68,7 +68,7 @@ int main(void)
 
         client_socket = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-        if(client_socket == INVALID_SOCKET)
+        if(client_socket == ROMANO_INVALID_SOCKET)
         {
             logger_log(LogLevel_Warning, "Invalid socket (%d)", socket_get_error());
             continue;
@@ -88,7 +88,7 @@ int main(void)
 
         client_result = socket_connect(client_socket, (SockAddr*)&client_addr, sizeof(client_addr));
 
-        if(client_result == SOCKET_ERROR)
+        if(client_result == ROMANO_SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Invalid connection (%d)", socket_get_error());
             socket_free(client_socket);
@@ -97,7 +97,7 @@ int main(void)
 
         client_result = socket_send(client_socket, client_msg, (int)strlen(client_msg), 0);
 
-        if(client_result == SOCKET_ERROR)
+        if(client_result == ROMANO_SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Error during data send (%d)", socket_get_error());
             socket_free(client_socket);
@@ -106,7 +106,7 @@ int main(void)
 
         client_result = socket_shutdown(client_socket, SD_SEND);
 
-        if(client_result == SOCKET_ERROR)
+        if(client_result == ROMANO_SOCKET_ERROR)
         {
             logger_log(LogLevel_Warning, "Error during connection shutdown (%d)", socket_get_error());
             socket_free(client_socket);
