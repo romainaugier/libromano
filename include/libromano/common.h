@@ -113,6 +113,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* ssize_t */
+#if defined(ROMANO_LINUX)
+#include <sys/types.h>
+#elif defined(ROMANO_WIN)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+typedef long long ssize_t;
+#endif /* defined(ROMANO_LINUX) */
+
 #define ROMANO_BYTE_ORDER_UNDEFINED 0
 #define ROMANO_BYTE_ORDER_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
 #define ROMANO_BYTE_ORDER_BIG_ENDIAN __ORDER_BIG_ENDIAN__
