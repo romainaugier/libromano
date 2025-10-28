@@ -138,7 +138,7 @@ void* socket_server_main_loop(void* _socket_server)
 
     socket = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if(socket == INVALID_SOCKET)
+    if(socket == ROMANO_INVALID_SOCKET)
     {
         socket_server_log(socket_server, socket_get_error(), "Error during socket creation");
         return NULL;
@@ -171,7 +171,7 @@ void* socket_server_main_loop(void* _socket_server)
         }
     }
 
-    if(socket_bind(socket, (SockAddr*)&server, sizeof(server)) == SOCKET_ERROR)
+    if(socket_bind(socket, (SockAddr*)&server, sizeof(server)) == ROMANO_SOCKET_ERROR)
     {
         socket_free(socket);
         socket_server_log(socket_server, socket_get_error(), "Error during socket binding");
@@ -180,7 +180,7 @@ void* socket_server_main_loop(void* _socket_server)
 
     socket_server_log(socket_server, 0, "Server socket bound to port");
 
-    if(socket_listen(socket, socket_server->max_connections) == SOCKET_ERROR)
+    if(socket_listen(socket, socket_server->max_connections) == ROMANO_SOCKET_ERROR)
     {
         socket_free(socket);
         socket_server_log(socket_server, socket_get_error(), "Error during socket listening");
@@ -216,14 +216,14 @@ void* socket_server_main_loop(void* _socket_server)
 
         select_status = socket_select(socket + 1, &read_fds, NULL, NULL, &time_interval);
 
-        if(select_status == 0 || select_status == SOCKET_ERROR)
+        if(select_status == 0 || select_status == ROMANO_SOCKET_ERROR)
         {
             continue;
         }
 
         new_connection = socket_accept(socket, NULL, NULL);
 
-        if(new_connection == INVALID_SOCKET)
+        if(new_connection == ROMANO_INVALID_SOCKET)
         {
             socket_server_log(socket_server, socket_get_error(), "Cannot accept incoming connection");
             continue;

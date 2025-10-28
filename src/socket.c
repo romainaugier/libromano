@@ -7,10 +7,13 @@
 #include "libromano/logger.h"
 #include "libromano/error.h"
 
+#include <string.h>
+
 #if defined(ROMANO_WIN)
 static LONG g_init_count = 0;
 #elif defined(ROMANO_LINUX)
 #include <errno.h>
+#include <fcntl.h>
 #else
 #warning Sockets not defined on this platform
 #endif /* defined(ROMANO_WIN) */
@@ -56,7 +59,7 @@ void socket_set_timeout(Socket socket, uint32_t ms)
     setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof(tv));
 #else
     struct timeval tv;
-    tv.tv_sc = ms / 1000;
+    tv.tv_sec = ms / 1000;
     tv.tv_usec = (ms % 1000) * 1000;
 
     setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
