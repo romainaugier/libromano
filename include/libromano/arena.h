@@ -11,7 +11,7 @@
 
 /*
  * Basic memory arena structure, be careful if you want to push objects that have a size larger
- * than the block size you set 
+ * than the block size you set
  */
 
 ROMANO_CPP_ENTER
@@ -41,15 +41,16 @@ typedef struct
 /*
  * Initializes a new arena
  */
-ROMANO_API void arena_init(Arena* arena, const size_t block_size);
+ROMANO_API bool arena_init(Arena* arena, const size_t block_size);
 
 /*
- * Creates a new heap-allocated Arena and initializes it
+ * Creates a new heap-allocated Arena and initializes it. Returns NULL on failure
  */
 ROMANO_API Arena* arena_new(const size_t block_size);
 
 /*
- * Pushes a new element to the Arena, returns the adress for that element
+ * Pushes a new element to the Arena, returns the adress for that element.
+ * Returns NULL on failure (memory allocation failure)
  */
 ROMANO_API void* arena_push(Arena* arena, void* data, const size_t data_size);
 

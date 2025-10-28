@@ -3,9 +3,12 @@
 /* All rights reserved. */
 
 #include "libromano/arena.h"
+#include "libromano/error.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+extern ErrorCode g_current_error;
 
 ArenaBlock* arena_block_init(const size_t block_size)
 {
@@ -13,10 +16,11 @@ ArenaBlock* arena_block_init(const size_t block_size)
 
     void* addr = malloc(total_size);
 
-    ROMANO_ASSERT(addr != NULL, "Error during arena reallocation");
-
     if(addr == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
         return NULL;
+    }
 
     void* block_addr = (char*)addr + sizeof(ArenaBlock);
 
@@ -30,17 +34,29 @@ ArenaBlock* arena_block_init(const size_t block_size)
     return block;
 }
 
-void arena_init(Arena* arena, const size_t block_size)
+bool arena_init(Arena* arena, const size_t block_size)
 {
     arena->current_block = arena_block_init(block_size);
+
+    if(arena->current_block == NULL)
+        return false;
+
     arena->block_size = block_size;
     arena->capacity = block_size;
+
+    return true;
 }
 
 Arena* arena_new(const size_t block_size)
 {
     Arena* arena = (Arena*)calloc(1, sizeof(Arena));
-    arena_init(arena, block_size);
+
+    if(!arena_init(arena, block_size))
+    {
+        free(arena);
+        return NULL;
+    }
+
     return arena;
 }
 
@@ -50,20 +66,26 @@ ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena,
     return (arena->current_block->offset + new_size) >= arena->current_block->capacity;
 }
 
-void arena_resize(Arena* arena)
+bool arena_resize(Arena* arena)
 {
     ArenaBlock* new_block = arena_block_init(arena->block_size);
+
+    if(new_block == NULL)
+        return false;
 
     new_block->previous = arena->current_block;
 
     arena->current_block = new_block;
     arena->capacity += arena->block_size;
+
+    return true;
 }
 
 void* arena_push(Arena* arena, void* data, const size_t data_size)
 {
     if(arena_check_resize(arena, data_size))
-        arena_resize(arena);
+        if(!arena_resize(arena))
+            return NULL;
 
     void* data_address = (void*)((char*)arena->current_block->address + arena->current_block->offset);
 
