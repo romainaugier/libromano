@@ -8,30 +8,38 @@
 #define __LIBROMANO_HTTP
 
 #include "libromano/common.h"
+#include "libromano/arena.h"
+#include "libromano/socket.h"
+#include "libromano/buffer.h"
 
 ROMANO_CPP_ENTER
 
 typedef enum HTTPVersion {
-   HTTPVersion_1_1,
-   HTTPVersion_2,
-   HTTPVersion_3,
+    HTTPVersion_Invalid,
+    HTTPVersion_1_1,
+    HTTPVersion_2,
+    HTTPVersion_3,
 } HTTPVersion;
 
-typedef enum HTTPRequestMethod {
-    HTTPRequestMethod_POST,
-    HTTPRequestMethod_GET,
-    HTTPRequestMethod_DELETE,
-    HTTPRequestMethod_PUT,
-    HTTPRequestMethod_PATCH,
-    HTTPRequestMethod_HEAD,
-    HTTPRequestMethod_OPTIONS,
-    HTTPRequestMethod_TRACE,
-    HTTPRequestMethod_CONNECT,
-} HTTPRequestMethod;
+typedef enum HTTPMethod {
+    HTTPMethod_POST,
+    HTTPMethod_GET,
+    HTTPMethod_DELETE,
+    HTTPMethod_PUT,
+    HTTPMethod_PATCH,
+    HTTPMethod_HEAD,
+    HTTPMethod_OPTIONS,
+    HTTPMethod_TRACE,
+    HTTPMethod_CONNECT,
+} HTTPMethod;
 
 typedef enum HTTPContentType {
     HTTPContentType_ApplicationJson,
 } HTTPContentType;
+
+/**********/
+/* HEADER */
+/**********/
 
 typedef struct HTTPHeaderEntry {
     const char* key;
@@ -39,15 +47,104 @@ typedef struct HTTPHeaderEntry {
     struct HTTPHeaderEntry* next;
 } HTTPHeaderEntry;
 
-ROMANO_API void http_header_entry_init(HTTPHeaderEntry* entry,
-                                       const char* key,
-                                       const char* value);
+typedef struct HTTPHeader {
+    HTTPHeaderEntry* head;
+    HTTPHeaderEntry* tail;
+
+    Arena string_arena;
+    Arena entries_arena;
+} HTTPHeader;
+
+typedef struct HTTPHeaderIterator {
+    HTTPHeaderEntry* current;
+} HTTPHeaderIterator;
+
+ROMANO_API bool http_header_init(HTTPHeader* header);
+
+ROMANO_API void http_header_add_entry(HTTPHeader* header, const char* key, const char* value);
+
+ROMANO_API void http_header_iterator_init(HTTPHeaderIterator* iterator);
+
+ROMANO_API HTTPHeaderEntry* http_header_get_next(HTTPHeader* header, HTTPHeaderIterator* iterator);
+
+ROMANO_API void http_header_remove_entry(HTTPHeader* header, const char* key);
+
+ROMANO_API void http_header_release(HTTPHeader* header);
+
+/***********/
+/* REQUEST */
+/***********/
 
 typedef struct HTTPRequest {
     HTTPVersion version;
-    HTTPRequestMethod method;
+    HTTPMethod method;
     const char* endpoint;
+    HTTPHeader headers;
 } HTTPRequest;
+
+ROMANO_API bool http_request_init(HTTPRequest* request,
+                                  HTTPVersion version,
+                                  HTTPMethod method,
+                                  const char* endpoint);
+
+/*
+ *
+ */
+ROMANO_API bool http_request_send(char* request_body,
+                                  size_t request_body_sz,
+                                  HTTPRequest* response);
+
+ROMANO_API void http_request_release(HTTPRequest* request);
+
+typedef Buffer HTTPBuilder;
+
+/************/
+/* RESPONSE */
+/************/
+
+typedef struct HTTPResponse {
+    HTTPVersion version;
+    HTTPHeader headers;
+    int code;
+} HTTPResponse;
+
+ROMANO_API bool http_response_init(HTTPResponse* response);
+
+ROMANO_API void http_response_release(HTTPResponse* response);
+
+/***********/
+/* CONTEXT */
+/***********/
+
+typedef struct HTTPContext {
+    HTTPBuilder builder;
+    Buffer recv_buffer;
+    Socket socket;
+    const char* host;
+    int port;
+    SockAddrIn server;
+    bool keep_alive;
+    bool is_alive;
+    size_t last_used_timestamp;
+} HTTPContext;
+
+/*
+ * Initializes an http context to send request to the host.
+ * Make sure socket_context_init is called before
+ */
+ROMANO_API bool http_context_init(HTTPContext* ctx, const char* host, int port);
+
+/*
+ *
+ */
+ROMANO_API bool http_context_send_request(HTTPContext* ctx,
+                                          HTTPRequest* request,
+                                          HTTPResponse* response);
+
+/*
+ *
+ */
+ROMANO_API void http_context_release(HTTPContext* ctx);
 
 ROMANO_CPP_END
 

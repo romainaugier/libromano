@@ -48,7 +48,7 @@ int main(void)
 
     logger_log(LogLevel_Debug, "Starting socket server test");
 
-    socket_init_ctx();
+    socket_context_init();
 
     socket_server = socket_server_new(50111, 2, SocketServerFlags_IpMode_LocalHost);
 
@@ -136,7 +136,7 @@ int main(void)
 
     socket_server_free(socket_server);
 
-    socket_release_ctx();
+    socket_context_release();
 
     logger_release();
 

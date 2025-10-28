@@ -20,7 +20,7 @@ static LONG g_init_count = 0;
 
 extern ErrorCode g_current_error;
 
-bool socket_init_ctx(void)
+bool socket_context_init(void)
 {
 #if defined(ROMANO_WIN)
     WSADATA wsa_data;
@@ -112,17 +112,17 @@ int socket_shutdown(Socket s, int how)
     return shutdown(s, how);
 }
 
-size_t socket_send(Socket s, const void* buffer, size_t buffer_sz, int flags)
+ssize_t socket_send(Socket s, const void* buffer, size_t buffer_sz, int flags)
 {
     return (size_t)send(s, buffer, (int)buffer_sz, flags);
 }
 
-size_t socket_recv(Socket s, void* buffer, size_t buffer_sz, int flags)
+ssize_t socket_recv(Socket s, void* buffer, size_t buffer_sz, int flags)
 {
     return (size_t)recv(s, buffer, (int)buffer_sz, flags);
 }
 
-size_t socket_sendto(Socket s,
+ssize_t socket_sendto(Socket s,
                      const void *buffer,
                      size_t buffer_sz,
                      int flags,
@@ -132,7 +132,7 @@ size_t socket_sendto(Socket s,
     return (size_t)sendto(s, buffer, buffer_sz, flags, dst, dst_len);
 }
 
-size_t socket_recvfrom(Socket s,
+ssize_t socket_recvfrom(Socket s,
                        void *buffer,
                        size_t buffer_sz,
                        int flags,
@@ -411,7 +411,7 @@ void socket_addr_to_string(const SockAddrStorage* addr,
 #endif /* defined(ROMANO_WIN) */
 }
 
-void socket_release_ctx(void)
+void socket_context_release(void)
 {
 #if defined(ROMANO_WIN)
     if(InterlockedDecrement(&g_init_count) == 0)

@@ -59,7 +59,7 @@ typedef struct sockaddr SockAddr6;
 /*
  * Initialize the socket context, and returns true on success
  */
-ROMANO_API bool socket_init_ctx(void);
+ROMANO_API bool socket_context_init(void);
 
 /*
  * Creates a new socket
@@ -104,32 +104,32 @@ ROMANO_API int socket_shutdown(Socket s, int how);
 /*
  *
  */
-ROMANO_API size_t socket_send(Socket s, const void *buffer, size_t buffer_sz, int flags);
+ROMANO_API ssize_t socket_send(Socket s, const void *buffer, size_t buffer_sz, int flags);
 
 /*
  *
  */
-ROMANO_API size_t socket_recv(Socket s, void *buffer, size_t buffer_sz, int flags);
+ROMANO_API ssize_t socket_recv(Socket s, void *buffer, size_t buffer_sz, int flags);
 
 /*
  *
  */
-ROMANO_API size_t socket_sendto(Socket s,
-                                const void *buffer,
-                                size_t buffer_sz,
-                                int flags,
-                                const SockAddr *dst,
-                                SockLen dst_len);
+ROMANO_API ssize_t socket_sendto(Socket s,
+                                 const void *buffer,
+                                 size_t buffer_sz,
+                                 int flags,
+                                 const SockAddr *dst,
+                                 SockLen dst_len);
 
 /*
  *
  */
-ROMANO_API size_t socket_recvfrom(Socket s,
-                                  void *buffer,
-                                  size_t buffer_sz,
-                                  int flags,
-                                  SockAddr *src,
-                                  SockLen *src_len);
+ROMANO_API ssize_t socket_recvfrom(Socket s,
+                                   void *buffer,
+                                   size_t buffer_sz,
+                                   int flags,
+                                   SockAddr *src,
+                                   SockLen *src_len);
 
 /*
  *
@@ -202,7 +202,7 @@ ROMANO_API void socket_addr_to_string(const SockAddrStorage* addr,
 /*
  * Release the socket context
  */
-ROMANO_API void socket_release_ctx(void);
+ROMANO_API void socket_context_release(void);
 
 ROMANO_CPP_END
 

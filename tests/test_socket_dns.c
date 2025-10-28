@@ -10,7 +10,7 @@ int main(void)
     logger_init();
     logger_set_level(LogLevel_Debug);
 
-    if(!socket_init_ctx())
+    if(!socket_context_init())
     {
         logger_log_error("Cannot initialize socket context");
         return 1;
@@ -37,6 +37,8 @@ int main(void)
     }
 
     socket_dns_result_release(&res);
+
+    socket_context_release();
 
     logger_release();
 

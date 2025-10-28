@@ -20,14 +20,14 @@
 
 void socket_loop(void)
 {
-    socket_init_ctx();
+    socket_context_init();
 
     Socket sock = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(sock == INVALID_SOCKET)
     {
         logger_log(LogLevel_Fatal, "Cannot create socket (%d)", error_get_last_from_system());
-        socket_release_ctx();
+        socket_context_release();
         return;
     }
 
@@ -40,7 +40,7 @@ void socket_loop(void)
     {
         logger_log(LogLevel_Fatal, "Cannot bind socket (%d)", error_get_last_from_system());
         socket_free(sock);
-        socket_release_ctx();
+        socket_context_release();
         return;
     }
 
@@ -48,7 +48,7 @@ void socket_loop(void)
     {
         logger_log(LogLevel_Fatal, "Cannot listen socket (%d)", error_get_last_from_system());
         socket_free(sock);
-        socket_release_ctx();
+        socket_context_release();
         return;
     }
 

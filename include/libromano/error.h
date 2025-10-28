@@ -49,6 +49,11 @@ typedef enum ErrorCode {
     ErrorCode_RegexInvalidToken,
     ErrorCode_RegexUnexpectedTokens,
     ErrorCode_RegexUnknownOpCode,
+
+    /* Socket/HTTP/DNS errors */
+    ErrorCode_InvalidHTTPRequest,
+    ErrorCode_DNSCantFindHost,
+    ErrorCode_HTTPContextNotAlive,
 } ErrorCode;
 
 /*
