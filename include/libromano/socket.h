@@ -26,8 +26,14 @@ typedef FD_SET FdSet;
 typedef int SockLen;
 typedef SOCKADDR_IN6 SockAddrIn6;
 typedef SOCKADDR SockAddr6;
+
+#define SHUTDOWN_RECV SD_RECEIVE
+#define SHUTDOWN_SEND SD_SEND
+#define SHUTDOWN_ALL SD_BOTH
+
 #define ROMANO_INVALID_SOCKET INVALID_SOCKET
 #define ROMANO_SOCKET_ERROR SOCKET_ERROR
+
 #elif defined(ROMANO_LINUX)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -35,15 +41,6 @@ typedef SOCKADDR SockAddr6;
 #include <arpa/inet.h>
 #include <unistd.h> /* close */
 #include <netdb.h>  /* gethostbyname */
-
-#define ROMANO_INVALID_SOCKET (-1)
-#define ROMANO_SOCKET_ERROR (-1)
-
-#define closesocket(s) close(s)
-
-#define SD_SEND SHUT_WR
-#define SD_RECEIVE SHUT_RD
-#define SD_BOTH SHUT_RDWR
 
 typedef int Socket;
 typedef struct sockaddr_in SockAddrIn;
@@ -54,6 +51,15 @@ typedef fd_set FdSet;
 typedef socklen_t SockLen;
 typedef struct sockaddr_in6 SockAddrIn6;
 typedef struct sockaddr SockAddr6;
+
+#define ROMANO_INVALID_SOCKET (-1)
+#define ROMANO_SOCKET_ERROR (-1)
+
+#define closesocket(s) close(s)
+
+#define SHUTDOWN_RECV SHUT_RD
+#define SHUTDOWN_SEND SHUT_WR
+#define SHUTDOWN_ALL SHUT_RDWR
 #endif /* defined(ROMANO_WIN) */
 
 /*

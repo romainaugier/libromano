@@ -644,7 +644,7 @@ void http_context_disconnect(HTTPContext* ctx)
     if(!ctx->is_alive)
         return;
 
-    socket_shutdown(ctx->socket, 2);
+    socket_shutdown(ctx->socket, SHUTDOWN_ALL);
     socket_free(ctx->socket);
 
     ctx->is_alive = false;
