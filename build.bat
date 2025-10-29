@@ -1,8 +1,8 @@
 @echo off
 
-rem SPDX-License-Identifier: BSD-3-Clause 
-rem Copyright (c) 2023 - Present Romain Augier 
-rem All rights reserved. 
+rem SPDX-License-Identifier: BSD-3-Clause
+rem Copyright (c) 2023 - Present Romain Augier
+rem All rights reserved.
 
 rem Little utility batch script to build the library
 
@@ -60,7 +60,7 @@ if %errorlevel% neq 0 (
 )
 
 if %RUNTESTS% equ 1 (
-    ctest --output-on-failure
+    ctest --output-on-failure -C %BUILDTYPE%
 
     if %errorlevel% neq 0 (
         call :LogError "Error caught during CMake testing"
@@ -129,7 +129,7 @@ exit /B 0
 rem //////////////////////////////////
 
 rem //////////////////////////////////
-rem Little function to parse the install dir from the command line 
+rem Little function to parse the install dir from the command line
 :ParseInstallDir
 
 for /f "tokens=1* delims=:" %%a in ("%~1") do (
@@ -162,7 +162,7 @@ exit /B 0
 rem //////////////////////////////////
 
 rem //////////////////////////////////
-rem Little function to log warnings 
+rem Little function to log warnings
 :LogWarning
 
 echo [WARNING] : %~1
@@ -171,7 +171,7 @@ exit /B 0
 rem //////////////////////////////////
 
 rem //////////////////////////////////
-rem Little function to log infos 
+rem Little function to log infos
 :LogInfo
 
 echo [INFO] : %~1

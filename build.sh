@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# SPDX-License-Identifier: BSD-3-Clause 
-# Copyright (c) 2023 - Present Romain Augier 
-# All rights reserved. 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
 
 BUILDTYPE="Release"
 RUNTESTS=0
@@ -26,7 +26,7 @@ parse_args()
     [ "$1" == "--tests" ] && RUNTESTS=1
 
     [ "$1" == "--clean" ] && REMOVEOLDDIR=1
-    
+
     [ "$1" == "--install" ] && INSTALL=1
 
     [ "$1" == "--threadsan" ] && THREADSAN=1
@@ -124,7 +124,7 @@ cmake -S . -B build -DRUN_TESTS=$RUNTESTS \
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
-    exit 1 
+    exit 1
 fi
 
 cd build
@@ -138,8 +138,8 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ $RUNTESTS -eq 1 ]]; then
-    ctest --output-on-failure
-    
+    ctest --output-on-failure -C $BUILDTYPE
+
     if [[ $? -ne 0 ]]; then
         log_error "Error during CMake testing"
         cd ..
