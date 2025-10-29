@@ -104,7 +104,7 @@ int main(void)
             continue;
         }
 
-        client_result = socket_shutdown(client_socket, SD_SEND);
+        client_result = socket_shutdown(client_socket, SHUTDOWN_SEND);
 
         if(client_result == ROMANO_SOCKET_ERROR)
         {

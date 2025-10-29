@@ -24,7 +24,7 @@ void socket_loop(void)
 
     Socket sock = socket_new(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if(sock == INVALID_SOCKET)
+    if(sock == ROMANO_INVALID_SOCKET)
     {
         logger_log(LogLevel_Fatal, "Cannot create socket (%d)", error_get_last_from_system());
         socket_context_release();

@@ -5,6 +5,8 @@
 #include "libromano/buffer.h"
 #include "libromano/error.h"
 
+#include <string.h>
+
 extern ErrorCode g_current_error;
 
 bool buffer_init(Buffer* buffer, size_t initial_capacity)
