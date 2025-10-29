@@ -28,18 +28,45 @@ int main(void)
     }
 
     HTTPRequest req;
-    http_request_init(&req, HTTPVersion_1_1, HTTPMethod_GET, "/get");
-
-    http_header_add_entry(&req.headers, "User-Agent", "zclient");
-    http_header_add_entry(&req.headers, "Accept", "*/*");
-
-    HTTPResponse resp;
-    if(!http_context_send_request(&ctx, &req, &resp))
+    if(!http_request_init(&req, HTTPVersion_1_1, HTTPMethod_GET, "/get"))
     {
-        logger_log_error("Cannot send http request (%d)",
+        logger_log_error("Error while preparing http request (%d)",
                          error_get_last());
         return 1;
     }
+
+    http_header_add_entry(&req.headers, "User-Agent", 10, "zclient", 7);
+    http_header_add_entry(&req.headers, "Accept", 6, "*/*", 3);
+
+    HTTPResponse resp;
+    if(!http_response_init(&resp))
+    {
+        logger_log_error("Error while preparing http response (%d)",
+                         error_get_last());
+        return 1;
+    }
+
+    if(!http_context_send_request(&ctx, &req, &resp))
+    {
+        logger_log_error("Error while sending http request (%d)",
+                         error_get_last());
+        return 1;
+    }
+
+    HTTPHeaderIterator resp_iterator;
+    http_header_iterator_init(&resp_iterator);
+
+    logger_log_debug("HTTP Response headers:");
+
+    HTTPHeaderEntry* resp_entry;
+    while((resp_entry = http_header_get_next(&resp.headers, &resp_iterator)))
+    {
+        logger_log_debug("%s: %s", resp_entry->key, resp_entry->value);
+    }
+
+    logger_log_debug("HTTP Response content:");
+
+    logger_log_debug("\n%.*s", (int)resp.content_sz, resp.content);
 
     http_context_release(&ctx);
 

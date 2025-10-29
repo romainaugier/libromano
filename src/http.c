@@ -7,8 +7,6 @@
 #include "libromano/common.h"
 #include "libromano/error.h"
 #include "libromano/buffer.h"
-#include "libromano/logger.h"
-#include "libromano/string_algo.h"
 
 #include <string.h>
 
@@ -50,10 +48,10 @@ HTTPVersion http_version_from_string(const char* str, size_t str_sz)
     if(str_sz < 6)
         return HTTPVersion_Invalid;
 
-    if(strncmp(str, "HTTP/", str_sz) != 0)
+    if(strncmp(str, "HTTP/", 5) != 0)
         return HTTPVersion_Invalid;
 
-    return (HTTPVersion)(str[5] - '0' + 1);
+    return (HTTPVersion)(str[5] - '0');
 }
 
 /*
@@ -92,7 +90,7 @@ size_t http_method_as_strlen(HTTPMethod method)
         case HTTPMethod_OPTIONS: return 7;
         case HTTPMethod_TRACE: return 5;
         case HTTPMethod_CONNECT: return 7;
-        default: return 7;
+        default: return 0;
     }
 }
 
@@ -125,7 +123,7 @@ bool http_header_init(HTTPHeader* header)
     if(!arena_init(&header->entries_arena, 16 * sizeof(HTTPHeaderEntry)))
         return false;
 
-    return false;
+    return true;
 }
 
 void http_header_iterator_init(HTTPHeaderIterator* iterator)
@@ -135,13 +133,16 @@ void http_header_iterator_init(HTTPHeaderIterator* iterator)
     iterator->current = NULL;
 }
 
-void http_header_add_entry(HTTPHeader* header, const char* key, const char* value)
+void http_header_add_entry(HTTPHeader* header,
+                           const char* key,
+                           size_t key_sz,
+                           const char* value,
+                           size_t value_sz)
 {
     HTTPHeaderEntry* entry;
     char* internal_key;
     char* internal_value;
-    size_t key_sz;
-    size_t value_sz;
+
 
     ROMANO_ASSERT(header != NULL, "header is NULL");
     ROMANO_ASSERT(key != NULL, "key is NULL");
@@ -151,13 +152,21 @@ void http_header_add_entry(HTTPHeader* header, const char* key, const char* valu
                                          NULL,
                                          sizeof(HTTPHeaderEntry));
 
-    key_sz = strlen(key);
-    internal_key = (char*)arena_push(&header->string_arena, NULL, (key_sz + 1) * sizeof(char));
+    if(key_sz == 0)
+        key_sz = strlen(key);
+
+    internal_key = (char*)arena_push(&header->string_arena,
+                                     NULL,
+                                     (key_sz + 1) * sizeof(char));
     memcpy(internal_key, key, key_sz * sizeof(char));
     internal_key[key_sz] = '\0';
 
-    value_sz = strlen(value);
-    internal_value = (char*)arena_push(&header->string_arena, NULL, (value_sz + 1) * sizeof(char));
+    if(value_sz == 0)
+        value_sz = strlen(value);
+
+    internal_value = (char*)arena_push(&header->string_arena,
+                                       NULL,
+                                       (value_sz + 1) * sizeof(char));
     memcpy(internal_value, value, value_sz * sizeof(char));
     internal_value[value_sz] = '\0';
 
@@ -174,7 +183,8 @@ void http_header_add_entry(HTTPHeader* header, const char* key, const char* valu
     header->tail = entry;
 }
 
-HTTPHeaderEntry* http_header_get_next(HTTPHeader* header, HTTPHeaderIterator* iterator)
+HTTPHeaderEntry* http_header_get_next(HTTPHeader* header,
+                                      HTTPHeaderIterator* iterator)
 {
     ROMANO_ASSERT(header != NULL, "header is NULL");
     ROMANO_ASSERT(iterator != NULL, "iterator is NULL");
@@ -185,6 +195,24 @@ HTTPHeaderEntry* http_header_get_next(HTTPHeader* header, HTTPHeaderIterator* it
         iterator->current = iterator->current->next;
 
     return iterator->current == NULL ? NULL : iterator->current;
+}
+
+HTTPHeaderEntry* http_header_find(HTTPHeader* header, const char* key)
+{
+    HTTPHeaderEntry* entry;
+    HTTPHeaderIterator iterator;
+
+    ROMANO_ASSERT(header != NULL, "header is NULL");
+
+    http_header_iterator_init(&iterator);
+
+    while((entry = http_header_get_next(header, &iterator)))
+    {
+        if(strcmp(key, entry->key) == 0)
+            return entry;
+    }
+
+    return NULL;
 }
 
 void http_header_remove_entry(HTTPHeader* header, const char* key)
@@ -416,6 +444,8 @@ bool http_response_init(HTTPResponse* response)
         return false;
 
     response->code = 0;
+    response->content = NULL;
+    response->content_sz = 0;
 
     return true;
 }
@@ -431,8 +461,6 @@ ROMANO_FORCE_INLINE bool http_response_parser_skip_whitespace(HTTPResponseParser
     while(parser->start[parser->current++] != ' ')
         if(parser->current >= parser->sz)
             return false;
-
-    parser->current++;
 
     if(parser->current >= parser->sz)
         return false;
@@ -460,14 +488,60 @@ ROMANO_FORCE_INLINE bool http_response_parser_skip_crlf(HTTPResponseParser* pars
     return true;
 }
 
+ROMANO_FORCE_INLINE char* http_response_parser_parse_key(HTTPResponseParser* parser,
+                                                         size_t* key_sz)
+{
+    char* key_start;
+
+    if((parser->current + 2) >= parser->sz)
+        return NULL;
+
+    if(parser->start[parser->current] == '\r' &&
+       parser->start[parser->current + 1] == '\n')
+        return NULL;
+
+    key_start = (char*)(parser->start + parser->current);
+    *key_sz = 0;
+
+    while(parser->current < parser->sz &&
+          parser->start[parser->current++] != ':')
+        (*key_sz)++;
+
+    parser->current++;
+
+    return key_start;
+}
+
+ROMANO_FORCE_INLINE char* http_response_parser_parse_value(HTTPResponseParser* parser,
+                                                           size_t* value_sz)
+{
+    char* value_start;
+
+    value_start = (char*)(parser->start + parser->current);
+    *value_sz = 0;
+
+    while(parser->current < parser->sz &&
+          parser->start[parser->current++] != '\r')
+        (*value_sz)++;
+
+    parser->current++;
+
+    return value_start;
+}
+
 bool http_response_parse(HTTPResponse* response, const char* body, size_t body_sz)
 {
+    char* key;
+    size_t key_sz;
+    char* value;
+    size_t value_sz;
+
     HTTPResponseParser parser;
     parser.start = body;
     parser.current = 0;
     parser.sz = body_sz;
 
-    response->version = http_version_from_string(parser.start + parser.current, body_sz);
+    response->version = http_version_from_string(parser.start, body_sz);
 
     if(response->version == HTTPVersion_Invalid)
         return false;
@@ -477,8 +551,44 @@ bool http_response_parse(HTTPResponse* response, const char* body, size_t body_s
 
     response->code = atoi(parser.start + parser.current);
 
-    if(!http_response_parser_skip_whitespace(&parser))
+    if(!http_response_parser_skip_crlf(&parser))
         return false;
+
+    while(1)
+    {
+        key = http_response_parser_parse_key(&parser, &key_sz);
+
+        if(key == NULL)
+            break;
+
+        if(parser.current >= parser.sz)
+            return false;
+
+        value = http_response_parser_parse_value(&parser, &value_sz);
+
+        http_header_add_entry(&response->headers, key, key_sz, value, value_sz);
+    }
+
+    if(!http_response_parser_skip_crlf(&parser))
+        return false;
+
+    if(parser.current >= parser.sz)
+        return true;
+
+    response->content_sz = parser.sz - parser.current;
+    response->content = calloc(response->content_sz + 1, sizeof(char));
+
+    if(response->content == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return false;
+    }
+
+    memcpy(response->content,
+           parser.start + parser.current,
+           response->content_sz * sizeof(char));
+
+    response->content[response->content_sz] = '\0';
 
     return true;
 }
@@ -488,7 +598,14 @@ void http_response_release(HTTPResponse* response)
     ROMANO_ASSERT(response != NULL, "response is NULL");
 
     http_header_release(&response->headers);
+
+    if(response->content != NULL)
+        free(response->content);
+
+    response->content = NULL;
+    response->content_sz = 0;
 }
+
 
 /***********/
 /* CONTEXT */
@@ -512,7 +629,6 @@ bool http_context_connect(HTTPContext* ctx)
     if(socket_connect(ctx->socket, (SockAddr*)&ctx->server, sizeof(SockAddr)) < 0)
     {
         g_current_error = error_get_last_from_system();
-        socket_free(ctx->socket);
         return false;
     }
 
@@ -528,6 +644,9 @@ void http_context_disconnect(HTTPContext* ctx)
     if(!ctx->is_alive)
         return;
 
+    socket_shutdown(ctx->socket, 2);
+    socket_free(ctx->socket);
+
     ctx->is_alive = false;
 }
 
@@ -539,14 +658,12 @@ bool http_context_init(HTTPContext* ctx, const char* host, int port)
 
     if(!socket_resolve_dns_ipv4(host, &res))
     {
-        socket_free(ctx->socket);
         return false;
     }
 
     if(socket_dns_result_get_count(&res) == 0)
     {
         g_current_error = ErrorCode_DNSCantFindHost;
-        socket_free(ctx->socket);
         return false;
     }
 
@@ -583,6 +700,11 @@ bool http_context_init(HTTPContext* ctx, const char* host, int port)
     return true;
 }
 
+bool http_context_is_alive(HTTPContext* ctx)
+{
+    return ctx->is_alive;
+}
+
 #define HTTP_RESPONSE_BUFFER_SZ 512
 
 bool http_context_send_request(HTTPContext *ctx,
@@ -594,6 +716,7 @@ bool http_context_send_request(HTTPContext *ctx,
     ssize_t sent_sz;
     ssize_t recv_sz;
     const char* headers_end;
+    HTTPHeaderEntry* resp_entry;
 
     ROMANO_ASSERT(ctx != NULL, "ctx is NULL");
     ROMANO_ASSERT(request != NULL, "request is NULL");
@@ -605,7 +728,7 @@ bool http_context_send_request(HTTPContext *ctx,
         return false;
     }
 
-    http_header_add_entry(&request->headers, "Host", ctx->host);
+    http_header_add_entry(&request->headers, "Host", 4, ctx->host, 0);
 
     http_builder_reset(&ctx->builder);
 
@@ -638,24 +761,27 @@ bool http_context_send_request(HTTPContext *ctx,
                               HTTP_RESPONSE_BUFFER_SZ,
                               0);
 
-        if(recv_sz <= 0)
+        if(recv_sz < 0)
             return false;
 
         buffer_emplace_size(&ctx->recv_buffer, recv_sz);
 
-        headers_end = strstrn((char*)buffer_front(&ctx->recv_buffer),
-                              buffer_size(&ctx->recv_buffer),
-                              "\r\n\r\n",
-                              4);
-
-        if(headers_end != NULL)
+        if(recv_sz < HTTP_RESPONSE_BUFFER_SZ)
             break;
     }
 
     if(!buffer_append(&ctx->recv_buffer, "\0", 1))
         return false;
 
-    printf("%s", (char*)buffer_front(&ctx->recv_buffer));
+    if(!http_response_parse(response,
+                            (const char*)buffer_front(&ctx->recv_buffer),
+                            buffer_size(&ctx->recv_buffer)))
+        return false;
+
+    resp_entry = http_header_find(&response->headers, "Connection");
+
+    if(resp_entry != NULL && strcmp(resp_entry->value, "close"))
+        http_context_disconnect(ctx);
 
     return true;
 }
@@ -665,9 +791,7 @@ void http_context_release(HTTPContext* ctx)
     ROMANO_ASSERT(ctx != NULL, "ctx is NULL");
 
     if(ctx->is_alive)
-        socket_free(ctx->socket);
-
-    ctx->is_alive = false;
+        http_context_disconnect(ctx);
 
     http_builder_release(&ctx->builder);
 

@@ -61,11 +61,19 @@ typedef struct HTTPHeaderIterator {
 
 ROMANO_API bool http_header_init(HTTPHeader* header);
 
-ROMANO_API void http_header_add_entry(HTTPHeader* header, const char* key, const char* value);
+ROMANO_API void http_header_add_entry(HTTPHeader* header,
+                                      const char* key,
+                                      size_t key_sz,
+                                      const char* value,
+                                      size_t value_sz);
 
 ROMANO_API void http_header_iterator_init(HTTPHeaderIterator* iterator);
 
-ROMANO_API HTTPHeaderEntry* http_header_get_next(HTTPHeader* header, HTTPHeaderIterator* iterator);
+ROMANO_API HTTPHeaderEntry* http_header_get_next(HTTPHeader* header,
+                                                 HTTPHeaderIterator* iterator);
+
+ROMANO_API HTTPHeaderEntry* http_header_find(HTTPHeader* header,
+                                             const char* key);
 
 ROMANO_API void http_header_remove_entry(HTTPHeader* header, const char* key);
 
@@ -106,10 +114,18 @@ typedef struct HTTPResponse {
     HTTPVersion version;
     HTTPHeader headers;
     int code;
+    char* content;
+    size_t content_sz;
 } HTTPResponse;
 
+/*
+ * Returns false on failure (memory allocation error)
+ */
 ROMANO_API bool http_response_init(HTTPResponse* response);
 
+/*
+ *
+ */
 ROMANO_API void http_response_release(HTTPResponse* response);
 
 /***********/
@@ -134,8 +150,10 @@ typedef struct HTTPContext {
  */
 ROMANO_API bool http_context_init(HTTPContext* ctx, const char* host, int port);
 
+ROMANO_API bool http_context_is_alive(HTTPContext* ctx);
+
 /*
- *
+ * Make sure to initialize the response before passing it (http_response_init)
  */
 ROMANO_API bool http_context_send_request(HTTPContext* ctx,
                                           HTTPRequest* request,
