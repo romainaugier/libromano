@@ -54,6 +54,11 @@ typedef enum ErrorCode {
     ErrorCode_InvalidHTTPRequest,
     ErrorCode_DNSCantFindHost,
     ErrorCode_HTTPContextNotAlive,
+
+    /* CLI Parser errors */
+    ErrorCode_CLIUnknownArgument,
+    ErrorCode_CLIInvalidArgumentType,
+    ErrorCode_CLIInvalidStringArgument,
 } ErrorCode;
 
 /*

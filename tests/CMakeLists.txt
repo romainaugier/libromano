@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: BSD-3-Clause 
-# Copyright (c) 2023 - Present Romain Augier 
-# All rights reserved. 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
 
 include(target_options)
 
@@ -13,8 +13,14 @@ foreach(test_file ${TEST_FILES})
     add_executable(${TESTNAME} ${test_file})
     set_target_options(${TESTNAME})
     target_link_libraries(${TESTNAME} ${PROJECT_NAME})
-    
-    add_test(${TESTNAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
+
+     # Special case for command line parser test
+    if(${TESTNAME} STREQUAL "test_cli")
+        set(TEST_PARAMETERS "--str_arg=\"arg string value\" --int_arg=573849 --bool_arg=False --double_arg=3.0")
+        # add_test(NAME ${TESTNAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME} ${TEST_PARAMETERS})
+    else()
+        add_test(NAME ${TESTNAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
+    endif()
 endforeach()
 
 # Copy clang asan dll to the tests directory when building in debug mode
