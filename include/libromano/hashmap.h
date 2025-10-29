@@ -30,13 +30,16 @@ typedef uint32_t HashMapIterator;
 
 typedef uint32_t (*hashmap_hash_func)(const void*, const size_t, const uint32_t);
 
+/*
+ * Returns NULL on failure (i.e memory allocation error)
+ */
 ROMANO_API HashMap* hashmap_new(size_t initial_capacity);
 
 ROMANO_API size_t hashmap_size(HashMap* hashmap);
 
 ROMANO_API size_t hashmap_capacity(HashMap* hashmap);
 
-ROMANO_API void hashmap_set_hash_func(HashMap* hashmap, 
+ROMANO_API void hashmap_set_hash_func(HashMap* hashmap,
                                       hashmap_hash_func func);
 
 ROMANO_API void hashmap_insert(HashMap* hashmap,

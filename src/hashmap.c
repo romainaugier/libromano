@@ -6,6 +6,9 @@
 #include "libromano/math/common32.h"
 #include "libromano/bit.h"
 #include "libromano/random.h"
+#include "libromano/error.h"
+
+extern ErrorCode g_current_error;
 
 /* HashMap */
 
@@ -341,6 +344,13 @@ void hashmap_grow(HashMap* hashmap,
 HashMap* hashmap_new(size_t initial_capacity)
 {
     HashMap* hashmap = (HashMap*)malloc(sizeof(HashMap));
+
+    if(hashmap == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return NULL;
+    }
+
     hashmap->buckets = NULL;
     hashmap->hash_func = hash_murmur3;
     hashmap->size = 0;
