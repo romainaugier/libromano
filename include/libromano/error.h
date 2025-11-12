@@ -56,6 +56,7 @@ typedef enum ErrorCode {
     ErrorCode_HTTPContextNotAlive,
 
     /* CLI Parser errors */
+    ErrorCode_CLIMalformedArgument,
     ErrorCode_CLIUnknownArgument,
     ErrorCode_CLIInvalidArgumentType,
     ErrorCode_CLIInvalidStringArgument,

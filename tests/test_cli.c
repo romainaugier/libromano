@@ -53,23 +53,19 @@ int main(int argc, char** argv)
 
     int64_t* i64_arg = cli_parser_arg_get_i64(&parser, "int_arg", 0);
     ROMANO_ASSERT(i64_arg != NULL, "i64_arg is NULL");
-
     logger_log_debug("int_arg: %ll", *i64_arg);
 
     double* f64_arg = cli_parser_arg_get_f64(&parser, "double_arg", 0);
     ROMANO_ASSERT(f64_arg != NULL, "f64_arg is NULL");
-
     logger_log_debug("double_arg: %f", *f64_arg);
 
     size_t str_arg_sz;
     char* str_arg = cli_parser_arg_get_str(&parser, "str_arg", 0, &str_arg_sz);
     ROMANO_ASSERT(str_arg != NULL, "str_arg is NULL");
-
     logger_log_debug("str_arg: %s", str_arg);
 
     bool* bool_arg = cli_parser_arg_get_bool(&parser, "bool_arg", 0);
     ROMANO_ASSERT(bool_arg != NULL, "bool_arg is NULL");
-
     logger_log_debug("bool_arg: %s", *bool_arg ? "true" : "false");
 
     logger_log_info("Finished cli test");

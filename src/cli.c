@@ -125,16 +125,22 @@ bool cli_parser_parse_argument(CLIParser* parser, char* arg_str)
         arg_str++;
 
     if(*arg_str == '\0')
+    {
+        g_current_error = ErrorCode_CLIMalformedArgument;
         return false;
+    }
 
     arg_name = arg_str;
     arg_name_sz = 0;
 
-    while(*arg_str != '\0' && (*arg_str)++ != '=')
+    while(*arg_str != '\0' && *(arg_str++) != '=')
         arg_name_sz++;
 
     if(*arg_str == '\0')
+    {
+        g_current_error = ErrorCode_CLIMalformedArgument;
         return false;
+    }
 
     arg = (CLIArg*)hashmap_get(parser->args_map,
                                arg_name,
@@ -158,20 +164,14 @@ bool cli_parser_parse_argument(CLIParser* parser, char* arg_str)
         case CLIArgType_Str:
         {
             if(*arg_str == '"')
-            {
-                g_current_error = ErrorCode_CLIInvalidStringArgument;
-                return false;
-            }
+                arg_str++;
 
             str_sz = 0;
 
             str_start = arg_str;
 
-            while(*arg_str != '\0' && (*arg_str)++ != '"')
+            while(*arg_str != '\0' && *(arg_str++) != '"')
                 str_sz++;
-
-            if(*arg_str == '\0')
-                return false;
 
             arg->data.str = (char*)calloc(str_sz + 1, sizeof(char));
 
@@ -208,6 +208,7 @@ bool cli_parser_parse_argument(CLIParser* parser, char* arg_str)
         }
         default:
         {
+            g_current_error = ErrorCode_CLIInvalidArgumentType;
             return false;
         }
     }
