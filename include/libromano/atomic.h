@@ -9,8 +9,6 @@
 
 #include "libromano/common.h"
 
-#include <intrin.h>
-
 #if defined(ROMANO_WIN)
 #include "Windows.h"
 #endif /* defined(ROMANO_WIN) */
