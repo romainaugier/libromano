@@ -12,7 +12,7 @@ void* func(void* data)
 
     for(i = 0; i < 10000; i++)
     {
-        atomic_add_32((Atomic32*)data, 1);
+        atomic_add_32((Atomic32*)data, 1, MemoryOrder_Relax);
     }
 
     return NULL;
@@ -25,14 +25,14 @@ void* cmpxchg_func1(void* data)
 
     while(1)
     {
-        if(atomic_compare_exchange_32((Atomic32*)data, 2, 1))
+        if(atomic_compare_exchange_strong_32((Atomic32*)data, 2, 1, MemoryOrder_SeqCst))
         {
             logger_log(LogLevel_Info, "Atomic set to 2 from tid: %zu", id);
             break;
         }
     }
 
-    
+
 
     return NULL;
 }
@@ -44,12 +44,12 @@ void* cmpxchg_func2(void* data)
 
     thread_sleep(250);
 
-    atomic_compare_exchange_32((Atomic32*)data, 1, 0);
+    atomic_compare_exchange_strong_32((Atomic32*)data, 1, 0, MemoryOrder_SeqCst);
     logger_log(LogLevel_Info, "Atomic set to 1 from tid: %zu", id);
 
     while(1)
     {
-        if(atomic_compare_exchange_32((Atomic32*)data, 3, 2))
+        if(atomic_compare_exchange_strong_32((Atomic32*)data, 3, 2, MemoryOrder_SeqCst))
         {
             logger_log(LogLevel_Info, "Atomic set to 3 from tid: %zu", id);
             break;
@@ -67,7 +67,7 @@ void* xchg_func(void* data)
 
     for(i = 0; i < 1000; i++)
     {
-        atomic_exchange_32((Atomic32*)data, i);
+        atomic_exchange_32((Atomic32*)data, i, MemoryOrder_Relax);
     }
 
     return NULL;

@@ -35,13 +35,13 @@ static const char* const levels_as_str[] = { "FATAL", "ERROR", "WARNING", "INFO"
 
 void logger_lock_acquire(void)
 {
-    while(!atomic_compare_exchange_32((Atomic32*)&g_logger_lock, 1, 0))
+    while(!atomic_compare_exchange_strong_32((Atomic32*)&g_logger_lock, 1, 0, MemoryOrder_SeqCst))
         thread_yield();
 }
 
 void logger_lock_release(void)
 {
-    atomic_store_32((Atomic32*)&g_logger_lock, 0);
+    atomic_store_32((Atomic32*)&g_logger_lock, 0, MemoryOrder_Release);
 }
 
 void logger_init(void)
