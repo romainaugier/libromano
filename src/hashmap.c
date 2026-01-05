@@ -726,10 +726,17 @@ bool hashmap_iterate(HashMap* hashmap,
             continue;
         }
 
-        *key = bucket_get_key(&hashmap->buckets[i]);
-        *key_size = bucket_get_key_size(&hashmap->buckets[i]);
-        *value = bucket_get_value(&hashmap->buckets[i]);
-        *value_size = bucket_get_value_size(&hashmap->buckets[i]);
+        if(key != NULL)
+            *key = bucket_get_key(&hashmap->buckets[i]);
+
+        if(key_size != NULL)
+            *key_size = bucket_get_key_size(&hashmap->buckets[i]);
+
+        if(value != NULL)
+            *value = bucket_get_value(&hashmap->buckets[i]);
+
+        if(value_size != NULL)
+            *value_size = bucket_get_value_size(&hashmap->buckets[i]);
 
         *it = i + 1;
 
