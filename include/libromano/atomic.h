@@ -108,7 +108,7 @@ static ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest, Atomic32 
 #if defined(ROMANO_MSVC)
     _InlineInterlockedAdd((LONG*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    __atomic_sub_fetch(dest, value);
+    __atomic_sub_fetch(dest, value, mo);
 #endif /* defined(ROMANO_MSVC) */
 }
 
@@ -118,7 +118,7 @@ static ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest, Atomic64 
 #if defined(ROMANO_MSVC)
     _InlineInterlockedAdd64((LONG64*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    __atomic_fetch_sub(dest, value);
+    __atomic_sub_fetch(dest, value, mo);
 #endif /* defined(ROMANO_MSVC) */
 }
 
