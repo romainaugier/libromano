@@ -68,6 +68,10 @@ int main(void)
 
     logger_log_debug("\n%.*s", (int)resp.content_sz, resp.content);
 
+    http_request_release(&req);
+
+    http_response_release(&resp);
+
     http_context_release(&ctx);
 
     socket_context_release();

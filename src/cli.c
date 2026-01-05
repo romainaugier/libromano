@@ -349,5 +349,17 @@ void cli_parser_release(CLIParser* parser)
 {
     ROMANO_ASSERT(parser != NULL, "parser is NULL");
 
+    HashMapIterator it = 0;
+    void* key;
+    void* value;
+
+    while(hashmap_iterate(parser->args_map, &it, &key, NULL, &value, NULL))
+    {
+        CLIArg* arg = (CLIArg*)value;
+
+        if(arg->type == CLIArgType_Str)
+            free(arg->data.str);
+    }
+
     hashmap_free(parser->args_map);
 }

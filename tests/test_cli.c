@@ -68,6 +68,8 @@ int main(int argc, char** argv)
     ROMANO_ASSERT(bool_arg != NULL, "bool_arg is NULL");
     logger_log_debug("bool_arg: %s", *bool_arg ? "true" : "false");
 
+    cli_parser_release(&parser);
+
     logger_log_info("Finished cli test");
 
     logger_release();

@@ -681,6 +681,8 @@ bool http_context_init(HTTPContext* ctx, const char* host, int port)
            &((const SockAddrIn*)socket_dns_result_get(&res, 0))->sin_addr,
            sizeof(InAddr));
 
+    socket_dns_result_release(&res);
+
     if(!http_context_connect(ctx))
         return false;
 
