@@ -391,6 +391,8 @@ void* threadpool_worker_func(void* arg)
         {
             ROMANO_ASSERT(work != NULL && work->func != NULL, "Invalid work item");
 
+            atomic_thread_fence(MemoryOrder_Acquire);
+
             atomic_add_32((Atomic32*)&threadpool->working_threads_count, 1, MemoryOrder_Relax);
 
             work->func(work->arg);
@@ -478,6 +480,8 @@ bool threadpool_work_add(ThreadPool* threadpool,
         work_free(work);
         return false;
     }
+
+    atomic_thread_fence(MemoryOrder_Release);
 
     return true;
 }
