@@ -24,6 +24,7 @@ jobs:
       - name: Build concurrentqueue
         run: |
           cd ext/concurrentqueue
+          git pull origin master
           ./build_c_api.bat
           cd ..
 
