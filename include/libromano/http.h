@@ -12,6 +12,8 @@
 #include "libromano/socket.h"
 #include "libromano/buffer.h"
 
+#if ROMANO_HTTP
+
 ROMANO_CPP_ENTER
 
 typedef enum HTTPVersion {
@@ -165,5 +167,7 @@ ROMANO_API bool http_context_send_request(HTTPContext* ctx,
 ROMANO_API void http_context_release(HTTPContext* ctx);
 
 ROMANO_CPP_END
+
+#endif /* ROMANO_HTTP */
 
 #endif /* !defined(__LIBROMANO_HTTP) */

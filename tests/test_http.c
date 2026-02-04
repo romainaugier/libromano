@@ -2,6 +2,8 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#if ROMANO_HTTP
+
 #include "libromano/http.h"
 #include "libromano/logger.h"
 #include "libromano/error.h"
@@ -80,3 +82,12 @@ int main(void)
 
     return 0;
 }
+
+#else
+
+int main(void)
+{
+    return 0;
+}
+
+#endif /* ROMANO_HTTP */

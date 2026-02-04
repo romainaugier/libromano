@@ -10,6 +10,8 @@
 
 #include <string.h>
 
+#if ROMANO_HTTP
+
 #define HTTP_PORT 80
 #define HTTPS_PORT 443
 
@@ -799,3 +801,5 @@ void http_context_release(HTTPContext* ctx)
 
     buffer_release(&ctx->recv_buffer);
 }
+
+#endif /* ROMANO_HTTP */

@@ -37,6 +37,8 @@ void logger_lock_acquire(void)
 {
     while(!atomic_compare_exchange_strong_32((Atomic32*)&g_logger_lock, 1, 0, MemoryOrder_SeqCst))
         thread_yield();
+
+    atomic_thread_fence(MemoryOrder_SeqCst);
 }
 
 void logger_lock_release(void)
@@ -92,7 +94,7 @@ void logger_enable_file(const char* file_path)
     g_log_mode |= LogMode_File;
     g_log_file_path = file_path;
 
-    /* _log_file = fopen(_log_file_path, "a"); */
+    g_log_file = fopen(g_log_file_path, "a");
 
     logger_lock_release();
 }
@@ -102,6 +104,12 @@ void logger_disable_file(void)
     logger_lock_acquire();
 
     g_log_mode &= ~LogMode_File;
+
+    if(g_log_file != NULL)
+    {
+        fclose(g_log_file);
+        g_log_file = NULL;
+    }
 
     logger_lock_release();
 }
@@ -157,8 +165,6 @@ void logger_log(log_level level, const char* format, ...)
 
         if(g_log_mode & LogMode_File)
         {
-            g_log_file = fopen(g_log_file_path, "a");
-
             ROMANO_ASSERT(g_log_file != NULL, "Log file has not been created");
 
             fprintf(g_log_file,
@@ -169,8 +175,6 @@ void logger_log(log_level level, const char* format, ...)
                     local_time.tm_sec,
                     current_time.tv_usec / 1000,
                     buffer);
-
-            fclose(g_log_file);
         }
     }
 
@@ -183,7 +187,9 @@ void logger_release(void)
 
     if(g_log_file != NULL)
     {
-        /* fclose(_log_file); */
+        fflush(g_log_file);
+        fclose(g_log_file);
+        g_log_file = NULL;
     }
 
     if(g_log_mode & LogMode_Console)

@@ -22,7 +22,7 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_BUILD_SHARED)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_OPENCL=${ROMANO_HAS_OPENCL})
-
+target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_HTTP=${ROMANO_HAS_HTTP})
 
 target_include_directories(${PROJECT_NAME}
                            PUBLIC
