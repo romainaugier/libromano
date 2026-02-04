@@ -23,7 +23,7 @@ jobs:
 
       - name: Build concurrentqueue
         run: |
-          cd concurrentqueue
+          cd ext/concurrentqueue
           ./build_c_api.sh
           cd ..
 
