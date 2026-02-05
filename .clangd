@@ -4,3 +4,4 @@ CompileFlags:
     - "-Iconcurrentqueue/cqinstall/include"
     - "-DDEBUG_BUILD=1"
     - "-DTESTS_DATA_DIR=../tests_data"
+    - "-D__ROMANO_DEFINE_ERROR_EXTERNS"
