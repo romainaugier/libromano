@@ -4,6 +4,8 @@
 
 #include "libromano/error.h"
 
+#include <string.h>
+
 ErrorCode g_current_error = ErrorCode_NoError;
 
 size_t g_context_cap = 255;

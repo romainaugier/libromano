@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 
-typedef struct CLIArg {
+struct CLIArg {
     size_t flags;
 
     union {
@@ -24,7 +24,7 @@ typedef struct CLIArg {
     char* help_text;
     char short_name;
     char* name;
-} CLIArg;
+};
 
 #define CLI_ARG_GET_MODE(arg) ((arg).flags & 0x3)
 #define CLI_ARG_SET_MODE(arg, mode) ((arg).flags = ((arg).flags & ~0x3) | ((mode) & 0x3))
