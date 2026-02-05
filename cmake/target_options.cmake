@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: BSD-3-Clause 
-# Copyright (c) 2023 - Present Romain Augier 
-# All rights reserved. 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
 
 function(set_target_options target_name)
     if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
@@ -76,7 +76,8 @@ function(set_target_options target_name)
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
 
         # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
-        target_link_options(${target_name} PRIVATE /ignore:4300 /NODEFAULTLIB:library $<$<CONFIG:Debug,RelWithDebInfo>:/PROFILE /OPT:NOREF>)
+        # 4075 is "ignoring '/INCREMENTAL' due to '/PROFILE' specification", again we do not care
+        target_link_options(${target_name} PUBLIC /ignore:4075 /ignore:4300 /NODEFAULTLIB:library $<$<CONFIG:Debug,RelWithDebInfo>:/PROFILE /OPT:NOREF>)
     endif()
 
     # Provides the macro definition DEBUG_BUILD
