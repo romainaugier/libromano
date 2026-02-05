@@ -16,7 +16,7 @@ foreach(test_file ${TEST_FILES})
 
      # Special case for command line parser test
     if(${TESTNAME} STREQUAL "test_cli")
-        set(TEST_PARAMETERS "--str_arg=\"arg string value\" --int_arg=573849 --bool_arg=False --double_arg=3.0")
+        set(TEST_PARAMETERS input.txt output.txt --verbose -n=10 --threshold 0.5 --enable-feature)
         add_test(NAME ${TESTNAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME} ${TEST_PARAMETERS})
     else()
         add_test(NAME ${TESTNAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})

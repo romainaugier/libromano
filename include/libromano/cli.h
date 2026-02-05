@@ -9,8 +9,15 @@
 
 #include "libromano/common.h"
 #include "libromano/hashmap.h"
+#include "libromano/vector.h"
 
 ROMANO_CPP_ENTER
+
+typedef enum {
+    CLIArgMode_Positional,
+    CLIArgMode_Named,
+    CLIArgMode_Optional,
+} CLIArgMode;
 
 typedef enum {
     CLIArgType_Str,
@@ -27,17 +34,34 @@ typedef enum {
     CLIArgAction_Count,
 } CLIArgAction;
 
+typedef struct CLIArg CLIArg;
+
 typedef struct CLIParser {
     HashMap* args_map;
+    HashMap* short_names_map;
+    Vector positional_args;
+    char* program_name;
+    char* description;
 } CLIParser;
 
 ROMANO_API bool cli_parser_init(CLIParser* parser);
 
+#define CLI_NO_SHORT_NAME 0
+
 ROMANO_API bool cli_parser_add_arg(CLIParser* parser,
                                    const char* name,
                                    size_t name_sz,
+                                   char short_name,
+                                   CLIArgMode mode,
                                    CLIArgType type,
-                                   CLIArgAction action);
+                                   CLIArgAction action,
+                                   const char* help_text);
+
+ROMANO_API void cli_parser_set_program_info(CLIParser* parser,
+                                            const char* program_name,
+                                            const char* description);
+
+ROMANO_API void cli_parser_print_help(CLIParser* parser);
 
 ROMANO_API bool cli_parser_parse(CLIParser* parser, int argc, char** argv);
 

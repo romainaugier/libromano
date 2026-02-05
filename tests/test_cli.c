@@ -8,65 +8,122 @@
 
 int main(int argc, char** argv)
 {
+    CLIParser parser;
+    int64_t* num_iterations;
+    double* threshold;
+    bool* verbose;
+    bool* enable_feature;
+    char* input_file;
+    char* output_file;
+
     logger_init();
     logger_set_level(LogLevel_Debug);
 
     logger_log_info("Starting cli test");
 
-    CLIParser parser;
-
     if(!cli_parser_init(&parser))
     {
-        logger_log_error("Could not initialize cli parser");
+        logger_log_error("Failed to initialize parser");
         return 1;
     }
 
-    if(!cli_parser_add_arg(&parser, "int_arg", 0, CLIArgType_Int, CLIArgAction_Store))
-    {
-        logger_log_error("Could not add argument to cli parser");
-        return 1;
-    }
+    cli_parser_set_program_info(&parser,
+                                argv[0],
+                                "Test application demonstrating CLI parsing");
 
-    if(!cli_parser_add_arg(&parser, "double_arg", 0, CLIArgType_Float, CLIArgAction_Store))
-    {
-        logger_log_error("Could not add argument to cli parser");
-        return 1;
-    }
+    cli_parser_add_arg(&parser,
+                      "input",
+                      0,
+                      CLI_NO_SHORT_NAME,
+                      CLIArgMode_Positional,
+                      CLIArgType_Str,
+                      CLIArgAction_Store,
+                      "Input file path");
 
-    if(!cli_parser_add_arg(&parser, "str_arg", 0, CLIArgType_Str, CLIArgAction_Store))
-    {
-        logger_log_error("Could not add argument to cli parser");
-        return 1;
-    }
+    cli_parser_add_arg(&parser,
+                      "output",
+                      0,
+                      CLI_NO_SHORT_NAME,
+                      CLIArgMode_Positional,
+                      CLIArgType_Str,
+                      CLIArgAction_Store,
+                      "Output file path");
 
-    if(!cli_parser_add_arg(&parser, "bool_arg", 0, CLIArgType_Bool, CLIArgAction_Store))
-    {
-        logger_log_error("Could not add argument to cli parser");
-        return 1;
-    }
+    cli_parser_add_arg(&parser,
+                      "num-iterations",
+                      0,
+                      'n',
+                      CLIArgMode_Optional,
+                      CLIArgType_Int,
+                      CLIArgAction_Store,
+                      "Number of iterations to perform");
+
+    cli_parser_add_arg(&parser,
+                      "threshold",
+                      0,
+                      't',
+                      CLIArgMode_Optional,
+                      CLIArgType_Float,
+                      CLIArgAction_Store,
+                      "Threshold value (0.0 to 1.0)");
+
+    cli_parser_add_arg(&parser,
+                      "verbose",
+                      0,
+                      'v',
+                      CLIArgMode_Optional,
+                      CLIArgType_Bool,
+                      CLIArgAction_StoreTrue,
+                      "Enable verbose output");
+
+    cli_parser_add_arg(&parser,
+                      "enable-feature",
+                      0,
+                      CLI_NO_SHORT_NAME,
+                      CLIArgMode_Optional,
+                      CLIArgType_Bool,
+                      CLIArgAction_StoreTrue,
+                      "Enable experimental feature");
 
     if(!cli_parser_parse(&parser, argc, argv))
     {
-        logger_log_error("Could not parse arguments (%d)", error_get_last());
+        logger_log_error("Failed to parse CLI arguments, check the log for more information");
+        logger_log_error("Error: %s (%s)",
+                         error_str_get_last(),
+                         error_context_str() != NULL ? error_context_str() : "No context");
+
+        cli_parser_release(&parser);
+
         return 1;
     }
 
-    int64_t* i64_arg = cli_parser_arg_get_i64(&parser, "int_arg", 0);
-    ROMANO_ASSERT(i64_arg != NULL, "i64_arg is NULL");
-    logger_log_debug("int_arg: %ll", *i64_arg);
+    input_file = cli_parser_arg_get_str(&parser, "input", 0, NULL);
+    output_file = cli_parser_arg_get_str(&parser, "output", 0, NULL);
 
-    double* f64_arg = cli_parser_arg_get_f64(&parser, "double_arg", 0);
-    ROMANO_ASSERT(f64_arg != NULL, "f64_arg is NULL");
-    logger_log_debug("double_arg: %f", *f64_arg);
+    logger_log_debug("Input file: %s", input_file);
+    logger_log_debug("Output file: %s", output_file);
 
-    size_t str_arg_sz;
-    char* str_arg = cli_parser_arg_get_str(&parser, "str_arg", 0, &str_arg_sz);
-    ROMANO_ASSERT(str_arg != NULL, "str_arg is NULL");
-    logger_log_debug("str_arg: %s", str_arg);
+    if(cli_parser_has_arg(&parser, "num-iterations", 0))
+    {
+        num_iterations = cli_parser_arg_get_i64(&parser, "num-iterations", 0);
+        logger_log_debug("Number of iterations: %lld", (long long)*num_iterations);
+    }
 
-    bool* bool_arg = cli_parser_arg_get_bool(&parser, "bool_arg", 0);
-    ROMANO_ASSERT(bool_arg != NULL, "bool_arg is NULL");
-    logger_log_debug("bool_arg: %s", *bool_arg ? "true" : "false");
+    if(cli_parser_has_arg(&parser, "threshold", 0))
+    {
+        threshold = cli_parser_arg_get_f64(&parser, "threshold", 0);
+        logger_log_debug("Threshold: %f", *threshold);
+    }
+
+    verbose = cli_parser_arg_get_bool(&parser, "verbose", 0);
+
+    if(verbose != NULL && *verbose)
+        logger_log_debug("Verbose mode enabled");
+
+    enable_feature = cli_parser_arg_get_bool(&parser, "enable-feature", 0);
+
+    if(enable_feature != NULL && *enable_feature)
+        logger_log_debug("Experimental feature enabled");
 
     cli_parser_release(&parser);
 
