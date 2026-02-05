@@ -42,6 +42,7 @@ static ROMANO_FORCE_INLINE Atomic32 atomic_load_32(Atomic32* volatile dest,
                                                    MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return InterlockedOr((LONG*)dest, 0);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_load_n(dest, mo);
@@ -52,6 +53,7 @@ static ROMANO_FORCE_INLINE Atomic64 atomic_load_64(Atomic64* volatile dest,
                                                    MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return InterlockedOr64((LONG64*)dest, 0);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_load_n(dest, mo);
@@ -74,6 +76,7 @@ static ROMANO_FORCE_INLINE void atomic_store_64(Atomic64* volatile dest,
                                                 MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     InterlockedExchange64((LONG64*)dest, value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_store_n(dest, value, mo);
@@ -85,6 +88,7 @@ static ROMANO_FORCE_INLINE void atomic_add_32(Atomic32* volatile dest,
                                               MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     InterlockedAdd((LONG*)dest, value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_add_fetch(dest, value, mo);
@@ -96,6 +100,7 @@ static ROMANO_FORCE_INLINE void atomic_add_64(Atomic64* volatile dest,
                                               MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     InterlockedAdd64((LONG64*)dest, value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_add_fetch(dest, value, mo);
@@ -106,6 +111,7 @@ static ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest, Atomic32 
                                               MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     _InlineInterlockedAdd((LONG*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_sub_fetch(dest, value, mo);
@@ -116,6 +122,7 @@ static ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest, Atomic64 
                                               MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     _InlineInterlockedAdd64((LONG64*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_sub_fetch(dest, value, mo);
@@ -130,6 +137,7 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_32(Atomic32* volati
                                                                 MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange((LONG*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_compare_exchange_n(dest, &compare, exchange, true, mo, mo);
@@ -142,6 +150,7 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_32(Atomic32* vola
                                                                   MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange((LONG*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
@@ -154,6 +163,7 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_64(Atomic64* volati
                                                                 MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange64((LONG64*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
@@ -166,6 +176,7 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_64(Atomic64* vola
                                                                   MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange64((LONG64*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
@@ -177,6 +188,7 @@ static ROMANO_FORCE_INLINE Atomic32 atomic_exchange_32(Atomic32* volatile dest,
                                                        MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return _InterlockedExchange((LONG*)dest, exchange);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     Atomic32 ret;
@@ -190,6 +202,7 @@ static ROMANO_FORCE_INLINE Atomic64 atomic_exchange_64(Atomic64* volatile dest,
                                                        MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
     return _InterlockedExchange64((LONG64*)dest, exchange);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     Atomic64 ret;
