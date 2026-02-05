@@ -232,6 +232,8 @@ typedef long long ssize_t;
 #define dump_struct(s)
 #endif /* defined(ROMANO_CLANG) */
 
+#define ROMANO_STRLIT_AND_SZ(s) (s), (sizeof((s)) - 1)
+
 #if defined(DEBUG_BUILD)
 #define ROMANO_DEBUG 1
 #define ROMANO_ASSERT(expr, message) if(!(expr)) { fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); abort(); }
