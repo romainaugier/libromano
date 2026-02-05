@@ -51,7 +51,7 @@ typedef enum ErrorCode {
     ErrorCode_RegexUnknownOpCode,
 
     /* Socket/HTTP/DNS errors */
-    ErrorCode_InvalidHTTPRequest,
+    ErrorCode_HTTPInvalidRequest,
     ErrorCode_DNSCantFindHost,
     ErrorCode_HTTPContextNotAlive,
 
@@ -59,13 +59,38 @@ typedef enum ErrorCode {
     ErrorCode_CLIMalformedArgument,
     ErrorCode_CLIUnknownArgument,
     ErrorCode_CLIInvalidArgumentType,
-    ErrorCode_CLIInvalidStringArgument,
+    ErrorCode_CLIInvalidArgumentAction,
+    ErrorCode_CLITooManyPositionalArgs,
+    ErrorCode_CLIMissingPositionalArgs,
+    ErrorCode_CLIMissingRequiredArg,
 } ErrorCode;
+
+/* Reserved for internal use only */
+#if defined(__ROMANO_DEFINE_ERROR_EXTERNS)
+extern ErrorCode g_current_error;
+extern void error_set_context(const char* context, size_t context_sz);
+#endif /* defined(__ROMANO_DEFINE_ERROR_EXTERNS) */
 
 /*
  * Returns the last error from library calls
  */
 ROMANO_API ErrorCode error_get_last(void);
+
+/*
+ * Returns the error as a string
+ */
+ROMANO_API const char* error_str(ErrorCode code);
+
+/*
+ * Returns the context error string (to get more information)
+ * If not set, returns NULL
+ */
+ROMANO_API const char* error_context_str(void);
+
+/*
+ * Returns the last error from library calls as string
+ */
+ROMANO_API const char* error_str_get_last(void);
 
 /*
  * Returns the last error from system calls (GetLastError, errno...)
