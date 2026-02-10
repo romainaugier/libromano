@@ -46,7 +46,7 @@ typedef enum JsonTag {
 
 #define json_set_sz(tags, sz) \
     tags &= ~JSON_SZ_MASK;    \
-    tags &= (((uint64_t)sz && 0xFFFFFFFFULL) << 32);
+    tags |= (((uint64_t)sz & 0xFFFFFFFFULL) << 32);
 
 #define json_get_sz(tags) (((uint64_t)tags >> 32) & 0xFFFFFFFFULL)
 #define json_incr_sz(tags) ((tags += (1ULL << 32)))
@@ -274,7 +274,7 @@ void json_str_set(Json* json, JsonValue* value, const char* str)
     json_set_tags(value->tags, JsonTag_Str);
 
     str_sz = strlen(str);
-    str_ptr = arena_push(&json->string_arena, NULL, str_sz * sizeof(char));
+    str_ptr = arena_push(&json->string_arena, NULL, (str_sz + 1) * sizeof(char));
     memcpy(str_ptr, str, str_sz * sizeof(char));
     str_ptr[str_sz] = '\0';
 
@@ -472,7 +472,7 @@ void json_dict_append(Json* json, JsonValue* dict, const char* key, JsonValue* v
     if(!reference)
     {
         new_value = arena_push(&json->value_arena, NULL, sizeof(JsonValue));
-        memcpy(new_value, value, sizeof(JsonKeyValue));
+        memcpy(new_value, value, sizeof(JsonValue));
     }
 
     new_key_value = arena_push(&json->value_arena, NULL, sizeof(JsonKeyValue));
@@ -518,7 +518,7 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
     found = false;
     info = (JsonDictInfo*)dict->value.ptr;
 
-    iterator.current = (JsonDictElement*)(dict->value.ptr);
+    iterator.current = (JsonDictElement*)(info->head);
     previous = NULL;
 
     while(iterator.current != NULL)
