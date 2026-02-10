@@ -247,6 +247,8 @@ JsonValue* json_str_new(Json* json, const char* str)
     json_set_tags(value->tags, JsonTag_Str);
     value->value.str = str_ptr;
 
+    json_set_sz(value->tags, str_sz);
+
     return value;
 }
 
@@ -360,6 +362,7 @@ void json_array_pop(Json* json, JsonValue* array, size_t index)
     if(index == 0)
     {
         info->head = info->head->next;
+        json_decr_sz(array->tags);
         return;
     }
 
