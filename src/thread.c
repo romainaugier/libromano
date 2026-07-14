@@ -40,8 +40,10 @@ size_t get_num_procs(void)
 #elif defined(ROMANO_APPLE)
     int n_cpu = 0;
     size_t n_cpu_sz = sizeof(n_cpu);
-    ROMANO_ASSERT(sysctlbyname("hw.ncpu", &n_cpu, &n_cpu_sz, NULL, 0) == 0,
-                  "syscall failed");
+    int res = sysctlbyname("hw.ncpu", &n_cpu, &n_cpu_sz, NULL, 0);
+
+    ROMANO_ASSERT(res == 0, "syscall failed");
+
     return (size_t)n_cpu;
 #endif
 }
@@ -224,11 +226,11 @@ void thread_init(Thread* thread, ThreadFunc func, void* arg)
 
 #if defined(ROMANO_WIN)
     thread->_thread_handle = CreateThread(NULL,
-                                              0,
-                                              (LPTHREAD_START_ROUTINE)func,
-                                              arg,
-                                              CREATE_SUSPENDED,
-                                              &thread->_id);
+                                          0,
+                                          (LPTHREAD_START_ROUTINE)func,
+                                          arg,
+                                          CREATE_SUSPENDED,
+                                          &thread->_id);
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     thread->_func = func;
     thread->_data = arg;
@@ -424,7 +426,7 @@ void* threadpool_worker_func(void* arg)
     return NULL;
 }
 
-ThreadPoolWaiter threadpool_waiter_new()
+ThreadPoolWaiter threadpool_waiter_new(void)
 {
     ThreadPoolWaiter waiter;
     waiter.counter = 0;

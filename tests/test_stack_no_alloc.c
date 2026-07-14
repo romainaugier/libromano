@@ -4,11 +4,11 @@
 
 #include "libromano/stack_no_alloc.h"
 
-int main() 
+int main(void)
 {
     stacknoa_init(int, mystack, 5);
-    
-    for(int i = 0; !stacknoa_is_full(mystack); i++) 
+
+    for(int i = 0; !stacknoa_is_full(mystack); i++)
     {
         stacknoa_push(mystack, i * 10);
         printf("Pushed: %d\n", *stacknoa_top(mystack));
@@ -16,7 +16,7 @@ int main()
 
     printf("\nPopping:\n");
 
-    while(!stacknoa_is_empty(mystack)) 
+    while(!stacknoa_is_empty(mystack))
     {
         printf("Popped: %d\n", stacknoa_pop(mystack));
     }

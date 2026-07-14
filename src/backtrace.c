@@ -10,7 +10,7 @@
 #if defined(ROMANO_WIN)
 #include <winnt.h>
 #include <DbgHelp.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <execinfo.h>
 #include <unistd.h>
 #include <signal.h>
@@ -20,7 +20,7 @@
 
 extern ErrorCode g_current_error;
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
 static ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
 {
@@ -41,7 +41,7 @@ static ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
 
 uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack)
 {
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     void* stack_frame;
     uint32_t num;
@@ -82,7 +82,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
     uint32_t i;
     uint32_t j;
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     char** symbols;
 
 #elif defined(ROMANO_WIN)
@@ -97,7 +97,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
     num = backtrace_call_stack(skip, max, out_addresses);
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     symbols = backtrace_symbols((void* const*)out_addresses, (int)num);
 
     for(i = 0; i < num; i++)
@@ -221,7 +221,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
 #define SIG_MAX_SYMBOLS 32
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_CLANG)
 void backtrace_signal_handler(int sig)
 {
     void* addresses[SIG_MAX_SYMBOLS];
@@ -273,9 +273,9 @@ LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
 }
 #endif /* defined(ROMANO_LINUX) */
 
-void backtrace_install_signal_handler()
+void backtrace_install_signal_handler(void)
 {
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_CLANG)
     signal(SIGSEGV, backtrace_signal_handler);
     signal(SIGFPE, backtrace_signal_handler);
     signal(SIGABRT, backtrace_signal_handler);

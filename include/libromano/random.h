@@ -21,9 +21,9 @@ ROMANO_FORCE_INLINE uint64_t murmur_64(uint64_t h)
     return h;
 }
 
-ROMANO_API uint64_t random_wyhash_64();
+ROMANO_API uint64_t random_wyhash_64(void);
 
-ROMANO_API uint64_t random_lehmer_64();
+ROMANO_API uint64_t random_lehmer_64(void);
 
 /* Very fast pseudo random generator with a good distribution */
 
@@ -61,13 +61,13 @@ ROMANO_FORCE_INLINE uint32_t random_uint32_range(const uint32_t state, const uin
 
 /* Non-Thread safe random generators, use atomics to make it thread-safe, or use thread-local _state */
 
-ROMANO_API float random_next_float_01();
+ROMANO_API float random_next_float_01(void);
 
-ROMANO_API uint32_t random_next_uint32();
+ROMANO_API uint32_t random_next_uint32(void);
 
 ROMANO_API uint32_t random_next_uint32_range(const uint32_t low, const uint32_t high);
 
-ROMANO_API uint64_t random_next_uint64();
+ROMANO_API uint64_t random_next_uint64(void);
 
 ROMANO_CPP_END
 

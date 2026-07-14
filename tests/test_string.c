@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-void test_string_new() 
+void test_string_new(void)
 {
     String s = string_new("Hello, World!");
     ROMANO_ASSERT(s != NULL, "string_new should not return NULL");
@@ -24,7 +24,7 @@ void test_string_new()
     string_free(s);
 }
 
-void test_string_newz() 
+void test_string_newz(void)
 {
     const size_t length = 10;
     String s = string_newz(length);
@@ -37,7 +37,7 @@ void test_string_newz()
     string_free(s);
 }
 
-void test_string_newf() 
+void test_string_newf(void)
 {
     String s = string_newf("Formatted: %d %s", 42, "test");
     ROMANO_ASSERT(s != NULL, "string_newf should not return NULL");
@@ -49,7 +49,7 @@ void test_string_newf()
     string_free(s);
 }
 
-void test_string_capacity() 
+void test_string_capacity(void)
 {
     String s = string_new("Test");
     size_t cap = string_capacity(s);
@@ -57,14 +57,14 @@ void test_string_capacity()
     string_free(s);
 }
 
-void test_string_length() 
+void test_string_length(void)
 {
     String s = string_new("12345");
     ROMANO_ASSERT(string_length(s) == 5, "Length should be 5");
     string_free(s);
 }
 
-void test_string_resize() 
+void test_string_resize(void)
 {
     String s = string_new("Hello");
     size_t original_size = string_length(s);
@@ -77,7 +77,7 @@ void test_string_resize()
     string_free(s);
 }
 
-void test_string_copy() 
+void test_string_copy(void)
 {
     String s1 = string_new("Original");
     String s2 = string_copy(s1);
@@ -90,7 +90,7 @@ void test_string_copy()
     string_free(s2);
 }
 
-void test_string_setc() 
+void test_string_setc(void)
 {
     String s = string_new("Initial");
     string_setc(&s, "New");
@@ -99,7 +99,7 @@ void test_string_setc()
     string_free(s);
 }
 
-void test_string_sets() 
+void test_string_sets(void)
 {
     String s1 = string_new("Source");
     String s2 = string_new("Destination");
@@ -109,7 +109,7 @@ void test_string_sets()
     string_free(s2);
 }
 
-void test_string_setf() 
+void test_string_setf(void)
 {
     String s = string_new("Before");
     string_setf(&s, "Formatted %d", 123);
@@ -117,7 +117,7 @@ void test_string_setf()
     string_free(s);
 }
 
-void test_string_appendc() 
+void test_string_appendc(void)
 {
     String s = string_new("Hello");
     string_appendc(&s, ", World!");
@@ -131,7 +131,7 @@ void test_string_appendc()
     string_free(s);
 }
 
-void test_string_appends() 
+void test_string_appends(void)
 {
     String s1 = string_new("Hello");
     String s2 = string_new(", World!");
@@ -141,7 +141,7 @@ void test_string_appends()
     string_free(s2);
 }
 
-void test_string_appendf() 
+void test_string_appendf(void)
 {
     String s = string_new("Count: ");
     string_appendf(&s, "%d", 42);
@@ -149,7 +149,7 @@ void test_string_appendf()
     string_free(s);
 }
 
-void test_string_prependc() 
+void test_string_prependc(void)
 {
     String s = string_new("World");
     string_prependc(&s, "Hello ");
@@ -157,7 +157,7 @@ void test_string_prependc()
     string_free(s);
 }
 
-void test_string_prepends() 
+void test_string_prepends(void)
 {
     String s1 = string_new("World");
     String s2 = string_new("Hello ");
@@ -167,7 +167,7 @@ void test_string_prepends()
     string_free(s2);
 }
 
-void test_string_prependf() 
+void test_string_prependf(void)
 {
     String s = string_new("World");
     string_prependf(&s, "Hello %s ", "there");
@@ -175,7 +175,7 @@ void test_string_prependf()
     string_free(s);
 }
 
-void test_string_clear()
+void test_string_clear(void)
 {
     String s = string_new("Content");
     size_t cap = string_capacity(s);
@@ -186,7 +186,7 @@ void test_string_clear()
     string_free(s);
 }
 
-void test_string_split() 
+void test_string_split(void)
 {
     char* data = strdup("a,b,c");
     uint32_t count;
@@ -214,7 +214,7 @@ void test_string_split()
     free(data);
 }
 
-void test_string_eq() 
+void test_string_eq(void)
 {
     String s1 = string_new("Same");
     String s2 = string_new("Same");
@@ -232,7 +232,7 @@ void test_string_eq()
     string_free(s2);
 }
 
-int main() 
+int main(void)
 {
     test_string_new();
     test_string_newz();

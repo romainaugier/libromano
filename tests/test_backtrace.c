@@ -8,7 +8,7 @@
 
 #define MAX_SYMBOLS 16
 
-ROMANO_NO_INLINE int func1()
+ROMANO_NO_INLINE int func1(void)
 {
     uint32_t i;
     uint32_t num_symbols;
@@ -26,7 +26,7 @@ ROMANO_NO_INLINE int func1()
     return (int)num_symbols;
 }
 
-ROMANO_NO_INLINE int func2()
+ROMANO_NO_INLINE int func2(void)
 {
     return func1();
 }

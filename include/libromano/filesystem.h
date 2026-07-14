@@ -79,22 +79,22 @@ ROMANO_API size_t fs_parent_dir_init(const char* path, char* buffer, size_t buff
 typedef enum FsCHMode
 {
     FsChMod_NOne = 0,
-    
+
     FsChMod_Owner_Read    = 0x0100,  /* 0400 */
     FsChMod_Owner_Write   = 0x0080,  /* 0200 */
     FsChMod_Owner_Exec    = 0x0040,  /* 0100 */
     FsChMod_Owner_Rwx     = 0x01C0,  /* 0700 */
-    
+
     FsChMod_Group_Read    = 0x0020,  /* 0040 */
     FsChMod_Group_Write   = 0x0010,  /* 0020 */
     FsChMod_Group_Exec    = 0x0008,  /* 0010 */
     FsChMod_Group_Rwx     = 0x0038,  /* 0070 */
-    
+
     FsChMod_Other_Read    = 0x0004,  /* 0004 */
     FsChMod_Other_Write   = 0x0002,  /* 0002 */
     FsChMod_Other_Exec    = 0x0001,  /* 0001 */
     FsChMod_Other_Rwx     = 0x0007,  /* 0007 */
-    
+
     FsChMod_Rwx_All       = 0x01FF,  /* 0777 */
     FsChMod_Rw_Owner      = 0x0180,  /* 0600 */
     FsChMod_Rw_All        = 0x01B6,  /* 0666 */
@@ -104,7 +104,7 @@ typedef enum FsCHMode
 /*
  * Applies permissions on the given file/directory
  */
-ROMANO_API bool fs_chmod(const char* path, 
+ROMANO_API bool fs_chmod(const char* path,
                          FsCHMod mode);
 
 /*
@@ -115,7 +115,7 @@ ROMANO_API bool fs_chmod(const char* path,
 ROMANO_API bool fs_get_cwd(char** out_path, size_t* out_len);
 
 /*
- * Removes the item at the given path. 
+ * Removes the item at the given path.
  * If the item is a directory, it will be removed recursively.
  * Returns true on success.
  */
@@ -138,12 +138,12 @@ ROMANO_API bool fs_is_dir(const char* path);
  */
 ROMANO_API bool fs_is_file(const char* path);
 
-typedef enum 
+typedef enum
 {
     FSWalkMode_YieldDirs = 0x1,
     FSWalkMode_YieldFiles = 0x2,
     FSWalkMode_Recursive = 0x4
-} FSWalkMode; 
+} FSWalkMode;
 
 typedef struct FSWalkIterator {
     char* current_path;
@@ -173,7 +173,7 @@ ROMANO_API bool fs_walk_iterator_init(FSWalkIterator* walk_iterator);
 /*
  * Allocates a new walk iterator. Returns NULL if an error happened
  */
-ROMANO_API FSWalkIterator* fs_walk_iterator_new();
+ROMANO_API FSWalkIterator* fs_walk_iterator_new(void);
 
 ROMANO_API void fs_walk_iterator_release(FSWalkIterator* walk_iterator);
 

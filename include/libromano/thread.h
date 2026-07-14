@@ -101,7 +101,7 @@ typedef struct ThreadPoolWaiter {
     int32_t counter;
 } ThreadPoolWaiter;
 
-ROMANO_API ThreadPoolWaiter threadpool_waiter_new();
+ROMANO_API ThreadPoolWaiter threadpool_waiter_new(void);
 
 /* Creates a threadpool with x workers and waits for work */
 ROMANO_API ThreadPool* threadpool_init(uint32_t workers_count);

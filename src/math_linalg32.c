@@ -28,7 +28,7 @@
     N -> columns
 */
 
-MatrixF matrix_null()
+MatrixF matrix_null(void)
 {
     MatrixF A;
     A.data = NULL;
@@ -417,7 +417,7 @@ void _matrixf_mul_neon(const float* ROMANO_RESTRICT A,
                        const uint32_t P)
 {
     /* TODO: implement matmul using neon */
-    return _matrixf_mul_scalar(A, B, C, M, N, P);
+    _matrixf_mul_scalar(A, B, C, M, N, P);
 }
 
 #endif /* defined(ROMANO_X86_64) */

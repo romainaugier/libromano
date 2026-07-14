@@ -1458,7 +1458,7 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
 /* Json funcs */
 /**************/
 
-Json* json_new()
+Json* json_new(void)
 {
     Json* json = malloc(sizeof(Json));
 

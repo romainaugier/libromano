@@ -30,7 +30,7 @@ ROMANO_API uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
 /*
  */
-ROMANO_API void backtrace_install_signal_handler();
+ROMANO_API void backtrace_install_signal_handler(void);
 
 ROMANO_CPP_END
 

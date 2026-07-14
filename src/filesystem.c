@@ -463,7 +463,7 @@ bool fs_walk_iterator_init(FSWalkIterator* walk_iterator)
     return true;
 }
 
-FSWalkIterator* fs_walk_iterator_new()
+FSWalkIterator* fs_walk_iterator_new(void)
 {
     FSWalkIterator* item = (FSWalkIterator*)malloc(sizeof(FSWalkIterator));
 

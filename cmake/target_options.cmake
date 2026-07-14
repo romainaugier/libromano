@@ -3,7 +3,7 @@
 # All rights reserved.
 
 function(set_target_options target_name)
-    if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
         set(ROMANO_CLANG 1)
 
         if(${ADDRSAN})
@@ -26,10 +26,22 @@ function(set_target_options target_name)
             target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=thread>)
         endif()
 
-        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+        set(COMPILE_OPTIONS
+            -D_FORTIFY_SOURCES=2
+            -pipe
+            -Wall
+            -pedantic-errors
+            $<$<CONFIG:Release,RelWithDebInfo>:-O3>
+            $<$<CONFIG:Release,RelWithDebInfo>:-Rpass=loop-vectorize>)
+
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+            list(APPEND COMPILE_OPTIONS -mavx2 -mfma -mveclibabi=svml)
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+            # list(APPEND COMPILE_OPTIONS -march=armv8.2-a+fp16)
+        endif()
 
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_GCC 1)
 
         if(${ADDRSAN})
@@ -52,7 +64,15 @@ function(set_target_options target_name)
             target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=thread>)
         endif()
 
-        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors -rdynamic $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+        set(COMPILE_OPTIONS
+            -D_FORTIFY_SOURCES=2
+            -pipe
+            -Wall
+            -pedantic-errors
+            $<$<CONFIG:Release,RelWithDebInfo>:-O3>
+            -mveclibabi=svml
+            -mavx2
+            -mfma)
 
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
     elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")

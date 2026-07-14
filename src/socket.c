@@ -196,7 +196,7 @@ const char* socket_inet_ntop(int af, const void* src, char* dst, SockLen len)
 #endif /* defined(ROMANO_WIN) */
 }
 
-int32_t socket_get_error()
+int32_t socket_get_error(void)
 {
 #if defined(ROMANO_WIN)
     return WSAGetLastError();

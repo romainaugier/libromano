@@ -246,7 +246,7 @@ ROMANO_API size_t json_dict_get_size(JsonValue* value);
  * Creates a new Json document. Returns NULL on error, otherwise returns a heap-allocated Json
  * document
  */
-ROMANO_API Json* json_new();
+ROMANO_API Json* json_new(void);
 
 /*
  */

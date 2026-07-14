@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-void test_init() 
+void test_init(void)
 {
     Stack* stack = stack_init(10, sizeof(int));
     ROMANO_ASSERT(stack != NULL, "stack should not be null");
@@ -15,7 +15,7 @@ void test_init()
     printf("test_init passed\n");
 }
 
-void test_push_top() 
+void test_push_top(void)
 {
     Stack* stack = stack_init(2, sizeof(int));
     int element = 42;
@@ -27,7 +27,7 @@ void test_push_top()
     printf("test_push_top passed\n");
 }
 
-void test_pop() 
+void test_pop(void)
 {
     Stack* stack = stack_init(3, sizeof(int));
     int values[] = {10, 20, 30};
@@ -45,7 +45,7 @@ void test_pop()
     printf("test_pop passed\n");
 }
 
-void test_empty_top() 
+void test_empty_top(void)
 {
     Stack* stack = stack_init(5, sizeof(int));
     ROMANO_ASSERT(stack_top(stack) == NULL, "");
@@ -53,7 +53,7 @@ void test_empty_top()
     printf("test_empty_top passed\n");
 }
 
-void test_struct_element() 
+void test_struct_element(void)
 {
     typedef struct { int a; char b; } TestStruct;
     TestStruct ts = {5, 'x'};
@@ -68,7 +68,7 @@ void test_struct_element()
     printf("test_struct_element passed\n");
 }
 
-void test_zero_initial_capacity() 
+void test_zero_initial_capacity(void)
 {
     Stack* stack = stack_init(0, sizeof(int));
     ROMANO_ASSERT(stack != NULL, "");
@@ -80,7 +80,7 @@ void test_zero_initial_capacity()
     printf("test_zero_initial_capacity passed\n");
 }
 
-void test_pop_with_null() 
+void test_pop_with_null(void)
 {
     Stack* stack = stack_init(2, sizeof(int));
     int element = 5;
@@ -91,7 +91,7 @@ void test_pop_with_null()
     printf("test_pop_with_null passed\n");
 }
 
-int main() 
+int main(void)
 {
     test_init();
     test_push_top();

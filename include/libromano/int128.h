@@ -26,8 +26,13 @@
 ROMANO_CPP_ENTER
 
 #if defined(ROMANO_USE_NATIVE_INT128)
+#if defined(ROMANO_GCC)
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
+#else
+__extension__ typedef __int128 int128_t;
+__extension__ typedef unsigned __int128 uint128_t;
+#endif /* defined(ROMANO_GCC) */
 #elif defined(ROMANO_X86_64)
 typedef __m128i int128_t;
 typedef __m128i uint128_t;

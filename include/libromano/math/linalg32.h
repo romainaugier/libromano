@@ -121,7 +121,7 @@ typedef struct MatrixF {
     uint32_t M;
 } MatrixF;
 
-ROMANO_API MatrixF matrix_null();
+ROMANO_API MatrixF matrix_null(void);
 
 ROMANO_API MatrixF matrixf_create(const int M, const int N);
 

@@ -5,10 +5,10 @@
 #include "libromano/random.h"
 
 #if !defined(ROMANO_MSVC)
-static uint64_t wyhash64_x = 1; 
+static uint64_t wyhash64_x = 1;
 #endif /* !defined(ROMANO_MSVC) */
 
-uint64_t random_wyhash_64() 
+uint64_t random_wyhash_64(void)
 {
 #if defined(ROMANO_MSVC)
 #pragma message("[WARNING]: uint128_t is not supported by MSVC, disabling random_wyhash_64")
@@ -29,7 +29,7 @@ uint64_t random_wyhash_64()
 static __uint128_t g_lehmer64_state = 1;
 #endif /* !defined(ROMANO_MSVC) */
 
-uint64_t random_lehmer_64() 
+uint64_t random_lehmer_64(void)
 {
 #if defined(ROMANO_MSVC)
 #pragma message("[WARNING]: uint128_t is not supported by MSVC, disabling random_lehmer_64")
@@ -43,7 +43,7 @@ uint64_t random_lehmer_64()
 
 static uint32_t _state = 0;
 
-float random_next_float_01()
+float random_next_float_01(void)
 {
     _state++;
 
@@ -59,7 +59,7 @@ uint32_t random_next_uint32_range(const uint32_t low, const uint32_t high)
 
 static uint32_t _state_next_uint32 = 0;
 
-uint32_t random_next_uint32()
+uint32_t random_next_uint32(void)
 {
     _state_next_uint32++;
 
@@ -68,7 +68,7 @@ uint32_t random_next_uint32()
 
 static uint64_t _state_next_uint64 = 0;
 
-uint64_t random_next_uint64()
+uint64_t random_next_uint64(void)
 {
     _state_next_uint64++;
 
