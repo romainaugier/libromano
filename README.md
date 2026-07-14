@@ -1,7 +1,8 @@
 # libromano
 
-![Windows Build](https://github.com/romainaugier/libromano/actions/workflows/build-windows.yml/badge.svg)
-![Linux Build](https://github.com/romainaugier/libromano/actions/workflows/build-linux.yml/badge.svg)
+![Windows x86_64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-windows-x8664.yml/badge.svg)
+![Linux x86_64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-linux-x8664.yml/badge.svg)
+![MacOS aarch64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-macos-aarch64.yml/badge.svg)
 
 C99 utility library for projects and learning.
 

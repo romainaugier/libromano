@@ -25,10 +25,10 @@ jobs:
         run: |
           cd ext/concurrentqueue
           git pull origin master
-          ./build_c_api.bat
+          ./build_c_api.sh
           cd ..
 
       - name: build and test
         run: |
-          ./build.bat --tests --reldebug --clean
+          ./build.sh --tests --reldebug --clean
           type build\Testing\Temporary\LastTest.log

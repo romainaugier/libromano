@@ -29,7 +29,7 @@
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif /* !defined(WIN32_LEAN_AND_MEAN) */
-#if defined(ROMANO_X64)
+#if defined(ROMANO_X86_64)
 #define ROMANO_PLATFORM_STR "WIN_X86_64"
 #elif defined(ROMANO_X86)
 #define ROMANO_PLATFORM_STR "WIN_X86"
@@ -39,10 +39,10 @@
 #define ROMANO_PLATFORM_STR "WIN_AARCH64"
 #else
 #error "Unknown platform"
-#endif /* defined(ROMANO_X64) */
+#endif /* defined(ROMANO_X86_64) */
 #elif defined(__linux__)
 #define ROMANO_LINUX
-#if defined(ROMANO_X64)
+#if defined(ROMANO_X86_64)
 #define ROMANO_PLATFORM_STR "LINUX_X86_64"
 #elif defined(ROMANO_X86)
 #define ROMANO_PLATFORM_STR "LINUX_X86"
@@ -52,10 +52,10 @@
 #define ROMANO_PLATFORM_STR "LINUX_AARCH64"
 #else
 #error "Unknown platform"
-#endif /* defined(ROMANO_X64) */
+#endif /* defined(ROMANO_X86_64) */
 #elif defined(__APPLE__)
 #define ROMANO_APPLE
-#if defined(ROMANO_X64)
+#if defined(ROMANO_X86_64)
 #define ROMANO_PLATFORM_STR "APPLE_X86_64"
 #elif defined(ROMANO_X86)
 #define ROMANO_PLATFORM_STR "APPLE_X86"
@@ -65,16 +65,16 @@
 #define ROMANO_PLATFORM_STR "APPLE_AARCH64"
 #else
 #error "Unknown platform"
-#endif /* defined(ROMANO_X64) */
+#endif /* defined(ROMANO_X86_64) */
 #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
 #define ROMANO_BSD
-#if defined(ROMANO_X64)
+#if defined(ROMANO_X86_64)
 #define ROMANO_PLATFORM_STR "BSD_X86_64"
 #elif defined(ROMANO_X86)
 #define ROMANO_PLATFORM_STR "BSD_X86"
 #else
 #error "Unknown platform"
-#endif /* defined(ROMANO_X64) */
+#endif /* defined(ROMANO_X86_64) */
 #else
 #error "Unknown platform"
 #endif /* defined(_WIN32) */
