@@ -31,4 +31,4 @@ jobs:
       - name: build and test
         run: |
           ./build.sh --tests --reldebug --clean
-          type build\Testing\Temporary\LastTest.log
+          type build/Testing/Temporary/LastTest.log
