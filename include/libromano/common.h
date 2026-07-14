@@ -10,7 +10,7 @@
 /* https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170 */
 /* https://github.com/cpredef/predef/blob/master/Architectures.md */
 #if defined(__x86_64__) || defined(_M_AMD64)
-#define ROMANO_X86_X64
+#define ROMANO_X86_64
 #define ROMANO_SIZEOF_PTR 8
 #elif defined(__i386__)
 #define ROMANO_X86
