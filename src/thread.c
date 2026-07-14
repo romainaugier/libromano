@@ -22,7 +22,9 @@ typedef DWORD thread_id;
 typedef pthread_t thread_handle;
 typedef int thread_id;
 #include <sched.h>
+#if defined(ROMANO_APPLE)
 #include <sys/sysctl.h>
+#endif /* defined(ROMANO_APPLE) */
 #endif /* defined(ROMANO_WIN) */
 
 extern ErrorCode g_current_error;
