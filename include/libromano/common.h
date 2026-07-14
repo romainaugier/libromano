@@ -161,7 +161,7 @@ typedef long long ssize_t;
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANO_CLANG)
-#define ROMANO_FORCE_INLINE __attribute__((always_inline))
+#define ROMANO_FORCE_INLINE inline __attribute__((always_inline))
 #define ROMANO_NO_INLINE __attribute__((noinline))
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
