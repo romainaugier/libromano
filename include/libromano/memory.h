@@ -44,11 +44,11 @@ ROMANOAPI void debug_free_override(void* ptr,
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
 #if defined(ROMANO_X86_64)
-static ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _mm_malloc(size, alignment); }
-static ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _mm_free(ptr); }
+ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _mm_malloc(size, alignment); }
+ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _mm_free(ptr); }
 #elif defined(ROMANO_AARCH64)
-static ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { void* ptr = NULL; if(posix_memalign(&ptr, alignment, size) != 0) return NULL; return ptr; }
-static ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { free(ptr); }
+ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { void* ptr = NULL; if(posix_memalign(&ptr, alignment, size) != 0) return NULL; return ptr; }
+ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { free(ptr); }
 #endif /* defined(ROMANO_X86_64) */
 
 #if defined(ROMANO_MSVC)

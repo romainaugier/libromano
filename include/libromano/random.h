@@ -11,7 +11,7 @@
 
 ROMANO_CPP_ENTER
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint64_t murmur_64(uint64_t h) 
+ROMANO_FORCE_INLINE uint64_t murmur_64(uint64_t h)
 {
     h ^= h >> 33;
     h *= 0xff51afd7ed558ccdL;
@@ -27,7 +27,7 @@ ROMANO_API uint64_t random_lehmer_64();
 
 /* Very fast pseudo random generator with a good distribution */
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t wang_hash(uint32_t seed)
+ROMANO_FORCE_INLINE uint32_t wang_hash(uint32_t seed)
 {
     seed = (seed ^ 61u) ^ (seed >> 16u);
     seed *= 9u;
@@ -37,7 +37,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t wang_hash(uint32_t seed)
     return 1u + seed;
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t xorshift32(uint32_t state)
+ROMANO_FORCE_INLINE uint32_t xorshift32(uint32_t state)
 {
     state ^= state << 13u;
     state ^= state >> 17u;
@@ -45,7 +45,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t xorshift32(uint32_t state)
     return state;
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float random_float_01(uint32_t state)
+ROMANO_FORCE_INLINE float random_float_01(uint32_t state)
 {
     uint32_t tofloat = 0x2f800004u;
 
@@ -54,7 +54,7 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float random_float_01(uint32_t state)
     return (float)x * *(float *)&tofloat;
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE uint32_t random_uint32_range(const uint32_t state, const uint32_t low, const uint32_t high)
+ROMANO_FORCE_INLINE uint32_t random_uint32_range(const uint32_t state, const uint32_t low, const uint32_t high)
 {
     return (uint32_t)(random_float_01(state) * ((float)high - (float)low)) + low;
 }

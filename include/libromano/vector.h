@@ -15,83 +15,83 @@ typedef struct Vector {
     void* data;
 } Vector;
 
-/* 
- * Initializes a vector 
+/*
+ * Initializes a vector
  */
 ROMANO_API void vector_init(Vector* vector, const size_t initial_capacity, const size_t element_size);
 
-/* 
- * Creates a heap allocated vector with a given initial size, and of the given element size 
+/*
+ * Creates a heap allocated vector with a given initial size, and of the given element size
  */
 ROMANO_API Vector* vector_new(const size_t initial_capacity, const size_t element_size);
 
-/* 
- * Returns the size of the given vector 
+/*
+ * Returns the size of the given vector
  */
-static ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[0]; }
+ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[0]; }
 
-/* 
- * Returns the capacity of the given vector 
+/*
+ * Returns the capacity of the given vector
  */
-static ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[1]; }
+ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[1]; }
 
-/* 
- * Returns the element size of the given vector 
+/*
+ * Returns the element size of the given vector
  */
-static ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[2]; }
+ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[2]; }
 
-/* 
- * Resizes the given vector to the given capacity 
+/*
+ * Resizes the given vector to the given capacity
  */
 ROMANO_API void vector_resize(Vector* vector, const size_t new_capacity);
 
-/* 
- * Adds a new element at the end of the given vector 
+/*
+ * Adds a new element at the end of the given vector
  */
 ROMANO_API void vector_push_back(Vector* vector, void* element);
 
-/* 
- * Returns the address where the element should be constructed 
+/*
+ * Returns the address where the element should be constructed
  */
 ROMANO_API void* _vector_emplace_back(Vector* vector);
 
-/* 
- * Macro to build the element in place 
+/*
+ * Macro to build the element in place
  */
 #define vector_emplace_back(vector, type) *(type*)_vector_emplace_back(vector)
 
-/* 
- * Adds a new element at the beginning of the given vector 
+/*
+ * Adds a new element at the beginning of the given vector
  */
 ROMANO_API void vector_insert(Vector* vector, void* element, const size_t position);
 
-/* 
- * Removes the element of the given vector at the given index 
+/*
+ * Removes the element of the given vector at the given index
  */
 ROMANO_API void vector_remove(Vector* vector, const size_t position);
 
-/* 
- * Removes the element at the end of the given vector 
+/*
+ * Removes the element at the end of the given vector
  */
 ROMANO_API void vector_pop(Vector* vector);
 
-/* 
- * Removes the element at the beginning of the given vector 
+/*
+ * Removes the element at the beginning of the given vector
  */
 ROMANO_API void vector_pop_front(Vector* vector);
 
-/* 
+/*
  * Returns the address to the element at the given index for the given vector
  */
 ROMANO_API void* vector_at(Vector* vector, const size_t index);
 
-/* 
+/*
  * Returns the address to the last element of the given vector
  */
 ROMANO_API void* vector_back(Vector* vector);
 
-/* 
- * Fits the given vector to its size (if the capacity is greater than the size) 
+/*
+ * Fits the given vector to its size (if the capacity is greater than the size)
  */
 ROMANO_API void vector_shrink_to_fit(Vector* vector);
 
@@ -117,13 +117,13 @@ ROMANO_API size_t vector_find(Vector* vector, void* value);
 
 typedef void (*vector_free_func)(void*);
 
-/* 
- * Releases the given vector 
+/*
+ * Releases the given vector
  */
 ROMANO_API void vector_release(Vector* vector);
 
-/* 
- * Releases and frees the given vector 
+/*
+ * Releases and frees the given vector
  */
 ROMANO_API void vector_free(Vector* vector);
 
@@ -132,8 +132,8 @@ ROMANO_API void vector_free(Vector* vector);
  */
 ROMANO_API void vector_release_with_dtor(Vector* vector, vector_free_func dtor);
 
-/* 
- * Releases and frees the given vector and execute dtor on each element 
+/*
+ * Releases and frees the given vector and execute dtor on each element
  */
 ROMANO_API void vector_free_with_dtor(Vector* vector, vector_free_func dtor);
 

@@ -38,8 +38,8 @@ typedef enum {
 } MemoryOrder;
 #endif /* defined(ROMANO_WIN) */
 
-static ROMANO_FORCE_INLINE Atomic32 atomic_load_32(Atomic32* volatile dest,
-                                                   MemoryOrder mo)
+ROMANO_FORCE_INLINE Atomic32 atomic_load_32(Atomic32* volatile dest,
+                                            MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -49,8 +49,8 @@ static ROMANO_FORCE_INLINE Atomic32 atomic_load_32(Atomic32* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE Atomic64 atomic_load_64(Atomic64* volatile dest,
-                                                   MemoryOrder mo)
+ROMANO_FORCE_INLINE Atomic64 atomic_load_64(Atomic64* volatile dest,
+                                            MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -60,9 +60,9 @@ static ROMANO_FORCE_INLINE Atomic64 atomic_load_64(Atomic64* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_store_32(Atomic32* volatile dest,
-                                                Atomic32 value,
-                                                MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_store_32(Atomic32* volatile dest,
+                                         Atomic32 value,
+                                         MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     InterlockedExchange((LONG*)dest, value);
@@ -71,9 +71,9 @@ static ROMANO_FORCE_INLINE void atomic_store_32(Atomic32* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_store_64(Atomic64* volatile dest,
-                                                Atomic64 value,
-                                                MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_store_64(Atomic64* volatile dest,
+                                         Atomic64 value,
+                                         MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -83,9 +83,9 @@ static ROMANO_FORCE_INLINE void atomic_store_64(Atomic64* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_add_32(Atomic32* volatile dest,
-                                              Atomic32 value,
-                                              MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_add_32(Atomic32* volatile dest,
+                                       Atomic32 value,
+                                       MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -95,9 +95,9 @@ static ROMANO_FORCE_INLINE void atomic_add_32(Atomic32* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_add_64(Atomic64* volatile dest,
-                                              Atomic64 value,
-                                              MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_add_64(Atomic64* volatile dest,
+                                       Atomic64 value,
+                                       MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -107,8 +107,9 @@ static ROMANO_FORCE_INLINE void atomic_add_64(Atomic64* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest, Atomic32 value,
-                                              MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest,
+                                       Atomic32 value,
+                                       MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -118,8 +119,9 @@ static ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest, Atomic32 
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest, Atomic64 value,
-                                              MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest,
+                                       Atomic64 value,
+                                       MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -131,10 +133,10 @@ static ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest, Atomic64 
 
 /* All compare exchange functions return a bool if the exchange has been successful */
 
-static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_32(Atomic32* volatile dest,
-                                                                Atomic32 exchange,
-                                                                Atomic32 compare,
-                                                                MemoryOrder mo)
+ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_32(Atomic32* volatile dest,
+                                                         Atomic32 exchange,
+                                                         Atomic32 compare,
+                                                         MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -144,10 +146,10 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_32(Atomic32* volati
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_32(Atomic32* volatile dest,
-                                                                  Atomic32 exchange,
-                                                                  Atomic32 compare,
-                                                                  MemoryOrder mo)
+ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_32(Atomic32* volatile dest,
+                                                           Atomic32 exchange,
+                                                           Atomic32 compare,
+                                                           MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -157,10 +159,10 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_32(Atomic32* vola
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_64(Atomic64* volatile dest,
-                                                                Atomic64 exchange,
-                                                                Atomic64 compare,
-                                                                MemoryOrder mo)
+ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_64(Atomic64* volatile dest,
+                                                         Atomic64 exchange,
+                                                         Atomic64 compare,
+                                                         MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -170,10 +172,10 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_64(Atomic64* volati
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_64(Atomic64* volatile dest,
-                                                                  Atomic64 exchange,
-                                                                  Atomic64 compare,
-                                                                  MemoryOrder mo)
+ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_64(Atomic64* volatile dest,
+                                                           Atomic64 exchange,
+                                                           Atomic64 compare,
+                                                           MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -183,9 +185,9 @@ static ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_64(Atomic64* vola
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE Atomic32 atomic_exchange_32(Atomic32* volatile dest,
-                                                       Atomic32 exchange,
-                                                       MemoryOrder mo)
+ROMANO_FORCE_INLINE Atomic32 atomic_exchange_32(Atomic32* volatile dest,
+                                                Atomic32 exchange,
+                                                MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -197,9 +199,9 @@ static ROMANO_FORCE_INLINE Atomic32 atomic_exchange_32(Atomic32* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE Atomic64 atomic_exchange_64(Atomic64* volatile dest,
-                                                       Atomic64 exchange,
-                                                       MemoryOrder mo)
+ROMANO_FORCE_INLINE Atomic64 atomic_exchange_64(Atomic64* volatile dest,
+                                                Atomic64 exchange,
+                                                MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
@@ -211,7 +213,7 @@ static ROMANO_FORCE_INLINE Atomic64 atomic_exchange_64(Atomic64* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
-static ROMANO_FORCE_INLINE void atomic_thread_fence(MemoryOrder mo)
+ROMANO_FORCE_INLINE void atomic_thread_fence(MemoryOrder mo)
 {
 #if defined(ROMANO_MSVC)
     switch(mo)

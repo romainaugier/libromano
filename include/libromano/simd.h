@@ -50,7 +50,7 @@ ROMANO_API const char* simd_get_vectorization_mode_as_string(VectorizationMode m
 /*
  * Returns the horizontal sum of the packed 4 floats
  */
-static ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
+ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
 {
     __m128 shuf = _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 1));
     __m128 sums = _mm_add_ps(x, shuf);
@@ -62,7 +62,7 @@ static ROMANO_FORCE_INLINE float _mm_hsum_ps(__m128 x)
 /*
  * Returns the horizontal sum of the packed 8 floats
  */
-static ROMANO_FORCE_INLINE float _mm256_hsum_ps(__m256 x)
+ROMANO_FORCE_INLINE float _mm256_hsum_ps(__m256 x)
 {
     __m128 hi = _mm256_extractf128_ps(x, 1);
     __m128 lo = _mm256_castps256_ps128(x);
@@ -75,7 +75,7 @@ static ROMANO_FORCE_INLINE float _mm256_hsum_ps(__m256 x)
 /*
  * Returns the linear interpolation of a and b depending on parameter t
  */
-static ROMANO_FORCE_INLINE __m128 _mm_lerp_ps(__m128 a, __m128 b, __m128 t)
+ROMANO_FORCE_INLINE __m128 _mm_lerp_ps(__m128 a, __m128 b, __m128 t)
 {
     __m128 one_minus_t = _mm_sub_ps(_mm_set1_ps(1.0f), t);
     a = _mm_mul_ps(one_minus_t, a);
@@ -86,7 +86,7 @@ static ROMANO_FORCE_INLINE __m128 _mm_lerp_ps(__m128 a, __m128 b, __m128 t)
 /*
  * Returns the linear interpolation of a and b depending on parameter t
  */
-static ROMANO_FORCE_INLINE __m256 _mm256_lerp_ps(__m256 a, __m256 b, __m256 t)
+ROMANO_FORCE_INLINE __m256 _mm256_lerp_ps(__m256 a, __m256 b, __m256 t)
 {
     __m256 one_minus_t = _mm256_sub_ps(_mm256_set1_ps(1.0f), t);
     a = _mm256_mul_ps(one_minus_t, a);
@@ -97,7 +97,7 @@ static ROMANO_FORCE_INLINE __m256 _mm256_lerp_ps(__m256 a, __m256 b, __m256 t)
 /*
  * Returns the horizontal mean of the 4 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm_hmean_ps(__m128 x)
+ROMANO_FORCE_INLINE float _mm_hmean_ps(__m128 x)
 {
     return _mm_hsum_ps(x) / 4.0;
 }
@@ -105,7 +105,7 @@ static ROMANO_FORCE_INLINE float _mm_hmean_ps(__m128 x)
 /*
  * Returns the horizontal mean of the 8 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
+ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
 {
     return _mm256_hsum_ps(x) / 8.0;
 }
@@ -113,7 +113,7 @@ static ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
 /*
  * Returns the minimum value of the 4 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm_hmin_ps(__m128 x)
+ROMANO_FORCE_INLINE float _mm_hmin_ps(__m128 x)
 {
     x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 0)));
     x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(1, 1, 0, 0)));
@@ -123,7 +123,7 @@ static ROMANO_FORCE_INLINE float _mm_hmin_ps(__m128 x)
 /*
  * Returns the minimum value of the 8 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm256_hmin_ps(__m256 v)
+ROMANO_FORCE_INLINE float _mm256_hmin_ps(__m256 v)
 {
     __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
     __m256 m0 = _mm256_min_ps(perm_halves, v);
@@ -140,7 +140,7 @@ static ROMANO_FORCE_INLINE float _mm256_hmin_ps(__m256 v)
 /*
  * Returns the maximum value of the 4 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm_hmax_ps(__m128 v)
+ROMANO_FORCE_INLINE float _mm_hmax_ps(__m128 v)
 {
     v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 0)));
     v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 0, 0)));
@@ -150,7 +150,7 @@ static ROMANO_FORCE_INLINE float _mm_hmax_ps(__m128 v)
 /*
  * Returns the maximum value of the 8 packed floats
  */
-static ROMANO_FORCE_INLINE float _mm256_hmax_ps(__m256 v)
+ROMANO_FORCE_INLINE float _mm256_hmax_ps(__m256 v)
 {
     __m256 perm_halves = _mm256_permute2f128_ps(v, v, 1);
     __m256 m0 = _mm256_max_ps(perm_halves, v);
