@@ -73,8 +73,8 @@ static ROMANO_FORCE_INLINE Vec3F vec3f_cross(const Vec3F a, const Vec3F b)
 {
     Vec3F res;
 
-    res.x = a.y * b.z - a.z * b.y; 
-    res.y = a.z * b.x - a.x * b.z; 
+    res.x = a.y * b.z - a.z * b.y;
+    res.y = a.z * b.x - a.x * b.z;
     res.z = a.x * b.y - a.y * b.x;
 
     return res;
@@ -115,13 +115,11 @@ typedef struct matrix44f {
     float data[16];
 } matrix44f_t;
 
-struct MatrixF {
+typedef struct MatrixF {
     float* data;
     uint32_t N;
     uint32_t M;
-};
-
-typedef struct MatrixF MatrixF;
+} MatrixF;
 
 ROMANO_API MatrixF matrix_null();
 

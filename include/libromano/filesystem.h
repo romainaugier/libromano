@@ -12,7 +12,7 @@
 #if defined(ROMANO_WIN)
 #define MAX_PATH 260
 #include <Windows.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #define MAX_PATH 4096
 #include <dirent.h>
 #endif /* ROMANO_WIN */
@@ -160,7 +160,7 @@ typedef struct FSWalkIterator {
 
 #if defined(ROMANO_WIN)
     HANDLE _h_find;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     DIR* _dir;
 #endif /* defined(ROMANO_WIN) */
 } FSWalkIterator;

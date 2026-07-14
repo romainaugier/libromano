@@ -28,17 +28,17 @@ ROMANO_API Vector* vector_new(const size_t initial_capacity, const size_t elemen
 /* 
  * Returns the size of the given vector 
  */
-ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[0]; }
+static ROMANO_FORCE_INLINE size_t vector_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[0]; }
 
 /* 
  * Returns the capacity of the given vector 
  */
-ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[1]; }
+static ROMANO_FORCE_INLINE size_t vector_capacity(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[1]; }
 
 /* 
  * Returns the element size of the given vector 
  */
-ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[2]; }
+static ROMANO_FORCE_INLINE size_t vector_element_size(Vector* vector) { ROMANO_ASSERT(vector != NULL, "Vector is NULL"); return ((size_t*)vector->data)[2]; }
 
 /* 
  * Resizes the given vector to the given capacity 

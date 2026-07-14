@@ -73,6 +73,7 @@ int main(void)
 
     matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
 
+#if defined(ROMANO_X86_64)
     simd_force_vectorization_mode(VectorizationMode_SSE);
     MatrixF C_sse = matrix_null();
 
@@ -88,7 +89,7 @@ int main(void)
     SCOPED_PROFILE_MS_END(matrixf_avx_mul);
 
     float sse_err = 0.0f;
-    float avx_err = 0.0f;   
+    float avx_err = 0.0f;
     uint32_t count = 1;
 
     for(i = 0; i < MATMUL_SIZE_M; i++)
@@ -120,11 +121,12 @@ int main(void)
         return 1;
     }
 
+    matrixf_destroy(&C_sse);
+    matrixf_destroy(&C_avx);
+#endif /* defined(ROMANO_X86_64) */
     matrixf_destroy(&A);
     matrixf_destroy(&B);
     matrixf_destroy(&C_scalar);
-    matrixf_destroy(&C_sse);
-    matrixf_destroy(&C_avx);
 
     logger_log(LogLevel_Info, "Cholesky Solving");
 

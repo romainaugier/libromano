@@ -11,7 +11,7 @@
 
 #if defined(ROMANO_WIN)
 #include <Windows.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <errno.h>
 #endif /* defined(ROMANO_WIN) */
 

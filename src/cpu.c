@@ -6,6 +6,12 @@
 
 #include <string.h>
 
+static uint64_t g_get_frequency_counter = 0;
+static uint32_t g_frequency = 0;
+static uint32_t g_refresh = 10000;
+static uint32_t g_cpu_freq_mhz = 0;
+
+#if defined(ROMANO_X86_64)
 #if defined(ROMANO_WIN)
 #include <windows.h>
 #include <powerbase.h>
@@ -28,10 +34,6 @@ typedef struct _PROCESSOR_POWER_INFORMATION
 #endif /* !defined(__USE_POSIX199309) */
 #include <time.h>
 #endif /* defined(ROMANO_WIN) */
-
-static uint64_t g_get_frequency_counter = 0;
-static uint32_t g_frequency = 0;
-static uint32_t g_refresh = 10000;
 
 uint32_t _get_cpu_frequency(void)
 {
@@ -94,8 +96,6 @@ uint32_t _get_cpu_frequency(void)
     return g_frequency;
 }
 
-static uint32_t g_cpu_freq_mhz = 0;
-
 void cpu_check(void)
 {
     /* CPU Frequency */
@@ -156,3 +156,83 @@ uint64_t cpu_rdtsc(void)
 {
     return __rdtsc();
 }
+
+#elif defined(ROMANO_AARCH64)
+
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+#include <sys/sysctl.h>
+#if !defined(__USE_POSIX199309)
+#define __USE_POSIX199309
+#endif /* !defined(__USE_POSIX199309) */
+#include <time.h>
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
+
+uint32_t _get_cpu_frequency(void)
+{
+    if(g_get_frequency_counter % g_refresh == 0)
+    {
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+        const uint64_t start = cpu_rdtsc();
+
+        struct timespec wait_duration;
+        wait_duration.tv_sec = 0;
+        wait_duration.tv_nsec = 1000000;
+
+        nanosleep(&wait_duration, NULL);
+
+        const uint64_t end = cpu_rdtsc();
+
+        const double frequency = (double)(end - start) * 1000;
+
+        g_frequency = (uint32_t)(frequency / 1000000);
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
+    }
+
+    g_get_frequency_counter++;
+
+    return g_frequency;
+}
+
+void cpu_check(void)
+{
+    g_cpu_freq_mhz = _get_cpu_frequency();
+}
+
+void cpu_get_name(char* name)
+{
+    size_t name_sz = ROMANO_CPU_NAME_SZ;
+
+    memset(name, '\0', name_sz * sizeof(char));
+
+#if defined(ROMANO_APPLE)
+    sysctlbyname("machdep.cpu.brand_string", name, &name_sz, NULL, ROMANO_CPU_NAME_SZ);
+#endif /* defined(ROMANO_APPLE) */
+}
+
+uint32_t cpu_get_frequency(void)
+{
+    return g_cpu_freq_mhz;
+}
+
+uint32_t cpu_get_current_frequency(void)
+{
+    return _get_cpu_frequency();
+}
+
+void cpu_get_current_frequency_set_refresh_frequency(const uint32_t refresh_frequency)
+{
+    g_refresh = refresh_frequency;
+}
+
+uint64_t cpu_rdtsc(void)
+{
+#if defined(ROMANO_APPLE) || defined(ROMANO_LINUX)
+    uint64_t value = 0;
+
+    __asm__ __volatile__("mrs %0, cntvct_el0" : "=r"(value));
+
+    return value;
+#endif /* defined(ROMANO_APPLE) || defined(ROMANO_LINUX) */
+}
+
+#endif /* defined(ROMANO_X86_64) */

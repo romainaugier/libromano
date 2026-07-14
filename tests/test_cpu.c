@@ -5,12 +5,11 @@
 #include "libromano/cpu.h"
 #include "libromano/logger.h"
 
-
 int main(void)
 {
     logger_init();
 
-    char cpu_name[49];
+    char cpu_name[ROMANO_CPU_NAME_SZ];
 
     cpu_get_name(cpu_name);
 

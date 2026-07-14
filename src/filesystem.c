@@ -15,9 +15,11 @@
 #include <Shlwapi.h>
 #include <shellapi.h>
 #include <PathCch.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <sys/stat.h>
+#if !defined(ROMANO_APPLE)
 #include <linux/limits.h>
+#endif /* !defined(ROMANO_APPLE) */
 #include <sys/types.h>
 #include <errno.h>
 #include <dirent.h>
@@ -122,7 +124,7 @@ bool fs_path_exists(const char *path)
 
 #if defined(ROMANO_WIN)
     return (bool)PathFileExistsA(path);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct stat sb;
 
     return (bool)(stat(path, &sb) == 0 && (S_ISDIR(sb.st_mode) || S_ISREG(sb.st_mode)));
@@ -140,7 +142,7 @@ bool fs_makedirs(const char *path)
 
 #if defined(ROMANO_WIN)
     return (bool)CreateDirectoryA(path, NULL);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return mkdir(path, 0755) == 0; /* drwxr-xr-x */
 #else
 #error "Unsupported platform"
@@ -226,7 +228,7 @@ bool fs_chmod(const char* path,
     if(!SetFileAttributesA(path, attrs))
         return false;
 
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     if(chmod(path, (mode_t)(mode & 0x01FF)) != 0)
         return false;
 
@@ -280,6 +282,16 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
     }
 
     *out_sz = strlen(*out_path);
+#elif defined(ROMANO_APPLE)
+    *out_path = getcwd(NULL, MAX_PATH);
+
+    if(*out_path == NULL)
+    {
+        *out_sz = 0;
+        return false;
+    }
+
+    *out_sz = strlen(*out_path);
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
@@ -287,7 +299,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
     return true;
 }
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 /*
  * Used by nftw in fs_remove
  */
@@ -345,7 +357,7 @@ bool fs_remove(const char* path)
 
         return true;
     }
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     if(fs_is_dir(path))
     {
         if(nftw(path, fs_remove_callback, 64, FTW_DEPTH | FTW_PHYS) != 0)
@@ -374,7 +386,7 @@ bool fs_move(const char* path,
 
 #if defined(ROMANO_WIN)
     return (bool)MoveFileA(path, new_path);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return rename(path, new_path) == 0;
 #else
 #error "Unsupported platform"
@@ -392,7 +404,7 @@ bool fs_is_dir(const char* path)
 
 #if defined(ROMANO_WIN)
     return GetFileAttributesA(path) & FILE_ATTRIBUTE_DIRECTORY;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct stat stats;
     stat(path, &stats);
     return (bool)S_ISREG(stats.st_mode);
@@ -412,7 +424,7 @@ bool fs_is_file(const char* path)
 
 #if defined(ROMANO_WIN)
     return GetFileAttributesA(path) & ~FILE_ATTRIBUTE_DIRECTORY;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct stat stats;
     stat(path, &stats);
     return (bool)S_ISDIR(stats.st_mode);
@@ -431,7 +443,7 @@ bool fs_walk_iterator_init(FSWalkIterator* walk_iterator)
 
 #if defined(ROMANO_WIN)
     walk_iterator->_h_find = INVALID_HANDLE_VALUE;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     walk_iterator->_dir = NULL;
 #endif /* defined(ROMANO_WIN) */
 
@@ -498,7 +510,7 @@ void fs_walk_iterator_release(FSWalkIterator* walk_iterator)
     }
 
     walk_iterator->_h_find = INVALID_HANDLE_VALUE;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     closedir(walk_iterator->_dir);
     walk_iterator->_dir = NULL;
 #endif /* defined(ROMANO_WIN) */
@@ -530,7 +542,7 @@ bool walk_should_skip_entry(FSWalkMode mode,
 
     return false;
 }
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 bool walk_should_skip_entry(FSWalkMode mode,
                             const char* entry_name,
                             unsigned char entry_type /* struct dirent->d_type */)
@@ -710,7 +722,7 @@ bool fs_walk(const char* path,
 
         return true;
     }
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct dirent* entry;
 
     while(true)

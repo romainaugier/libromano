@@ -3,10 +3,10 @@
 /* All rights reserved. */
 
 #include "libromano/hashmap.h"
-#include "libromano/math/common32.h"
 #include "libromano/bit.h"
 #include "libromano/random.h"
 #include "libromano/error.h"
+#include "libromano/math/common32.h"
 
 extern ErrorCode g_current_error;
 

@@ -10,9 +10,14 @@
 #include "libromano/common.h"
 
 #include <stdlib.h>
+
+#if defined(ROMANO_X86_64)
 #include <immintrin.h>
+#endif /* defined(ROMANO_X86_64) */
 
 ROMANO_CPP_ENTER
+
+#if defined(ROMANO_X86_64)
 
 typedef enum
 {
@@ -24,7 +29,7 @@ typedef enum
     VectorizationMode_COUNT = 5,
 } VectorizationMode;
 
-#define VECTORIZATION_MODE_STR(mode) mode == 2 ? "AVX" : mode == 1 ? "SSE" : "Scalar (None)" 
+#define VECTORIZATION_MODE_STR(mode) mode == 2 ? "AVX" : mode == 1 ? "SSE" : "Scalar (None)"
 
 void simd_check_vectorization(void);
 
@@ -158,6 +163,29 @@ static ROMANO_FORCE_INLINE float _mm256_hmax_ps(__m256 v)
 
     return _mm256_cvtss_f32(m2);
 }
+
+#elif defined(ROMANO_AARCH64)
+
+typedef enum
+{
+    VectorizationMode_Scalar = 0,
+    VectorizationMode_NEON = 1,
+    VectorizationMode_COUNT = 2,
+} VectorizationMode;
+
+#define VECTORIZATION_MODE_STR(mode) mode == 1 ? "NEON" : "Scalar (None)"
+
+void simd_check_vectorization(void);
+
+ROMANO_API int simd_has_neon(void);
+
+ROMANO_API VectorizationMode simd_get_vectorization_mode(void);
+
+ROMANO_API void simd_force_vectorization_mode(const VectorizationMode mode);
+
+ROMANO_API const char* simd_get_vectorization_mode_as_string(VectorizationMode mode);
+
+#endif /* defined(ROMANO_X86_64) */
 
 ROMANO_CPP_END
 

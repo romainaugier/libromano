@@ -18,10 +18,11 @@
 typedef HANDLE thread_handle;
 typedef DWORD thread_id;
 #include <processthreadsapi.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 typedef pthread_t thread_handle;
 typedef int thread_id;
 #include <sched.h>
+#include <sys/sysctl.h>
 #endif /* defined(ROMANO_WIN) */
 
 extern ErrorCode g_current_error;
@@ -34,6 +35,12 @@ size_t get_num_procs(void)
     return (size_t)sys_info.dwNumberOfProcessors;
 #elif defined(ROMANO_LINUX)
     return (size_t)sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(ROMANO_APPLE)
+    int n_cpu = 0;
+    size_t n_cpu_sz = sizeof(n_cpu);
+    ROMANO_ASSERT(sysctlbyname("hw.ncpu", &n_cpu, &n_cpu_sz, NULL, 0) == 0,
+                  "syscall failed");
+    return (size_t)n_cpu;
 #endif
 }
 
@@ -43,7 +50,7 @@ Mutex* mutex_new(void)
 
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(new_mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_init(new_mutex, NULL);
 #endif /* defined(ROMANO_WIN) */
 
@@ -54,7 +61,7 @@ void mutex_init(Mutex* mutex)
 {
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_init(mutex, NULL);
 #endif /* defined(ROMANO_WIN) */
 }
@@ -66,7 +73,7 @@ void mutex_lock(Mutex* mutex)
 
 #if defined(ROMANO_WIN)
     EnterCriticalSection(mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_lock(mutex);
 #endif /* defined(ROMANO_WIN) */
 }
@@ -77,7 +84,7 @@ void mutex_unlock(Mutex* mutex)
 
 #if defined(ROMANO_WIN)
     LeaveCriticalSection(mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_unlock(mutex);
 #endif /* defined(ROMANO_WIN) */
 }
@@ -88,7 +95,7 @@ void mutex_release(Mutex* mutex)
 
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_destroy(mutex);
 #endif /* defined(ROMANO_WIN) */
 }
@@ -99,38 +106,38 @@ void mutex_free(Mutex* mutex)
 
 #if defined(ROMANO_WIN)
     DeleteCriticalSection(mutex);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_mutex_destroy(mutex);
 #endif /* defined(ROMANO_WIN) */
 
     free(mutex);
 }
 
-ConditionalVariable* ConditionalVariable_new(void)
+ConditionalVariable* conditionalvariable_new(void)
 {
     ConditionalVariable* new_cond_var = malloc(sizeof(ConditionalVariable));
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(new_cond_var);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_init(new_cond_var, NULL);
 #endif /* defined(ROMANO_WIN) */
 
     return new_cond_var;
 }
 
-void ConditionalVariable_init(ConditionalVariable* cond_var)
+void conditionalvariable_init(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(cond_var);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_init(cond_var, NULL);
 #endif /* defined(ROMANO_WIN) */
 }
 
-void ConditionalVariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_t wait_duration_ms)
+void conditionalvariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_t wait_duration_ms)
 {
     ROMANO_ASSERT(cond_var != NULL && mtx != NULL, "");
 
@@ -141,7 +148,7 @@ void ConditionalVariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_
     }
 
     SleepConditionVariableCS(cond_var, mtx, (DWORD)wait_duration_ms);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     if(wait_duration_ms == 0)
     {
         pthread_cond_wait(cond_var, mtx);
@@ -157,43 +164,43 @@ void ConditionalVariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_
 #endif /* defined(ROMANO_WIN) */
 }
 
-void ConditionalVariable_signal(ConditionalVariable* cond_var)
+void conditionalvariable_signal(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 #if defined(ROMANO_WIN)
     WakeConditionVariable(cond_var);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_signal(cond_var);
 #endif /* defined(ROMANO_WIN) */
 }
 
-void ConditionalVariable_broadcast(ConditionalVariable* cond_var)
+void conditionalvariable_broadcast(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
 #if defined(ROMANO_WIN)
     WakeAllConditionVariable(cond_var);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_broadcast(cond_var);
 #endif /* defined(ROMANO_WIN) */
 }
 
-void ConditionalVariable_release(ConditionalVariable* cond_var)
+void conditionalvariable_release(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_destroy(cond_var);
 #else
     ROMANO_UNUSED(cond_var);
 #endif /* defined(ROMANO_LINUX) */
 }
 
-void ConditionalVariable_free(ConditionalVariable* cond_var)
+void conditionalvariable_free(ConditionalVariable* cond_var)
 {
     ROMANO_ASSERT(cond_var != NULL, "");
 
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_cond_destroy(cond_var);
 #endif /* defined(ROMANO_LINUX) */
 
@@ -203,7 +210,7 @@ void ConditionalVariable_free(ConditionalVariable* cond_var)
 struct Thread {
     thread_handle _thread_handle;
     thread_id _id;
-#if defined(ROMANO_LINUX)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     ThreadFunc _func;
     void* _data;
 #endif /* defined(ROMANO_LINUX) */
@@ -220,7 +227,7 @@ void thread_init(Thread* thread, ThreadFunc func, void* arg)
                                               arg,
                                               CREATE_SUSPENDED,
                                               &thread->_id);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     thread->_func = func;
     thread->_data = arg;
 #endif /* defined(ROMANO_WIN) */
@@ -247,7 +254,7 @@ void thread_start(Thread* thread)
 
 #if defined(ROMANO_WIN)
     ResumeThread(thread->_thread_handle);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_create(&thread->_thread_handle,
                    NULL,
                    thread->_func,
@@ -262,7 +269,7 @@ void thread_sleep(const int sleep_duration_ms)
 
 #if defined(ROMANO_WIN)
     Sleep((DWORD)sleep_duration_ms);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct timespec wait_duration;
     wait_duration.tv_sec = sleep_duration_ms / 1000;
     wait_duration.tv_nsec = (sleep_duration_ms % 1000) * 1000000;
@@ -275,7 +282,7 @@ void thread_yield(void)
 {
 #if defined(ROMANO_WIN)
     SwitchToThread();
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     sched_yield();
 #else
 #error "thread_yield no implemented on current platform"
@@ -288,6 +295,13 @@ size_t thread_get_id(void)
     return (size_t)GetCurrentThreadId();
 #elif defined(ROMANO_LINUX)
     return (size_t)syscall(SYS_gettid);
+#elif defined(ROMANO_APPLE)
+    uint64_t id;
+
+    if(pthread_threadid_np(NULL, &id) != 0)
+        return THREAD_INVALID_ID;
+
+    return (size_t)id;
 #endif /* defined(ROMANO_WIN) */
 }
 
@@ -297,7 +311,7 @@ void thread_detach(Thread* thread)
 
 #if defined(ROMANO_WIN)
     CloseHandle(thread->_thread_handle);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_detach(thread->_thread_handle);
 #endif /* defined(ROMANO_WIN) */
 
@@ -314,7 +328,7 @@ void thread_join(Thread* thread)
 #if defined(ROMANO_WIN)
     WaitForSingleObject(thread->_thread_handle, INFINITE);
     CloseHandle(thread->_thread_handle);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     pthread_join(thread->_thread_handle, NULL);
 #endif /* defined(ROMANO_WIN) */
 

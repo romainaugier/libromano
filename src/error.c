@@ -112,7 +112,7 @@ int error_get_last_from_system(void)
 {
 #if defined(ROMANO_WIN)
     return (int)GetLastError();
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return errno;
 #endif /* defined(ROMANO_WIN) */
 }

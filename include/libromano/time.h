@@ -17,7 +17,7 @@ ROMANO_CPP_ENTER
 struct timezone {
     int tz_minuteswest;
     int tz_dsttime;
-};   
+};
 
 typedef struct timezone timezone_t;
 
@@ -38,7 +38,7 @@ typedef TIMEVAL timeval_t;
 
 ROMANO_API void gettimeofday(timeval_t* tv, timezone_t* tz);
 
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <sys/time.h>
 
 typedef struct timezone timezone_t;

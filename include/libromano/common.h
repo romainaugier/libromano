@@ -9,13 +9,13 @@
 
 /* https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170 */
 /* https://github.com/cpredef/predef/blob/master/Architectures.md */
-#if INTPTR_MAX == INT64_MAX || defined(__x86_64__) || defined(_M_AMD64)
+#if defined(__x86_64__) || defined(_M_AMD64)
 #define ROMANO_X64
 #define ROMANO_SIZEOF_PTR 8
-#elif INTPTR_MAX == INT32_MAX
+#elif defined(__i386__)
 #define ROMANO_X86
 #define ROMANO_SIZEOF_PTR 4
-#elif defined(__arm__)
+#elif defined(__arm__) || _M_ARM
 #define ROMANO_AARCH32
 #define ROMANO_SIZEOF_PTR 4
 #elif defined(__aarch64__)
@@ -82,7 +82,7 @@
 /* https://github.com/cpredef/predef/blob/master/Compilers.md */
 #if defined(_MSC_VER)
 #define ROMANO_MSVC
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #define ROMANO_GCC
 #elif defined(__clang__)
 #define ROMANO_CLANG
@@ -119,6 +119,8 @@
 #elif defined(ROMANO_WIN)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
+#elif defined(ROMANO_APPLE)
+/* pass */
 #else
 typedef long long ssize_t;
 #endif /* defined(ROMANO_LINUX) */
@@ -143,7 +145,7 @@ typedef long long ssize_t;
 #define ROMANO_EXPORT __attribute__((dllexport))
 #define ROMANO_IMPORT __attribute__((dllimport))
 #endif /* defined(ROMANO_MSVC) */
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #define ROMANO_EXPORT __attribute__((visibility("default")))
 #define ROMANO_IMPORT
 #endif /* defined(ROMANO_WIN) */

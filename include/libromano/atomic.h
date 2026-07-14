@@ -27,7 +27,7 @@ typedef enum {
     MemoryOrder_AcqRel,
     MemoryOrder_SeqCst,
 } MemoryOrder;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 typedef enum {
     MemoryOrder_Relax = __ATOMIC_RELAXED,
     MemoryOrder_Consume = __ATOMIC_CONSUME,

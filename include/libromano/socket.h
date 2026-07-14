@@ -34,7 +34,7 @@ typedef SOCKADDR SockAddr6;
 #define ROMANO_INVALID_SOCKET INVALID_SOCKET
 #define ROMANO_SOCKET_ERROR SOCKET_ERROR
 
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

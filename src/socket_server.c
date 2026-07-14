@@ -15,7 +15,7 @@
 
 #if defined(ROMANO_WIN)
 #include <WS2tcpip.h>
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_CLANG)
 #include <arpa/inet.h>
 #endif /* defined(ROMANO_WIN) */
 

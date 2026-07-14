@@ -11,11 +11,11 @@
 
 #if defined(ROMANO_WIN)
 static LONG g_init_count = 0;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <errno.h>
 #include <fcntl.h>
 #else
-#warning Sockets not defined on this platform
+#error Sockets not defined on this platform
 #endif /* defined(ROMANO_WIN) */
 
 extern ErrorCode g_current_error;
@@ -271,7 +271,7 @@ bool copy_addrinfo(struct addrinfo* list, DNSResolveResult* res)
     {
 #if defined(ROMANO_WIN)
         FreeAddrInfoA(list);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
         freeaddrinfo(list);
 #endif /* defined(ROMANO_WIN) */
 
@@ -288,7 +288,7 @@ bool copy_addrinfo(struct addrinfo* list, DNSResolveResult* res)
 
 #if defined(ROMANO_WIN)
     FreeAddrInfoA(list);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     freeaddrinfo(list);
 #endif /* defined(ROMANO_WIN) */
 
@@ -319,7 +319,7 @@ bool resolve_dns_windows(const char* hostname, int family, DNSResolveResult* res
 
     return copy_addrinfo(list, res);
 }
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 bool resolve_dns_posix(const char* hostname, int family, DNSResolveResult* res)
 {
     struct addrinfo hints;
@@ -355,7 +355,7 @@ bool socket_resolve_dns_ipv4(const char* hostname,
 
 #if defined(ROMANO_WIN)
     return resolve_dns_windows(hostname, AF_INET, res);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return resolve_dns_posix(hostname, AF_INET, res);
 #endif /* defined(ROMANO_WIN) */
 
@@ -370,7 +370,7 @@ bool socket_resolve_dns_ipv6(const char* hostname,
 
 #if defined(ROMANO_WIN)
     return resolve_dns_windows(hostname, AF_INET6, res);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return resolve_dns_posix(hostname, AF_INET6, res);
 #endif /* defined(ROMANO_WIN) */
 
@@ -395,7 +395,7 @@ void socket_addr_to_string(const SockAddrStorage* addr,
         s6 = (const SockAddrIn6*)addr;
         InetNtopA(AF_INET6, &s6->sin6_addr, buffer, buffer_sz);
     }
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     if(addr->ss_family == AF_INET)
     {
         s4 = (const SockAddrIn*)addr;

@@ -217,6 +217,10 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
     }
 }
 
+#if defined(ROMANO_X86_64)
+
+#define NUM_MATRIXF_MUL_FUNCS 3
+
 #define M_BLOCK_SIZE 4
 #define SSE_N_BLOCK_SIZE 4
 #define AVX_N_BLOCK_SIZE 8
@@ -401,6 +405,23 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
     }
 }
 
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_MATRIXF_MUL_FUNCS 2
+
+void _matrixf_mul_neon(const float* ROMANO_RESTRICT A,
+                       const float* ROMANO_RESTRICT B,
+                       float* ROMANO_RESTRICT C,
+                       const uint32_t M,
+                       const uint32_t N,
+                       const uint32_t P)
+{
+    /* TODO: implement matmul using neon */
+    return _matrixf_mul_scalar(A, B, C, M, N, P);
+}
+
+#endif /* defined(ROMANO_X86_64) */
+
 typedef void (*matmul_func)(const float* ROMANO_RESTRICT,
                             const float* ROMANO_RESTRICT,
                             float* ROMANO_RESTRICT,
@@ -410,8 +431,12 @@ typedef void (*matmul_func)(const float* ROMANO_RESTRICT,
 
 matmul_func __matmul_funcs[3] = {
     _matrixf_mul_scalar,
+#if defined(ROMANO_X86_64)
     _matrixf_mul_sse,
     _matrixf_mul_avx2,
+#elif defined(ROMANO_AARCH64)
+    _matrixf_mul_neon,
+#endif /* defined(ROMANO_X86_64) */
 };
 
 void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)

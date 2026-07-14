@@ -9,7 +9,7 @@
 
 #if defined(ROMANO_WIN)
 #include "libromano/time.h"
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <sys/time.h>
 #endif /* defined(ROMANO_WIN) */
 
@@ -136,8 +136,10 @@ void logger_log(log_level level, const char* format, ...)
 
 #if defined(ROMANO_WIN)
         localtime_s(&local_time, &raw_time);
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
         localtime_r(&raw_time, &local_time);
+#else
+#error "No implementation available for time conversion"
 #endif /* defined(ROMANO_WIN) */
 
         va_start(args, format);

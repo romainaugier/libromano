@@ -24,7 +24,7 @@ ROMANO_CPP_ENTER
 #define UNSET_BIT64(i, b) ((i) &= ~BIT64((b)))
 #define TOGGLE_BIT64(i, b) ((i) ^= BIT64((b)))
 
-ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
+static ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
 {
     x--;
     x |= x >> 1;
@@ -35,7 +35,7 @@ ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
     return x++;
 }
 
-ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
+static ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
 {
     x--;
     x |= x >> 1;
@@ -47,13 +47,15 @@ ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
     return x++;
 }
 
+#if defined(ROMANO_X86_64)
 #if defined(ROMANO_WIN)
 #include <intrin.h>
 #else
 #include <immintrin.h>
 #endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_X86_64) */
 
-ROMANO_FORCE_INLINE uint64_t popcount_u32(const uint32_t x)
+static ROMANO_FORCE_INLINE uint64_t popcount_u32(const uint32_t x)
 {
 #if defined(ROMANO_MSVC)
     return __popcnt(x);
@@ -69,7 +71,7 @@ ROMANO_FORCE_INLINE uint64_t popcount_u32(const uint32_t x)
 #endif /* defined(ROMANO_WIN) */
 }
 
-ROMANO_FORCE_INLINE uint64_t popcount_u64(const uint64_t x)
+static ROMANO_FORCE_INLINE uint64_t popcount_u64(const uint64_t x)
 {
 #if defined(ROMANO_MSVC)
     return __popcnt64(x);
@@ -85,7 +87,7 @@ ROMANO_FORCE_INLINE uint64_t popcount_u64(const uint64_t x)
 #endif /* defined(ROMANO_WIN) */
 }
 
-ROMANO_FORCE_INLINE uint32_t clz_u64(const uint64_t x)
+static ROMANO_FORCE_INLINE uint32_t clz_u64(const uint64_t x)
 {
 #if defined(ROMANO_MSVC)
     unsigned long trailing_zero = 0;
@@ -96,12 +98,12 @@ ROMANO_FORCE_INLINE uint32_t clz_u64(const uint64_t x)
     }
 
     return 32UL;
-#elif defined(ROMANO_GCC)
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __builtin_clzll(x);
 #endif /* defined(ROMANO_MSVC) */
 }
 
-ROMANO_FORCE_INLINE uint32_t ctz_u64(const uint64_t x)
+static ROMANO_FORCE_INLINE uint32_t ctz_u64(const uint64_t x)
 {
 #if defined(ROMANO_MSVC)
     unsigned long trailing_zero = 0UL;
@@ -112,51 +114,83 @@ ROMANO_FORCE_INLINE uint32_t ctz_u64(const uint64_t x)
     }
 
     return 63UL;
-#elif defined(ROMANO_GCC)
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     return __builtin_ctzll(x);
 #endif /* defined(ROMANO_MSVC) */
 }
 
-ROMANO_FORCE_INLINE uint32_t pext_u32(const uint32_t x, const uint32_t y)
+/* https://www.felixcloutier.com/x86/pext */
+
+static ROMANO_FORCE_INLINE uint32_t pext_u32(const uint32_t x, const uint32_t y)
 {
+#if defined(ROMANO_X86_64)
     return _pext_u32(x, y);
+#elif defined(ROMANO_AARCH64)
+    uint32_t temp = x;
+    uint32_t mask = y;
+    uint32_t dest = 0;
+    uint32_t k = 0;
+
+    for(uint32_t m = 0; m < 32; m++)
+    {
+        if(mask & (1 << m))
+            dest |= 1 << k++;
+    }
+
+    return dest;
+#endif /* defined(ROMANO_X86_64) */
 }
 
-ROMANO_FORCE_INLINE uint64_t pext_u64(const uint64_t x, const uint64_t y)
+static ROMANO_FORCE_INLINE uint64_t pext_u64(const uint64_t x, const uint64_t y)
 {
+#if defined(ROMANO_X86_64)
     return _pext_u64(x, y);
+#elif defined(ROMANO_AARCH64)
+    uint64_t temp = x;
+    uint64_t mask = y;
+    uint64_t dest = 0;
+    uint64_t k = 0;
+
+    for(uint64_t m = 0; m < 64; m++)
+    {
+        if(mask & (1 << m))
+            dest |= 1 << k++;
+    }
+
+    return dest;
+#endif /* defined(ROMANO_X86_64) */
 }
 
-ROMANO_FORCE_INLINE uint8_t abs_u8(const int8_t x)
+static ROMANO_FORCE_INLINE uint8_t abs_u8(const int8_t x)
 {
     const uint8_t mask = x >> 7U;
     return (uint8_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint16_t abs_i16(const int16_t x)
+static ROMANO_FORCE_INLINE uint16_t abs_i16(const int16_t x)
 {
     const uint16_t mask = x >> 15U;
     return (uint16_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint32_t abs_i32(const int32_t x)
+static ROMANO_FORCE_INLINE uint32_t abs_i32(const int32_t x)
 {
     const uint32_t mask = x >> 31U;
     return (uint32_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint64_t abs_i64(const int64_t x)
+static ROMANO_FORCE_INLINE uint64_t abs_i64(const int64_t x)
 {
     const uint64_t mask = x >> 63U;
     return (uint64_t)((mask ^ x) - mask);
 }
 
-ROMANO_FORCE_INLINE uint64_t lsb_u64(const uint64_t x)
+static ROMANO_FORCE_INLINE uint64_t lsb_u64(const uint64_t x)
 {
     return x & -x;
 }
 
-ROMANO_FORCE_INLINE uint64_t clsb_u64(const uint64_t x)
+static ROMANO_FORCE_INLINE uint64_t clsb_u64(const uint64_t x)
 {
     return x & (x - 1ULL);
 }

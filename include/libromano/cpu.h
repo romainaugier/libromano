@@ -13,14 +13,19 @@
 
 ROMANO_CPP_ENTER
 
+#if defined(ROMANO_X86_64)
 #if defined(ROMANO_MSVC)
 #include <intrin.h>
 #define cpuid(__regs, __mode) __cpuid(__regs, __mode)
 #else
 #define cpuid(__regs, __mode) asm volatile ("cpuid" : "=a" ((__regs)[0]), "=b" ((__regs)[1]), "=c" ((__regs)[2]), "=d" ((__regs)[3]) : "a" (__mode), "c" (0))
 #endif /* defined(ROMANO_MSVC) */
+#elif defined(ROMANO_AARCH64)
+#endif /* defined(ROMANO_X86_64) */
 
 ROMANO_API void cpu_check(void);
+
+#define ROMANO_CPU_NAME_SZ 49
 
 /* The string must be allocated before, and should be sizeof(int) * 12 + 1 (49 bytes) */
 ROMANO_API void cpu_get_name(char* name);

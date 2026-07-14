@@ -17,7 +17,7 @@ ROMANO_API size_t get_num_procs(void);
 #include <Windows.h>
 typedef CRITICAL_SECTION Mutex;
 typedef CONDITION_VARIABLE ConditionalVariable;
-#elif defined(ROMANO_LINUX)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -44,25 +44,25 @@ ROMANO_API void mutex_release(Mutex* mutex);
 ROMANO_API void mutex_free(Mutex* mutex);
 
 /* Creates a new conditional variable (memory allocated) and initializes it */
-ROMANO_API ConditionalVariable* ConditionalVariable_new(void);
+ROMANO_API ConditionalVariable* conditionalvariable_new(void);
 
 /* Initializes the given conditional variable */
-ROMANO_API void ConditionalVariable_init(ConditionalVariable* cond_var);
+ROMANO_API void conditionalvariable_init(ConditionalVariable* cond_var);
 
 /* Waits for the conditional variable to be waken, for the given time */
-ROMANO_API void ConditionalVariable_wait(ConditionalVariable* cond_var, Mutex* mutex, uint32_t wait_duration_ms);
+ROMANO_API void conditionalvariable_wait(ConditionalVariable* cond_var, Mutex* mutex, uint32_t wait_duration_ms);
 
 /* Signal one conditional variable */
-ROMANO_API void ConditionalVariable_signal(ConditionalVariable* cond_var);
+ROMANO_API void conditionalvariable_signal(ConditionalVariable* cond_var);
 
 /* Signal all conditonal variables */
-ROMANO_API void ConditionalVariable_broadcast(ConditionalVariable* cond_var);
+ROMANO_API void conditionalvariable_broadcast(ConditionalVariable* cond_var);
 
 /* Releases the given conditional variable */
-ROMANO_API void ConditionalVariable_release(ConditionalVariable* cond_var);
+ROMANO_API void conditionalvariable_release(ConditionalVariable* cond_var);
 
 /* Releases and frees the given conditional variable */
-ROMANO_API void ConditionalVariable_free(ConditionalVariable* cond_var);
+ROMANO_API void conditionalvariable_free(ConditionalVariable* cond_var);
 
 struct Thread;
 typedef struct Thread Thread;
@@ -82,6 +82,8 @@ ROMANO_API void thread_sleep(const int sleep_duration_ms);
  *
  */
 ROMANO_API void thread_yield(void);
+
+#define THREAD_INVALID_ID UINT64_MAX
 
 /* Returns the current thread id */
 ROMANO_API size_t thread_get_id(void);

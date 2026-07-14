@@ -47,6 +47,10 @@ float __stats_mean_scalar(const float* ROMANO_RESTRICT array, size_t n)
     return mean;
 }
 
+#if defined(ROMANO_X86_64)
+
+#define NUM_STATS_MEAN_FUNCS 5
+
 float __stats_mean_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
     size_t i;
@@ -109,14 +113,44 @@ float __stats_mean_avx(const float* ROMANO_RESTRICT array, size_t n)
     return mean;
 }
 
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_STATS_MEAN_FUNCS 2
+
+float __stats_mean_neon(const float* ROMANO_RESTRICT array, size_t n)
+{
+    size_t i;
+    size_t neon_loop;
+    float mean;
+
+    i = 0;
+    neon_loop = n % 4;
+    mean = 0.0f;
+
+    /* TODO: implement simd loop */
+
+    for(; i < n; i++)
+    {
+        mean = mathf_lerp(mean, array[i], 1.0f / (float)(i + 1));
+    }
+
+    return mean;
+}
+
+#endif /* defined(ROMANO_X86_64) */
+
 typedef float (*stats_mean_func)(const float* ROMANO_RESTRICT, size_t);
 
-stats_mean_func __stats_mean_funcs[5] = {
+stats_mean_func __stats_mean_funcs[NUM_STATS_MEAN_FUNCS] = {
     __stats_mean_scalar,
+#if defined(ROMANO_X86_64)
     __stats_mean_sse,
     __stats_mean_avx,
     __stats_mean_avx,
     __stats_mean_avx,
+#elif defined(ROMANO_AARCH64)
+    __stats_mean_neon,
+#endif /* defined(ROMANO_X86_64) */
 };
 
 float stats_mean(const float* ROMANO_RESTRICT array, size_t n)
@@ -176,6 +210,10 @@ float __stats_min_scalar(const float* ROMANO_RESTRICT array, size_t n)
     return min;
 }
 
+#if defined(ROMANO_X86_64)
+
+#define NUM_STATS_MIN_FUNCS 5
+
 float __stats_min_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
     size_t i;
@@ -230,14 +268,43 @@ float __stats_min_avx5(const float* ROMANO_RESTRICT array, size_t n)
     return __stats_min_avx(array, n);
 }
 
-typedef float (*min_func)(const float* ROMANO_RESTRICT,size_t);
+#elif defined(ROMANO_AARCH64)
 
-min_func __stats_min_funcs[5] = {
+#define NUM_STATS_MIN_FUNCS 2
+
+float __stats_min_neon(const float* ROMANO_RESTRICT array, size_t n)
+{
+    float min;
+    size_t i;
+    size_t neon_loop;
+
+    min = array[0];
+    neon_loop = n % 4;
+
+    i = 1;
+
+    /* TODO: implement neon loop */
+
+    for(; i < n; i++)
+        min = mathf_min(min, array[i]);
+
+    return min;
+}
+
+#endif /* defined(ROMANO_X86_64) */
+
+typedef float (*min_func)(const float* ROMANO_RESTRICT, size_t);
+
+min_func __stats_min_funcs[NUM_STATS_MIN_FUNCS] = {
     __stats_min_scalar,
+#if defined(ROMANO_X86_64)
     __stats_min_sse,
     __stats_min_avx,
     __stats_min_avx,
     __stats_min_avx5,
+#elif defined(ROMANO_AARCH64)
+    __stats_min_neon,
+#endif /* defined(ROMANO_X86_64) */
 };
 
 float stats_min(const float* ROMANO_RESTRICT array, size_t n)
@@ -262,6 +329,10 @@ float __stats_max_scalar(const float* ROMANO_RESTRICT array, size_t n)
 
     return max;
 }
+
+#if defined(ROMANO_X86_64)
+
+#define NUM_STATS_MAX_FUNCS 5
 
 float __stats_max_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
@@ -317,14 +388,43 @@ float __stats_max_avx5(const float* ROMANO_RESTRICT array, size_t n)
     return __stats_max_avx(array, n);
 }
 
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_STATS_MAX_FUNCS 2
+
+float __stats_max_neon(const float* ROMANO_RESTRICT array, size_t n)
+{
+    float max;
+    size_t i;
+    size_t neon_loop;
+
+    max = array[0];
+    neon_loop = n % 4;
+
+    i = 1;
+
+    /* TODO: implement neon loop */
+
+    for(; i < n; i++)
+        max = mathf_max(max, array[i]);
+
+    return max;
+}
+
+#endif /* defined(ROMANO_X86_64) */
+
 typedef float (*max_func)(const float* ROMANO_RESTRICT,size_t);
 
-max_func __stats_max_funcs[5] = {
+max_func __stats_max_funcs[NUM_STATS_MAX_FUNCS] = {
     __stats_max_scalar,
+#if defined(ROMANO_X86_64)
     __stats_max_sse,
     __stats_max_avx,
     __stats_max_avx,
     __stats_max_avx5,
+#elif defined(ROMANO_AARCH64)
+    __stats_max_neon,
+#endif /* defined(ROMANO_X86_64) */
 };
 
 float stats_max(const float* ROMANO_RESTRICT array, size_t n)
@@ -346,12 +446,16 @@ float __stats_range_scalar(const float* ROMANO_RESTRICT array, size_t n)
     ROMANO_NO_VECTORIZATION
     for(i = 1; i < n; i++)
     {
-        min = mathf_min(min, array[i]); 
-        max = mathf_max(max, array[i]); 
+        min = mathf_min(min, array[i]);
+        max = mathf_max(max, array[i]);
     }
 
     return mathf_abs(max - min);
 }
+
+#if defined(ROMANO_X86_64)
+
+#define NUM_STATS_RANGE_FUNC 5
 
 float __stats_range_sse(const float* ROMANO_RESTRICT array, size_t n)
 {
@@ -415,14 +519,43 @@ float __stats_range_avx5(const float* ROMANO_RESTRICT array, size_t n)
     return __stats_range_avx(array, n);
 }
 
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_STATS_RANGE_FUNC 2
+
+float __stats_range_neon(const float* ROMANO_RESTRICT array, size_t n)
+{
+    size_t i;
+    float min;
+    float max;
+
+    min = array[0];
+    max = array[0];
+
+    ROMANO_NO_VECTORIZATION
+    for(i = 1; i < n; i++)
+    {
+        min = mathf_min(min, array[i]);
+        max = mathf_max(max, array[i]);
+    }
+
+    return mathf_abs(max - min);
+}
+
+#endif /* defined(ROMANO_X86_64) */
+
 typedef float (*range_func)(const float* ROMANO_RESTRICT,size_t);
 
-range_func __stats_range_funcs[5] = {
+range_func __stats_range_funcs[NUM_STATS_RANGE_FUNC] = {
     __stats_range_scalar,
+#if defined(ROMANO_X86_64)
     __stats_range_sse,
     __stats_range_avx,
     __stats_range_avx,
     __stats_range_avx5,
+#elif defined(ROMANO_AARCH64)
+    __stats_range_neon,
+#endif /* defined(ROMANO_X86_64) */
 };
 
 float stats_range(const float* ROMANO_RESTRICT array, size_t n)
