@@ -94,6 +94,23 @@ ROMANO_API void thread_detach(Thread* thread);
 /* Waits until the given thread has finished and destroy it */
 ROMANO_API void thread_join(Thread* thread);
 
+/* Macros for tsan when using cq acquire/release */
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define ROMANO_TP_TSAN 1
+#endif
+#endif /* defined(__has_feature) */
+
+#if defined(ROMANO_TP_TSAN)
+void __tsan_acquire(void* addr);
+void __tsan_release(void* addr);
+#define ROMANO_TP_RELEASE(p) __tsan_release(p)
+#define ROMANO_TP_ACQUIRE(p) __tsan_acquire(p)
+#else
+#define ROMANO_TP_RELEASE(p) ((void)0)
+#define ROMANO_TP_ACQUIRE(p) ((void)0)
+#endif /* defined(TP_TSAN) */
+
 struct ThreadPool;
 typedef struct ThreadPool ThreadPool;
 

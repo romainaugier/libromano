@@ -348,14 +348,26 @@ struct Work
 
 typedef struct Work Work;
 
+typedef struct Worker
+{
+    MoodycamelCQHandle queue;
+    struct ThreadPool* pool;
+    Thread* thread;
+    size_t tid;
+    uint32_t index;
+    char _pad[64];
+} Worker;
+
 struct ThreadPool
 {
-    MoodycamelCQHandle work_queue;
-    Thread** threads;
+    Worker* workers;
 
     uint32_t working_threads_count;
     uint32_t workers_count;
+    uint32_t alive_count;
     uint32_t stop;
+
+    uint32_t submit_rr;
 };
 
 Work* work_new(ThreadFunc func, void* arg, ThreadPoolWaiter* waiter)
@@ -395,33 +407,105 @@ void work_free(Work* work)
     free(work);
 }
 
-void* threadpool_worker_func(void* arg)
+Worker* threadpool_current_worker(ThreadPool* pool)
 {
-    ThreadPool* threadpool = (ThreadPool*)arg;
+    size_t self = thread_get_id();
+    uint32_t i;
+
+    for(i = 0; i < pool->workers_count; i++)
+    {
+        if(pool->workers[i].tid == self)
+            return &pool->workers[i];
+    }
+
+    return NULL;
+}
+
+void work_execute(ThreadPool* pool, Work* work)
+{
+    ROMANO_ASSERT(work != NULL && work->func != NULL, "Invalid work item");
+
+    atomic_thread_fence(MemoryOrder_Acquire);
+
+    atomic_add_32((Atomic32*)&pool->working_threads_count, 1, MemoryOrder_Relax);
+
+    work->func(work->arg);
+
+    atomic_sub_32((Atomic32*)&pool->working_threads_count, 1, MemoryOrder_Relax);
+
+    work_free(work);
+}
+
+Work* threadpool_try_steal(ThreadPool* pool, Worker* self)
+{
+    uint32_t count = pool->workers_count;
+    uint32_t start = self->index;
+    uint32_t i;
     Work* work;
 
-    while(1)
+    for(i = 1; i < count; i++)
     {
-        if(atomic_load_32((Atomic32*)&threadpool->stop, MemoryOrder_Relax))
-            break;
+        uint32_t victim = (start + i) % count;
 
-        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue*)&work))
+        if(moodycamel_cq_try_dequeue(pool->workers[victim].queue,
+                                     (MoodycamelValue*)&work))
         {
-            ROMANO_ASSERT(work != NULL && work->func != NULL, "Invalid work item");
+            ROMANO_TP_ACQUIRE(work);
 
-            atomic_thread_fence(MemoryOrder_Acquire);
-
-            atomic_add_32((Atomic32*)&threadpool->working_threads_count, 1, MemoryOrder_Relax);
-
-            work->func(work->arg);
-
-            atomic_sub_32((Atomic32*)&threadpool->working_threads_count, 1, MemoryOrder_Relax);
-
-            work_free(work);
+            return work;
         }
     }
 
-    atomic_sub_32((Atomic32*)&threadpool->workers_count, 1, MemoryOrder_Relax);
+    return NULL;
+}
+
+void* threadpool_worker_func(void* arg)
+{
+    Worker* self = (Worker*)arg;
+    ThreadPool* pool = self->pool;
+    Work* work;
+    uint32_t spins = 0;
+
+    self->tid = thread_get_id();
+
+    atomic_add_32((Atomic32*)&pool->alive_count, 1, MemoryOrder_AcqRel);
+
+    while(1)
+    {
+        if(atomic_load_32((Atomic32*)&pool->stop, MemoryOrder_Relax))
+            break;
+
+        if(moodycamel_cq_try_dequeue(self->queue, (MoodycamelValue*)&work))
+        {
+            ROMANO_TP_ACQUIRE(work);
+
+            work_execute(pool, work);
+            spins = 0;
+
+            continue;
+        }
+
+        work = threadpool_try_steal(pool, self);
+
+        if(work != NULL)
+        {
+            work_execute(pool, work);
+            spins = 0;
+            continue;
+        }
+
+        if(++spins < 1024)
+        {
+            thread_yield();
+        }
+        else
+        {
+            thread_yield();
+            spins = 1024;
+        }
+    }
+
+    atomic_sub_32((Atomic32*)&pool->alive_count, 1, MemoryOrder_AcqRel);
 
     return NULL;
 }
@@ -437,7 +521,7 @@ ThreadPoolWaiter threadpool_waiter_new(void)
 ThreadPool* threadpool_init(uint32_t workers_count)
 {
     ThreadPool* threadpool;
-    size_t i;
+    uint32_t i;
 
     workers_count = workers_count == 0 ? (uint32_t)get_num_procs() : workers_count;
 
@@ -449,35 +533,47 @@ ThreadPool* threadpool_init(uint32_t workers_count)
         return NULL;
     }
 
-    atomic_store_32((Atomic32*)&threadpool->workers_count, workers_count, MemoryOrder_Relax);
+    threadpool->workers = (Worker*)calloc(workers_count, sizeof(Worker));
 
-    if(!moodycamel_cq_create(&threadpool->work_queue))
+    if(threadpool->workers == NULL)
     {
         g_current_error = ErrorCode_MemAllocError;
-
         free(threadpool);
-
         return NULL;
     }
 
-    threadpool->threads = (Thread**)calloc(workers_count, sizeof(Thread*));
+    threadpool->workers_count = workers_count;
 
-    if(threadpool->threads == NULL)
+    for(i = 0; i < workers_count; i++)
     {
-        g_current_error = ErrorCode_MemAllocError;
+        threadpool->workers[i].pool  = threadpool;
+        threadpool->workers[i].index = i;
 
-        moodycamel_cq_destroy(&threadpool->work_queue);
+        if(!moodycamel_cq_create(&threadpool->workers[i].queue))
+        {
+            uint32_t j;
 
-        free(threadpool);
+            g_current_error = ErrorCode_MemAllocError;
 
-        return NULL;
+            for(j = 0; j < i; j++)
+                moodycamel_cq_destroy(threadpool->workers[j].queue);
+
+            free(threadpool->workers);
+            free(threadpool);
+
+            return NULL;
+        }
     }
 
     for(i = 0; i < workers_count; i++)
     {
-        threadpool->threads[i] = thread_create(threadpool_worker_func, (void*)threadpool);
-        thread_start(threadpool->threads[i]);
+        threadpool->workers[i].thread = thread_create(threadpool_worker_func, (void*)&threadpool->workers[i]);
+
+        thread_start(threadpool->workers[i].thread);
     }
+
+    while(atomic_load_32((Atomic32*)&threadpool->alive_count, MemoryOrder_Acquire) != threadpool->workers_count)
+        thread_yield();
 
     return threadpool;
 }
@@ -488,12 +584,34 @@ bool threadpool_work_add(ThreadPool* threadpool,
                          ThreadPoolWaiter* waiter)
 {
     Work* work;
+    Worker* self;
+    uint32_t idx;
 
     ROMANO_ASSERT(threadpool != NULL, "");
 
     work = work_new(func, arg, waiter);
 
-    if(!moodycamel_cq_enqueue(threadpool->work_queue, (MoodycamelValue)work))
+    if(work == NULL)
+        return false;
+
+    self = threadpool_current_worker(threadpool);
+
+    if(self != NULL)
+    {
+        ROMANO_TP_RELEASE(work);
+        if(!moodycamel_cq_enqueue(self->queue, (MoodycamelValue)work))
+        {
+            work_free(work);
+            return false;
+        }
+
+        return true;
+    }
+
+    idx = atomic_fetch_add_32((Atomic32*)&threadpool->submit_rr, 1, MemoryOrder_Relax) % threadpool->workers_count;
+
+    ROMANO_TP_RELEASE(work);
+    if(!moodycamel_cq_enqueue(threadpool->workers[idx].queue, (MoodycamelValue)work))
     {
         work_free(work);
         return false;
@@ -506,13 +624,30 @@ bool threadpool_work_add(ThreadPool* threadpool,
 
 void threadpool_wait(ThreadPool* threadpool)
 {
+    uint32_t i;
+    bool all_empty;
+
     ROMANO_ASSERT(threadpool != NULL, "");
 
     while(1)
     {
-        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count, MemoryOrder_Relax) == 0 &&
-           moodycamel_cq_size_approx(threadpool->work_queue) == 0)
-            break;
+        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count,
+                          MemoryOrder_Relax) == 0)
+        {
+            all_empty = true;
+
+            for(i = 0; i < threadpool->workers_count; i++)
+            {
+                if(moodycamel_cq_size_approx(threadpool->workers[i].queue) != 0)
+                {
+                    all_empty = false;
+                    break;
+                }
+            }
+
+            if(all_empty)
+                break;
+        }
 
         thread_yield();
     }
@@ -526,28 +661,34 @@ void threadpool_waiter_wait(ThreadPoolWaiter* waiter)
 
 void threadpool_release(ThreadPool* threadpool)
 {
-    Work* work;
     uint32_t workers_count;
     uint32_t i;
+    Work* work;
 
     ROMANO_ASSERT(threadpool != NULL, "");
 
-    workers_count = (uint32_t)atomic_load_32((Atomic32*)&threadpool->workers_count, MemoryOrder_SeqCst);
+    workers_count = threadpool->workers_count;
 
-    atomic_store_32((Atomic32*)&threadpool->stop, 1, MemoryOrder_Relax);
+    atomic_store_32((Atomic32*)&threadpool->stop, 1, MemoryOrder_SeqCst);
 
     for(i = 0; i < workers_count; i++)
-        thread_join(threadpool->threads[i]);
+        thread_join(threadpool->workers[i].thread);
 
-    while(moodycamel_cq_size_approx(threadpool->work_queue) > 0)
-        if(moodycamel_cq_try_dequeue(threadpool->work_queue, (MoodycamelValue)&work))
-            work_free(work);
+    for(i = 0; i < workers_count; i++)
+    {
+        while(moodycamel_cq_size_approx(threadpool->workers[i].queue) > 0)
+        {
+            if(moodycamel_cq_try_dequeue(threadpool->workers[i].queue, (MoodycamelValue*)&work))
+            {
+                ROMANO_TP_ACQUIRE(work);
 
-    free(threadpool->threads);
+                work_free(work);
+            }
+        }
 
-    moodycamel_cq_destroy(threadpool->work_queue);
+        moodycamel_cq_destroy(threadpool->workers[i].queue);
+    }
 
+    free(threadpool->workers);
     free(threadpool);
-
-    threadpool = NULL;
 }

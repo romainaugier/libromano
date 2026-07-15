@@ -95,6 +95,19 @@ ROMANO_FORCE_INLINE void atomic_add_32(Atomic32* volatile dest,
 #endif /* defined(ROMANO_MSVC) */
 }
 
+ROMANO_FORCE_INLINE Atomic32 atomic_fetch_add_32(Atomic32* volatile dest,
+                                                 Atomic32 value,
+                                                 MemoryOrder mo)
+{
+#if defined(ROMANO_MSVC)
+    ROMANO_UNUSED(mo);
+    return (Atomic32)InterlockedAdd((LONG*)dest, value);
+#elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+    return (Atomic32)__atomic_add_fetch(dest, value, mo);
+#endif /* defined(ROMANO_MSVC) */
+    return 0;
+}
+
 ROMANO_FORCE_INLINE void atomic_add_64(Atomic64* volatile dest,
                                        Atomic64 value,
                                        MemoryOrder mo)
