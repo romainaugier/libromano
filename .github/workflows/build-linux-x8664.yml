@@ -42,3 +42,8 @@ jobs:
         run: |
           ./build.sh --tests --clean --reldebug --threadsan
           cat build/Testing/Temporary/LastTest.log
+
+      - name: Build and test Release
+        run: |
+          ./build.sh --tests --clean
+          cat build/Testing/Temporary/LastTest.log

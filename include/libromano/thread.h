@@ -95,11 +95,13 @@ ROMANO_API void thread_detach(Thread* thread);
 ROMANO_API void thread_join(Thread* thread);
 
 /* Macros for tsan when using cq acquire/release */
-#if defined(__has_feature)
+#if defined(__SANITIZE_THREAD__)
+#define ROMANO_TP_TSAN 1
+#elif defined(__has_feature)
 #if __has_feature(thread_sanitizer)
 #define ROMANO_TP_TSAN 1
 #endif
-#endif /* defined(__has_feature) */
+#endif /* defined(__SANITIZE_THREAD__) */
 
 #if defined(ROMANO_TP_TSAN)
 void __tsan_acquire(void* addr);
