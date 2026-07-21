@@ -122,12 +122,24 @@ float __stats_mean_neon(const float* ROMANO_RESTRICT array, size_t n)
     size_t i;
     size_t neon_loop;
     float mean;
+    float32x4_t v;
+    float32x4_t m;
+    float32x4_t t;
 
     i = 0;
     neon_loop = n % 4;
     mean = 0.0f;
 
-    /* TODO: implement simd loop */
+    m = vdupq_n_f32(0.0f);
+
+    for(i = 0; i < neon_loop; i += 4)
+    {
+        v = vld1q_f32(&array[i]);
+        t = vdupq_n_f32(1.0f / (float)(i + 1));
+        m = vlerpq_f32(m, v, t);
+    }
+
+    mean = vhmean_f32(m);
 
     for(; i < n; i++)
     {
@@ -277,13 +289,16 @@ float __stats_min_neon(const float* ROMANO_RESTRICT array, size_t n)
     float min;
     size_t i;
     size_t neon_loop;
+    float32x4_t m;
 
     min = array[0];
     neon_loop = n % 4;
+    m = vdupq_n_f32(min);
 
-    i = 1;
+    for(i = 0; i < neon_loop; i += 4)
+        m = vminq_f32(m, vld1q_f32(&array[i]));
 
-    /* TODO: implement neon loop */
+    min = vminvq_f32(m);
 
     for(; i < n; i++)
         min = mathf_min(min, array[i]);
@@ -397,13 +412,16 @@ float __stats_max_neon(const float* ROMANO_RESTRICT array, size_t n)
     float max;
     size_t i;
     size_t neon_loop;
+    float32x4_t m;
 
     max = array[0];
     neon_loop = n % 4;
+    m = vdupq_n_f32(max);
 
-    i = 1;
+    for(i = 0; i < neon_loop; i += 4)
+        m = vmaxq_f32(m, vld1q_f32(&array[i]));
 
-    /* TODO: implement neon loop */
+    max = vmaxvq_f32(m);
 
     for(; i < n; i++)
         max = mathf_max(max, array[i]);
@@ -525,15 +543,27 @@ float __stats_range_avx5(const float* ROMANO_RESTRICT array, size_t n)
 
 float __stats_range_neon(const float* ROMANO_RESTRICT array, size_t n)
 {
+    float max, min;
     size_t i;
-    float min;
-    float max;
+    size_t neon_loop;
+    float32x4_t v_max, v_min;
 
     min = array[0];
     max = array[0];
+    neon_loop = n % 4;
+    v_min = vdupq_n_f32(min);
+    v_max = vdupq_n_f32(max);
 
-    ROMANO_NO_VECTORIZATION
-    for(i = 1; i < n; i++)
+    for(i = 0; i < neon_loop; i += 4)
+    {
+        v_min = vminq_f32(v_min, vld1q_f32(&array[i]));
+        v_max = vmaxq_f32(v_max, vld1q_f32(&array[i]));
+    }
+
+    min = vminvq_f32(v_min);
+    max = vmaxvq_f32(v_max);
+
+    for(; i < n; i++)
     {
         min = mathf_min(min, array[i]);
         max = mathf_max(max, array[i]);

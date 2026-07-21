@@ -13,6 +13,8 @@
 
 #if defined(ROMANO_X86_64)
 #include <immintrin.h>
+#elif defined(ROMANO_AARCH64)
+#include <arm_neon.h>
 #endif /* defined(ROMANO_X86_64) */
 
 ROMANO_CPP_ENTER
@@ -166,6 +168,8 @@ ROMANO_FORCE_INLINE float _mm256_hmax_ps(__m256 v)
 
 #elif defined(ROMANO_AARCH64)
 
+/* https://arm-software.github.io/acle/neon_intrinsics/advsimd.html */
+
 typedef enum
 {
     VectorizationMode_Scalar = 0,
@@ -184,6 +188,30 @@ ROMANO_API VectorizationMode simd_get_vectorization_mode(void);
 ROMANO_API void simd_force_vectorization_mode(const VectorizationMode mode);
 
 ROMANO_API const char* simd_get_vectorization_mode_as_string(VectorizationMode mode);
+
+/* Helpers */
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t vzeroq_f32(void) { return vdupq_n_f32(0.0f); }
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t voneq_f32(void) { return vdupq_n_f32(1.0f); }
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t vlerpq_f32(float32x4_t a, float32x4_t b, float32x4_t t)
+{
+    float32x4_t one_minus_t = vsubq_f32(voneq_f32(), t);
+    a = vmulq_f32(one_minus_t, a);
+    b = vmulq_f32(t, b);
+    return vaddq_f32(a, b);
+}
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float vhsumq_f32(float32x4_t x)
+{
+    return vaddvq_f32(x);
+}
+
+ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float vhmean_f32(float32x4_t x)
+{
+    return vaddvq_f32(x) * 0.25f;
+}
 
 #endif /* defined(ROMANO_X86_64) */
 
