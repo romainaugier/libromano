@@ -117,8 +117,18 @@ float matrixf_get_at(MatrixF* A, const int i, const int j)
 
 float matrixf_trace(MatrixF* A)
 {
-    /* TODO: implement trace */
-    return 0.0f;
+    size_t i;
+    float t;
+
+    if(A->M != A->N)
+        return 0.0f;
+
+    t = 0.0f;
+
+    for(i = 0; i < A->M; i++)
+        t += A->data[i * A->M + i];
+
+    return t;
 }
 
 void matrixf_zero(MatrixF* A)
@@ -139,24 +149,19 @@ void matrixf_transpose(MatrixF* A)
     if(M == N)
     {
         for(i = 0; i < M; i++)
-        {
             for(j = 0; j < N; j++)
-            {
                 SWAP_FLOAT(A->data[i * M + j], A->data[j * M + i]);
-            }
-        }
     }
     else
     {
         new_data = (float*)mem_aligned_alloc((N * M) * sizeof(float), ALIGNMENT);
 
+        if(new_data == NULL)
+            return;
+
         for(i = 0; i < M; i++)
-        {
             for(j = 0; j < N; j++)
-            {
                 new_data[j * M + i] = A->data[i * N + j];
-            }
-        }
 
         mem_aligned_free(A->data);
 
@@ -178,12 +183,8 @@ MatrixF matrixf_transpose_from(MatrixF* A)
     MatrixF res = matrixf_create(N, M);
 
     for(i = 0; i < M; i++)
-    {
         for(j = 0; j < N; j++)
-        {
             res.data[i * N + j] = A->data[j * M + i];
-        }
-    }
 
     return res;
 }
@@ -208,9 +209,7 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
             sum = 0.0f;
 
             for(k = 0; k < N; k++)
-            {
                 sum += A[i * N + k] * B[j * N + k];
-            }
 
             C[i * P + j] = sum;
         }
@@ -478,12 +477,8 @@ void _matrixf_add_f_scalar(MatrixF* A, const float f, const uint32_t M, const ui
     uint32_t j;
 
     for(i = 0; i < M; i++)
-    {
         for(j = 0; j < N; j++)
-        {
             GET_AT_WITH_N((*A), N, i, j) += f;
-        }
-    }
 }
 
 void matrixf_add_f(MatrixF* A, float f)
@@ -500,12 +495,8 @@ void _matrixf_sub_f_scalar(MatrixF* A, const float f, const uint32_t M, const ui
     uint32_t j;
 
     for(i = 0; i < M; i++)
-    {
         for(j = 0; j < N; j++)
-        {
             GET_AT_WITH_N((*A), N, i, j) -= f;
-        }
-    }
 }
 
 void matrixf_sub_f(MatrixF* A, float f)
@@ -522,12 +513,8 @@ void _matrixf_mul_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const
     uint32_t j;
 
     for(i = 0; i < M; i++)
-    {
         for(j = 0; j < N; j++)
-        {
             GET_AT_WITH_N((*A), N, i, j) *= f;
-        }
-    }
 }
 
 void matrixf_mul_by_f(MatrixF* A, float f)
@@ -544,12 +531,8 @@ void _matrixf_div_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const
     uint32_t j;
 
     for(i = 0; i < M; i++)
-    {
         for(j = 0; j < N; j++)
-        {
             GET_AT_WITH_N((*A), N, i, j) /= f;
-        }
-    }
 }
 
 void matrixf_div_by_f(MatrixF* A, float f)
@@ -568,9 +551,7 @@ void _matrixf_debug_full(MatrixF* A, const uint32_t M, const uint32_t N)
     for(i = 0; i < M; i++)
     {
         for(j = 0; j < N; j++)
-        {
             printf(j == (N - 1) ? "%.3f" : "%.3f ", GET_AT_WITH_N((*A), N, i, j));
-        }
 
         printf("\n");
     }
@@ -593,9 +574,7 @@ void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, cons
         }
 
         if(j < (N / 2))
-        {
             printf("... ");
-        }
 
         for(j = (N - max_columns_to_print); j < N; j++)
         {
@@ -607,9 +586,7 @@ void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, cons
     }
 
     if(i < (M / 2))
-    {
         printf("...\n");
-    }
 
     for(i = (M - max_rows_to_print); i < M; i++)
     {
@@ -620,9 +597,7 @@ void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, cons
         }
 
         if(j < (N / 2))
-        {
             printf("... ");
-        }
 
         for(j = (N - max_columns_to_print); j < N; j++)
         {
@@ -642,13 +617,9 @@ void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns)
     printf("Matrix f32: %u x %u\n", M, N);
 
     if(max_rows == 0 || max_columns == 0)
-    {
         _matrixf_debug_full(A, M, N);
-    }
     else
-    {
         _matrixf_debug_limited(A, M, N, max_rows, max_columns);
-    }
 }
 
 void matrixf_destroy(MatrixF* A)
@@ -688,9 +659,7 @@ bool matrixf_cholesky_decomposition(MatrixF* A, MatrixF* L)
             sum = 0.0f;
 
             for(k = 0; k < j; k++)
-            {
                 sum += GET_AT_WITH_N((*L), N, i, k) * GET_AT_WITH_N((*L), N, j, k);
-            }
 
             if(i == j)
             {
@@ -797,9 +766,7 @@ bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
             sum = 0.0f;
 
             for(k = j2 + 1; k < N; k++)
-            {
                 sum += GET_AT_WITH_N(L, N, j2, k) * GET_AT_WITH_N((*x), b_n, k, i);
-            }
 
             value = (GET_AT_WITH_N(y, b_n, j2, i) - sum) / GET_AT_WITH_N(L, N, j2, j2);
 
