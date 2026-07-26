@@ -236,12 +236,12 @@ void _matrixf_mul_avx(const float* ROMANO_RESTRICT A,
     _matrixf_mul_scalar(A, B, C, M, N, P);
 }
 
-void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
-                       const float* ROMANO_RESTRICT B,
-                       float* ROMANO_RESTRICT C,
-                       const uint32_t M,
-                       const uint32_t N,
-                       const uint32_t P)
+void _matrixf_mul_avx256(const float* ROMANO_RESTRICT A,
+                         const float* ROMANO_RESTRICT B,
+                         float* ROMANO_RESTRICT C,
+                         const uint32_t M,
+                         const uint32_t N,
+                         const uint32_t P)
 {
     _matrixf_mul_scalar(A, B, C, M, N, P);
 }
@@ -294,7 +294,7 @@ matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
 #if defined(ROMANO_X86_64)
     _matrixf_mul_sse,
     _matrixf_mul_avx,
-    _matrixf_mul_avx2,
+    _matrixf_mul_avx256,
     _matrixf_mul_avx512,
 #elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
     _matrixf_mul_accelerate,
@@ -641,14 +641,24 @@ bool _matrixf_cholesky_solve_scalar(MatrixF* A, MatrixF* b, MatrixF* x)
 
 #if defined(ROMANO_X86_64)
 
-#define NUM_CHOL_SOLVE_FUNCS 3
+#define NUM_CHOL_SOLVE_FUNCS 5
 
 bool _matrixf_cholesky_solve_sse(MatrixF* A, MatrixF* b, MatrixF* x)
 {
     return _matrixf_cholesky_solve_scalar(A, b, x);
 }
 
-bool _matrixf_cholesky_solve_avx2(MatrixF* A, MatrixF* b, MatrixF* x)
+bool _matrixf_cholesky_solve_avx(MatrixF* A, MatrixF* b, MatrixF* x)
+{
+    return _matrixf_cholesky_solve_scalar(A, b, x);
+}
+
+bool _matrixf_cholesky_solve_avx256(MatrixF* A, MatrixF* b, MatrixF* x)
+{
+    return _matrixf_cholesky_solve_scalar(A, b, x);
+}
+
+bool _matrixf_cholesky_solve_avx512(MatrixF* A, MatrixF* b, MatrixF* x)
 {
     return _matrixf_cholesky_solve_scalar(A, b, x);
 }
@@ -701,7 +711,9 @@ cholesky_solve_func __cholesky_solver_funcs[NUM_CHOL_SOLVE_FUNCS] = {
     _matrixf_cholesky_solve_scalar,
 #if defined(ROMANO_X86_64)
     _matrixf_cholesky_solve_sse,
-    _matrixf_cholesky_solve_avx2,
+    _matrixf_cholesky_solve_avx,
+    _matrixf_cholesky_solve_avx256,
+    _matrixf_cholesky_solve_avx512,
 #elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
     _matrixf_cholesky_solve_accelerate,
 #endif /* defined(ROMANO_X86_64) */
