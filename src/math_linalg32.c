@@ -103,12 +103,12 @@ int matrixf_column_size(MatrixF* A)
 
 void matrixf_set_at(MatrixF* A, const float value, const int i, const int j)
 {
-    A->data[i * A->M + j] = value;
+    A->data[i * A->N + j] = value;
 }
 
 float matrixf_get_at(MatrixF* A, const int i, const int j)
 {
-    return A->data[i * A->M + j];
+    return A->data[i * A->N + j];
 }
 
 float matrixf_trace(MatrixF* A)
@@ -157,7 +157,7 @@ void matrixf_transpose(MatrixF* A)
 
         for(i = 0; i < M; i++)
             for(j = 0; j < N; j++)
-                new_data[j * N + i] = A->data[i * M + j];
+                new_data[j * M + i] = A->data[i * N + j];
 
         mem_aligned_free(A->data);
 
@@ -180,7 +180,7 @@ MatrixF matrixf_transpose_from(MatrixF* A)
 
     for(i = 0; i < M; i++)
         for(j = 0; j < N; j++)
-            res.data[j * N + i] = A->data[i * M + j];
+            res.data[j * M + i] = A->data[i * N + j];
 
     return res;
 }

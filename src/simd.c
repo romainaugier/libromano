@@ -120,7 +120,7 @@ const char* simd_get_vectorization_mode_as_string(VectorizationMode mode)
         case VectorizationMode_Scalar: return "Scalar";
         case VectorizationMode_SSE: return "SSE";
         case VectorizationMode_AVX: return "AVX";
-        case VectorizationMode_AVX2: return "AVX256";
+        case VectorizationMode_AVX256: return "AVX256";
         case VectorizationMode_AVX512: return "AVX512";
         default: return "Unknown";
     }
