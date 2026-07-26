@@ -30,7 +30,7 @@ void ROMANO_LIB_ENTRY lib_entry(void)
     mem_check_endianness();
     cpu_check();
 #if ROMANO_DEBUG
-    printf("libromano vectorization mode: %s\n", VECTORIZATION_MODE_STR(simd_get_vectorization_mode()));
+    printf("libromano vectorization mode: %s\n", simd_get_vectorization_mode_as_string(simd_get_vectorization_mode()));
     printf("libromano detected endianness: %s\n", ENDIANNESS_STR(mem_get_endianness()));
     printf("libromano detected cpu frequency: %u MHz\n", cpu_get_frequency());
 #endif /* ROMANO_DEBUG */

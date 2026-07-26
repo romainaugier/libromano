@@ -26,18 +26,20 @@ typedef enum
     VectorizationMode_Scalar = 0,
     VectorizationMode_SSE = 1,
     VectorizationMode_AVX = 2,
-    VectorizationMode_AVX2 = 3,
+    VectorizationMode_AVX256 = 3,
     VectorizationMode_AVX512 = 4,
     VectorizationMode_COUNT = 5,
 } VectorizationMode;
-
-#define VECTORIZATION_MODE_STR(mode) mode == 2 ? "AVX" : mode == 1 ? "SSE" : "Scalar (None)"
 
 void simd_check_vectorization(void);
 
 ROMANO_API int simd_has_sse(void);
 
 ROMANO_API int simd_has_avx(void);
+
+ROMANO_API int simd_has_avx256(void);
+
+ROMANO_API int simd_has_avx512(void);
 
 ROMANO_API VectorizationMode simd_get_vectorization_mode(void);
 
@@ -176,8 +178,6 @@ typedef enum
     VectorizationMode_NEON = 1,
     VectorizationMode_COUNT = 2,
 } VectorizationMode;
-
-#define VECTORIZATION_MODE_STR(mode) mode == 1 ? "NEON" : "Scalar (None)"
 
 void simd_check_vectorization(void);
 

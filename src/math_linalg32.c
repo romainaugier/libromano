@@ -214,9 +214,19 @@ void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
 
 #if defined(ROMANO_X86_64)
 
-#define NUM_MATRIXF_MUL_FUNCS 3
+#define NUM_MATRIXF_MUL_FUNCS 5
 
 void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
+                      const float* ROMANO_RESTRICT B,
+                      float* ROMANO_RESTRICT C,
+                      const uint32_t M,
+                      const uint32_t N,
+                      const uint32_t P)
+{
+    _matrixf_mul_scalar(A, B, C, M, N, P);
+}
+
+void _matrixf_mul_avx(const float* ROMANO_RESTRICT A,
                       const float* ROMANO_RESTRICT B,
                       float* ROMANO_RESTRICT C,
                       const uint32_t M,
@@ -232,6 +242,16 @@ void _matrixf_mul_avx2(const float* ROMANO_RESTRICT A,
                        const uint32_t M,
                        const uint32_t N,
                        const uint32_t P)
+{
+    _matrixf_mul_scalar(A, B, C, M, N, P);
+}
+
+void _matrixf_mul_avx512(const float* ROMANO_RESTRICT A,
+                         const float* ROMANO_RESTRICT B,
+                         float* ROMANO_RESTRICT C,
+                         const uint32_t M,
+                         const uint32_t N,
+                         const uint32_t P)
 {
     _matrixf_mul_scalar(A, B, C, M, N, P);
 }
@@ -273,7 +293,9 @@ matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
     _matrixf_mul_scalar,
 #if defined(ROMANO_X86_64)
     _matrixf_mul_sse,
+    _matrixf_mul_avx,
     _matrixf_mul_avx2,
+    _matrixf_mul_avx512,
 #elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
     _matrixf_mul_accelerate,
 #endif /* defined(ROMANO_X86_64) */
