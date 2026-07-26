@@ -40,6 +40,11 @@ elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf dbghelp)
 endif()
 
+if(APPLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ACCELERATE_NEW_LAPACK)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Accelerate")
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE concurrentqueue::concurrentqueue_c_api)
 
 if(ROMANO_HAS_OPENCL EQUAL 1)

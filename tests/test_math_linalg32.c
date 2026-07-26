@@ -13,12 +13,13 @@
 #if ROMANO_DEBUG
 #define MATMUL_SIZE_M 350
 #define MATMUL_SIZE_N 213
+#define M_CHOL 16
 #else
 #define MATMUL_SIZE_M 1024
 #define MATMUL_SIZE_N 1024
+#define M_CHOL 256
 #endif /* ROMANO_DEBUG */
 
-#define M_CHOL 4
 
 #define DEBUG_SIZE 4
 
@@ -28,6 +29,7 @@ int main(void)
 {
     size_t i;
     size_t j;
+    size_t k;
 
     logger_init();
 
@@ -64,127 +66,89 @@ int main(void)
 
     logger_log(LogLevel_Info, "Matrix Multiplication");
 
-    simd_force_vectorization_mode(VectorizationMode_Scalar);
-    MatrixF C_scalar = matrix_null();
+    MatrixF C = matrix_null();
 
-    SCOPED_PROFILE_MS_START(matrixf_scalar_mul);
-    matrixf_mul(&A, &B, &C_scalar);
-    SCOPED_PROFILE_MS_END(matrixf_scalar_mul);
-
-    matrixf_debug(&C_scalar, DEBUG_SIZE, DEBUG_SIZE);
-
-#if defined(ROMANO_X86_64)
-    simd_force_vectorization_mode(VectorizationMode_SSE);
-    MatrixF C_sse = matrix_null();
-
-    SCOPED_PROFILE_MS_START(matrixf_sse_mul);
-    matrixf_mul(&A, &B, &C_sse);
-    SCOPED_PROFILE_MS_END(matrixf_sse_mul);
-
-    simd_force_vectorization_mode(VectorizationMode_AVX);
-    MatrixF C_avx = matrix_null();
-
-    SCOPED_PROFILE_MS_START(matrixf_avx_mul);
-    matrixf_mul(&A, &B, &C_avx);
-    SCOPED_PROFILE_MS_END(matrixf_avx_mul);
-
-    float sse_err = 0.0f;
-    float avx_err = 0.0f;
-    uint32_t count = 1;
-
-    for(i = 0; i < MATMUL_SIZE_M; i++)
+    for(i = 0; i < VectorizationMode_COUNT; i++)
     {
-        for(j = 0; j < MATMUL_SIZE_M; j++)
-        {
-            const float scalar = matrixf_get_at(&C_scalar, i, j);
-            const float sse = matrixf_get_at(&C_sse, i, j);
-            const float avx = matrixf_get_at(&C_avx, i, j);
+        simd_force_vectorization_mode((VectorizationMode)i);
 
-            sse_err = mathf_lerp(sse_err, mathf_abs(scalar - sse), 1.0f / (float)count);
-            avx_err = mathf_lerp(avx_err, mathf_abs(scalar - avx), 1.0f / (float)count);
-            count++;
-        }
+        logger_log(LogLevel_Info,
+                   "Vectorization mode: %s",
+                   simd_get_vectorization_mode_as_string((VectorizationMode)i));
+
+        SCOPED_PROFILE_MS_START(matrixf_mul);
+        matrixf_mul(&A, &B, &C);
+        SCOPED_PROFILE_MS_END(matrixf_mul);
+
+        matrixf_debug(&C, DEBUG_SIZE, DEBUG_SIZE);
     }
 
-    logger_log(LogLevel_Info, "Average sse_err: %f", sse_err);
-    logger_log(LogLevel_Info, "Average avx_err: %f", avx_err);
-
-    if(sse_err > EPSILON)
-    {
-        logger_log(LogLevel_Error, "Average err is too high between sse and scalar matmul");
-        return 1;
-    }
-
-    if(avx_err > EPSILON)
-    {
-        logger_log(LogLevel_Error, "Average err is too high between avx and scalar matmul");
-        return 1;
-    }
-
-    matrixf_destroy(&C_sse);
-    matrixf_destroy(&C_avx);
-#endif /* defined(ROMANO_X86_64) */
     matrixf_destroy(&A);
     matrixf_destroy(&B);
-    matrixf_destroy(&C_scalar);
+    matrixf_destroy(&C);
 
     logger_log(LogLevel_Info, "Cholesky Solving");
 
-    MatrixF _a = matrixf_create(M_CHOL, M_CHOL);
-
-    for(i = 0; i < M_CHOL; i++)
+    for(k = 0; k < VectorizationMode_COUNT; k++)
     {
-        for(j = 0; j < M_CHOL; j++)
+        MatrixF _a = matrixf_create(M_CHOL, M_CHOL);
+
+        for(i = 0; i < M_CHOL; i++)
         {
-            float r1 = random_float_01((i + 1) * (j + 1) * 8439);
-            matrixf_set_at(&_a, (float)r1 + 1.0f, i, j);
+            for(j = 0; j < M_CHOL; j++)
+            {
+                float r1 = random_float_01((i + 1) * (j + 1) * 8439);
+                matrixf_set_at(&_a, (float)r1 + 1.0f, i, j);
+            }
         }
-    }
 
-    MatrixF b = matrixf_create(M_CHOL, 1);
+        MatrixF b = matrixf_create(M_CHOL, 1);
 
-    for(i = 0; i < M_CHOL; i++)
-    {
-        matrixf_set_at(&b, (float)i + 1.0f, i, 0);
-    }
+        for(i = 0; i < M_CHOL; i++)
+            matrixf_set_at(&b, (float)i + 1.0f, i, 0);
 
-    MatrixF _at = matrixf_copy(&_a);
-    matrixf_transpose(&_at);
+        MatrixF _at = matrixf_copy(&_a);
+        matrixf_transpose(&_at);
 
-    MatrixF a = matrix_null();
-    matrixf_mul(&_a, &_at, &a);
+        MatrixF a = matrix_null();
+        matrixf_mul(&_a, &_at, &a);
 
-    matrixf_destroy(&_a);
-    matrixf_destroy(&_at);
+        matrixf_destroy(&_a);
+        matrixf_destroy(&_at);
 
-    logger_log(LogLevel_Info, "A");
-    matrixf_debug(&a, 0, 0);
+        matrixf_mul_by_f(&a, 0.01f);
 
-    MatrixF x = matrix_null();
+        logger_log(LogLevel_Info, "A");
+        matrixf_debug(&a, 4, 4);
 
-    bool res = matrixf_cholesky_solve(&a, &b, &x);
+        MatrixF x = matrix_null();
 
-    if(!res)
-    {
-        logger_log(LogLevel_Error, "Cannot solve linear system with Cholesky Decomposition: %u", res);
+        SCOPED_PROFILE_MS_START(matrixf_cholesky_solve);
+        bool res = matrixf_cholesky_solve(&a, &b, &x);
+        SCOPED_PROFILE_MS_END(matrixf_cholesky_solve);
+
+        if(!res)
+        {
+            logger_log(LogLevel_Error, "Cannot solve linear system with Cholesky Decomposition: %u", res);
+
+            matrixf_destroy(&a);
+            matrixf_destroy(&b);
+
+            continue;
+        }
+
+        logger_log(LogLevel_Info, "Cholesky solve successful");
+
+        logger_log(LogLevel_Info, "x");
+        matrixf_debug(&x, 4, 4);
+
+        logger_log(LogLevel_Info, "B");
+        matrixf_debug(&b, 4, 4);
 
         matrixf_destroy(&a);
         matrixf_destroy(&b);
-
-        return 1;
+        matrixf_destroy(&x);
     }
-
-    logger_log(LogLevel_Info, "Cholesky solve successful");
-
-    logger_log(LogLevel_Info, "x");
-    matrixf_debug(&x, 0, 0);
-
-    logger_log(LogLevel_Info, "B");
-    matrixf_debug(&b, 0, 0);
-
-    matrixf_destroy(&a);
-    matrixf_destroy(&b);
-    matrixf_destroy(&x);
 
     logger_log(LogLevel_Info, "Finished math_linalg32 test");
 

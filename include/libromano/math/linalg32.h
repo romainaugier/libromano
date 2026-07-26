@@ -117,8 +117,8 @@ typedef struct matrix44f {
 
 typedef struct MatrixF {
     float* data;
-    uint32_t N;
     uint32_t M;
+    uint32_t N;
 } MatrixF;
 
 ROMANO_API MatrixF matrix_null(void);
@@ -160,8 +160,6 @@ ROMANO_API void matrixf_div_by_f(MatrixF* A, const float f);
 ROMANO_API void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns);
 
 ROMANO_API void matrixf_destroy(MatrixF* A);
-
-ROMANO_API bool matrixf_cholesky_decomposition(MatrixF* A, MatrixF* L);
 
 ROMANO_API bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x);
 
