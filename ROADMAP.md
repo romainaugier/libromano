@@ -2,6 +2,7 @@
 
 ## Data Structures
 - :heavy_check_mark: hashmap
+- :heavy_check_mark: hashset
 - :heavy_check_mark: string
 - :heavy_check_mark: stringview
 - :heavy_check_mark: dynamic vector
