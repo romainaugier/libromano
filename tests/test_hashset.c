@@ -5,8 +5,8 @@
 #include "libromano/hashset.h"
 
 #include "libromano/logger.h"
-#include "libromano/string.h"
 #include "libromano/hash.h"
+#include "libromano/string.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -133,8 +133,14 @@ int main(void)
             free(seen);
             return 1;
         }
+        
+        char* end = (char*)key + key_size;
 
-        long num = strtol((const char*)key + KEY_NAME_SIZE, NULL, 10);
+        char temp[16];
+        memset(temp, 0, sizeof(temp));
+        memcpy(temp, (const char*)key + KEY_NAME_SIZE, key_size - KEY_NAME_SIZE);
+
+        long num = strtol(temp, NULL, 10);
 
         if(num < 0 || num >= (long)HASHSET_LOOP_COUNT || seen[(size_t)num])
         {
