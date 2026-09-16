@@ -352,7 +352,7 @@ HashMap* hashmap_new(size_t initial_capacity)
     }
 
     hashmap->buckets = NULL;
-    hashmap->hash_func = hash_murmur3;
+    hashmap->hash_func = hash_wyhash32;
     hashmap->size = 0;
     hashmap->capacity = 0;
     hashmap->hashkey ^= random_next_uint32();

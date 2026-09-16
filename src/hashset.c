@@ -245,7 +245,7 @@ Hashset* hashset_new(size_t initial_capacity)
     }
 
     hashset->buckets = NULL;
-    hashset->hash_func = hash_murmur3;
+    hashset->hash_func = hash_wyhash32;
     hashset->size = 0;
     hashset->capacity = 0;
     hashset->hashkey ^= random_next_uint32();

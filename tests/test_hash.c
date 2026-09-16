@@ -35,6 +35,7 @@ int main(void)
     PROFILE_NS(hash_fnv1a(text_to_hash, text_len));
     PROFILE_NS(hash_fnv1a_pippip(text_to_hash, text_len));
     PROFILE_NS(hash_murmur3((const void*)text_to_hash, text_len, random_next_uint32()));
+    PROFILE_NS(hash_wyhash64((const void*)text_to_hash, text_len, random_next_uint64()));
 
     return 0;
 }

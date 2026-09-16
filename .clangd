@@ -3,6 +3,7 @@ CompileFlags:
     - "-Iinclude"
     - "-Iext/concurrentqueue/cqinstall/include"
     - "-DDEBUG_BUILD=1"
+    - "-DROMANO_HTTP=1"
     - "-DTESTS_DATA_DIR=../tests_data"
     - "-D__ROMANO_DEFINE_ERROR_EXTERNS"
     - "-DACCELERATE_NEW_LAPACK"
