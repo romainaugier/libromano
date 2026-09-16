@@ -100,9 +100,7 @@ ROMANO_FORCE_INLINE uint32_t bucket_get_key_size(const Bucket* bucket)
 ROMANO_FORCE_INLINE void* bucket_get_key(const Bucket* bucket)
 {
     if(bucket_has_flag(bucket, BucketFlag_KeyInterned))
-    {
         return (void*)bucket;
-    }
 
     return bucket->key;
 }
@@ -149,17 +147,13 @@ ROMANO_FORCE_INLINE bool bucket_compare_key(const Bucket* bucket,
 
 void hashset_bucket_free(Bucket* bucket)
 {
-    ROMANO_ASSERT(bucket != NULL, "");
+    ROMANO_ASSERT(bucket != NULL, "bucket is NULL");
 
     if(bucket_is_empty(bucket))
-    {
         return;
-    }
 
     if(!bucket_has_flag(bucket, BucketFlag_KeyInterned))
-    {
         free(bucket_get_key(bucket));
-    }
 
     memset(bucket, 0, sizeof(Bucket));
 }
@@ -412,7 +406,10 @@ bool hashset_add(Hashset* hashset,
         if(!bucket_is_empty(bucket))
         {
             if(bucket_compare_key(bucket, key, key_size, hash))
+            {
+                hashset_bucket_free(&entry);
                 return false;
+            }
 
             if(entry.probe_length > bucket_get_probe_length(bucket))
             {
@@ -565,12 +562,7 @@ void hashset_free(Hashset* hashset)
     if(hashset->buckets != NULL)
     {
         for(i = 0; i < hashset->capacity; i++)
-        {
-            if(bucket_is_empty(&hashset->buckets[i]))
-                continue;
-
             hashset_bucket_free(&hashset->buckets[i]);
-        }
 
         free(hashset->buckets);
     }
