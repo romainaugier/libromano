@@ -352,8 +352,12 @@ static void cpu_detect_features(void)
     }
 #elif defined(ROMANO_AARCH64)
 #if defined(ROMANO_LINUX)
-    cpu_decode_hwcaps(getauxval(AT_HWCAP), getauxval(AT_HWCAP2));
+    unsigned long hwcap = getauxval(AT_HWCAP);
+    cpu_decode_hwcaps(hwcap, getauxval(AT_HWCAP2));
+
+    g_cpu_features[CPUFeature_NEON] = (hwcap & HWCAP_ASIMD) != 0;
 #elif defined(ROMANO_APPLE)
+    g_cpu_features[CPUFeature_NEON] = cpu_sysctl_bool("hw.optional.neon");
     g_cpu_features[CPUFeature_FP] = cpu_sysctl_bool("hw.optional.floatingpoint");
     g_cpu_features[CPUFeature_AdvSIMD] = cpu_sysctl_bool("hw.optional.AdvSIMD");
     g_cpu_features[CPUFeature_AES_ARM] = cpu_sysctl_bool("hw.optional.arm.FEAT_AES");
@@ -386,6 +390,8 @@ static void cpu_detect_features(void)
                                      cpu_sysctl_bool("hw.optional.armv8_2_fhm");
 #elif defined(ROMANO_WIN)
     /* Mandatory on Windows on ARM */
+
+    g_cpu_features[CPUFeature_NEON] = IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE);
     g_cpu_features[CPUFeature_FP] = true;
     g_cpu_features[CPUFeature_AdvSIMD] = true;
 
@@ -433,6 +439,8 @@ static void cpu_detect_features(void)
     elf_aux_info(AT_HWCAP2, &hwcap2, sizeof(hwcap2));
 
     cpu_decode_hwcaps(hwcap, hwcap2);
+
+    g_cpu_features[CPUFeature_NEON] = (hwcap & HWCAP_ASIMD) != 0;
 #else
     /* Required by the ABI on every BSD */
     g_cpu_features[CPUFeature_FP] = true;

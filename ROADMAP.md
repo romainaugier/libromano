@@ -24,10 +24,10 @@
 - :heavy_check_mark: socket server
 - :heavy_check_mark: filesystem interaction (python-like functions to interact with the filesystem)
 - :heavy_check_mark: http requests
-- :clock3: hash (various hash functions)
+- :heavy_check_mark: hash functions (fnv1a, murmur3, wyhash, cityhash)
 - :clock3: random number generators
 - :clock3: memory (memory_arena, allocators...)
-- :clock3: cpu utilities
+- :heavy_check_mark: cpu utilities (cross platform features detection, frequency get, timestamp counter)
 - :clock3: simd utilities
 
 ## Maths
