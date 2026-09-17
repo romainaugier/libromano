@@ -15,6 +15,8 @@ int main(void)
 
     logger_log(LogLevel_Info, "CPU Name: %s", cpu_name);
 
+    cpu_print_features();
+
     logger_release();
 
     return 0;

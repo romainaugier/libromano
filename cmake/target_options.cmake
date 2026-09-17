@@ -28,6 +28,7 @@ function(set_target_options target_name)
 
         set(COMPILE_OPTIONS
             -D_FORTIFY_SOURCES=2
+            -Wno-gnu-statement-expression # for a macro in cpu.c
             -pipe
             -Wall
             -pedantic-errors
