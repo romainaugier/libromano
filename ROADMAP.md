@@ -14,8 +14,8 @@
 - :heavy_check_mark: thread
 - :heavy_check_mark: locks
 - :heavy_check_mark: 32/64 bits atomics
-- :clock3: regular expressions (regex)
-- :clock3: command line arguments parser
+- :heavy_check_mark: regular expressions (posix regex)
+- :heavy_check_mark: command line arguments parser
 - :heavy_check_mark: json
 - :heavy_check_mark: logger
 - :heavy_check_mark: sockets
