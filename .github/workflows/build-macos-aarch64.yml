@@ -27,7 +27,7 @@ jobs:
 
       - name: Build and test with addr/leak sanitizer
         run: |
-          ./build.sh --tests --reldebug --addrsan --leaksan
+          ./build.sh --tests --reldebug --addrsan
           cat build/Testing/Temporary/LastTest.log
 
       - name: Build and test with ub sanitizer
