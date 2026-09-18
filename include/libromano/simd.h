@@ -191,11 +191,11 @@ ROMANO_API const char* simd_get_vectorization_mode_as_string(VectorizationMode m
 
 /* Helpers */
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t vzeroq_f32(void) { return vdupq_n_f32(0.0f); }
+ROMANO_FORCE_INLINE float32x4_t vzeroq_f32(void) { return vdupq_n_f32(0.0f); }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t voneq_f32(void) { return vdupq_n_f32(1.0f); }
+ROMANO_FORCE_INLINE float32x4_t voneq_f32(void) { return vdupq_n_f32(1.0f); }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t vlerpq_f32(float32x4_t a, float32x4_t b, float32x4_t t)
+ROMANO_FORCE_INLINE float32x4_t vlerpq_f32(float32x4_t a, float32x4_t b, float32x4_t t)
 {
     float32x4_t one_minus_t = vsubq_f32(voneq_f32(), t);
     a = vmulq_f32(one_minus_t, a);
@@ -203,12 +203,12 @@ ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float32x4_t vlerpq_f32(float32x4_t a,
     return vaddq_f32(a, b);
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float vhsumq_f32(float32x4_t x)
+ROMANO_FORCE_INLINE float vhsumq_f32(float32x4_t x)
 {
     return vaddvq_f32(x);
 }
 
-ROMANO_STATIC_FUNCTION ROMANO_FORCE_INLINE float vhmean_f32(float32x4_t x)
+ROMANO_FORCE_INLINE float vhmean_f32(float32x4_t x)
 {
     return vaddvq_f32(x) * 0.25f;
 }

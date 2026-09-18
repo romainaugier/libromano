@@ -127,12 +127,12 @@ static const uint64_t g_digit_count_table[64] = {
     89766816766159920,
 };
 
-static ROMANO_FORCE_INLINE int floor_log2(uint64_t n)
+ROMANO_FORCE_INLINE int floor_log2(uint64_t n)
 {
     return 63 ^ clz_u64(n);
 }
 
-static ROMANO_FORCE_INLINE int count_digits(uint64_t n)
+ROMANO_FORCE_INLINE int count_digits(uint64_t n)
 {
     return n == 0 ? 1 : ((int)((g_digit_count_table[floor_log2(n)] + (n >> (floor_log2(n) / 4))) >> 52));
 }

@@ -151,25 +151,25 @@ typedef long long ssize_t;
 #endif /* defined(ROMANO_WIN) */
 
 #if defined(ROMANO_MSVC)
-#define ROMANO_FORCE_INLINE __forceinline
+#define ROMANO_FORCE_INLINE static __forceinline
 #define ROMANO_NO_INLINE __declspec(noinline)
 #define ROMANO_LIB_ENTRY
 #define ROMANO_LIB_EXIT
 #elif defined(ROMANO_GCC)
-#define ROMANO_FORCE_INLINE inline __attribute__((always_inline))
+#define ROMANO_FORCE_INLINE static inline __attribute__((always_inline))
 #define ROMANO_NO_INLINE __attribute__((noinline))
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANO_CLANG)
-#define ROMANO_FORCE_INLINE inline __attribute__((always_inline))
+#define ROMANO_FORCE_INLINE static inline __attribute__((always_inline))
 #define ROMANO_NO_INLINE __attribute__((noinline))
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
 #endif /* defined(ROMANO_MSVC) */
 
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-#define	ROMANO_LIKELY(x)	__builtin_expect((x) != 0, 1)
-#define	ROMANO_UNLIKELY(x)	__builtin_expect((x) != 0, 0)
+#define	ROMANO_LIKELY(x) __builtin_expect((x) != 0, 1)
+#define	ROMANO_UNLIKELY(x) __builtin_expect((x) != 0, 0)
 #else
 #define	ROMANO_LIKELY(x) (x)
 #define	ROMANO_UNLIKELY(x) (x)

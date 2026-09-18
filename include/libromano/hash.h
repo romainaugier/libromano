@@ -27,7 +27,7 @@ typedef struct _hash_uint128_t
     uint64_t hi;
 } hash_uint128_t;
 
-static ROMANO_FORCE_INLINE uint64_t hash_128_to_64(const hash_uint128_t x)
+ROMANO_FORCE_INLINE uint64_t hash_128_to_64(const hash_uint128_t x)
 {
     const uint64_t kmul = 0x9ddfea08eb382d69ULL;
     uint64_t a;
@@ -42,7 +42,7 @@ static ROMANO_FORCE_INLINE uint64_t hash_128_to_64(const hash_uint128_t x)
     return b;
 }
 
-static ROMANO_FORCE_INLINE hash_uint128_t hash_uint128_make(uint64_t lo, uint64_t hi)
+ROMANO_FORCE_INLINE hash_uint128_t hash_uint128_make(uint64_t lo, uint64_t hi)
 {
     hash_uint128_t r;
     r.lo = lo;

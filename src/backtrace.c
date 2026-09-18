@@ -22,7 +22,7 @@ extern ErrorCode g_current_error;
 
 #if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-static ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
+ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
 {
     uintptr_t* new_stack_frame;
 

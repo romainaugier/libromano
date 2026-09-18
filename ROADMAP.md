@@ -29,6 +29,7 @@
 - :clock3: memory (memory_arena, allocators...)
 - :heavy_check_mark: cpu utilities (cross platform features detection, frequency get, timestamp counter)
 - :clock3: simd utilities
+- :heavy_check_mark: numeric utilities (wrapping, saturating, checked, overflowing arithemtic ops)
 
 ## Maths
 - :heavy_check_mark: f32 common (optimized maths library)

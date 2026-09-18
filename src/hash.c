@@ -296,7 +296,7 @@ uint64_t hash_wyhash64(const void *key, size_t len, uint64_t seed)
     return wyhash(key, len, seed, wyhash_secret);
 }
 
-static ROMANO_FORCE_INLINE uint32_t hash64_to_32(uint64_t h)
+ROMANO_FORCE_INLINE uint32_t hash64_to_32(uint64_t h)
 {
     return (uint32_t)(h ^ (h >> 32));
 }
@@ -316,55 +316,55 @@ uint32_t hash_wyhash32(const void *key, size_t len, uint32_t seed)
 #define c1 0xcc9e2d51U
 #define c2 0x1b873593U
 
-static ROMANO_FORCE_INLINE uint64_t uload64(const uint8_t* p)
+ROMANO_FORCE_INLINE uint64_t uload64(const uint8_t* p)
 {
     uint64_t r;
     memcpy(&r, p, sizeof(r));
     return r;
 }
 
-static ROMANO_FORCE_INLINE uint32_t uload32(const uint8_t* p)
+ROMANO_FORCE_INLINE uint32_t uload32(const uint8_t* p)
 {
     uint32_t r;
     memcpy(&r, p, sizeof(r));
     return r;
 }
 
-static ROMANO_FORCE_INLINE uint64_t fetch64(const uint8_t* p)
+ROMANO_FORCE_INLINE uint64_t fetch64(const uint8_t* p)
 {
     return htole64(uload64(p));
 }
 
-static ROMANO_FORCE_INLINE uint32_t fetch32(const uint8_t* p)
+ROMANO_FORCE_INLINE uint32_t fetch32(const uint8_t* p)
 {
     return htole32(uload32(p));
 }
 
 /* Rotation / mixing */
 
-static ROMANO_FORCE_INLINE uint64_t rotate64(uint64_t v, int shift)
+ROMANO_FORCE_INLINE uint64_t rotate64(uint64_t v, int shift)
 {
     return shift == 0 ? v : ((v >> shift) | (v << (64 - shift)));
 }
 
-static ROMANO_FORCE_INLINE uint32_t rotate32(uint32_t v, int shift)
+ROMANO_FORCE_INLINE uint32_t rotate32(uint32_t v, int shift)
 {
     return shift == 0 ? v : ((v >> shift) | (v << (32 - shift)));
 }
 
-static ROMANO_FORCE_INLINE uint64_t shift_mix(uint64_t v)
+ROMANO_FORCE_INLINE uint64_t shift_mix(uint64_t v)
 {
     return v ^ (v >> 47);
 }
 
-static ROMANO_FORCE_INLINE void swap64(uint64_t* a, uint64_t* b)
+ROMANO_FORCE_INLINE void swap64(uint64_t* a, uint64_t* b)
 {
     uint64_t t = *a;
     *a = *b;
     *b = t;
 }
 
-static ROMANO_FORCE_INLINE void swap32(uint32_t* a, uint32_t* b)
+ROMANO_FORCE_INLINE void swap32(uint32_t* a, uint32_t* b)
 {
     uint32_t t = *a;
     *a = *b;
@@ -373,7 +373,7 @@ static ROMANO_FORCE_INLINE void swap32(uint32_t* a, uint32_t* b)
 
 /* Portable short-input helpers */
 
-static ROMANO_FORCE_INLINE uint64_t hash_len_16(uint64_t u, uint64_t v)
+ROMANO_FORCE_INLINE uint64_t hash_len_16(uint64_t u, uint64_t v)
 {
     const uint64_t mul = 0x9ddfea08eb382d69ULL;
     uint64_t a;
@@ -388,7 +388,7 @@ static ROMANO_FORCE_INLINE uint64_t hash_len_16(uint64_t u, uint64_t v)
     return b;
 }
 
-static ROMANO_FORCE_INLINE uint64_t hash_len_0_to_16(const uint8_t* s, size_t len)
+ROMANO_FORCE_INLINE uint64_t hash_len_0_to_16(const uint8_t* s, size_t len)
 {
     if(ROMANO_LIKELY(len >= 8))
     {
@@ -420,7 +420,7 @@ static ROMANO_FORCE_INLINE uint64_t hash_len_0_to_16(const uint8_t* s, size_t le
     return k2;
 }
 
-static ROMANO_FORCE_INLINE uint64_t hash_len_17_to_32(const uint8_t* s, size_t len)
+ROMANO_FORCE_INLINE uint64_t hash_len_17_to_32(const uint8_t* s, size_t len)
 {
     uint64_t mul = k2 + len * 2;
     uint64_t a = fetch64(s) * k1;
@@ -432,7 +432,7 @@ static ROMANO_FORCE_INLINE uint64_t hash_len_17_to_32(const uint8_t* s, size_t l
                        a + rotate64(b + k2, 18) + c);
 }
 
-static ROMANO_FORCE_INLINE uint64_t hash_len_33_to_64(const uint8_t* s, size_t len)
+ROMANO_FORCE_INLINE uint64_t hash_len_33_to_64(const uint8_t* s, size_t len)
 {
     uint64_t mul = k2 + len * 2;
     uint64_t a = fetch64(s) * k2;
@@ -524,7 +524,7 @@ uint64_t hash_city64_with_seed(const uint8_t* buf, size_t len, uint64_t seed)
 
 /* Portable CityHash32 */
 
-static ROMANO_FORCE_INLINE uint32_t fmix32(uint32_t h)
+ROMANO_FORCE_INLINE uint32_t fmix32(uint32_t h)
 {
     h ^= h >> 16;
     h *= 0x85ebca6bU;
@@ -534,7 +534,7 @@ static ROMANO_FORCE_INLINE uint32_t fmix32(uint32_t h)
     return h;
 }
 
-static ROMANO_FORCE_INLINE uint32_t mur(uint32_t a, uint32_t h)
+ROMANO_FORCE_INLINE uint32_t mur(uint32_t a, uint32_t h)
 {
     a *= c1;
     a = rotate32(a, 17);
@@ -652,12 +652,12 @@ uint32_t hash_city32(const uint8_t* buf, size_t len)
 
 /* Portable CityHash128 */
 
-static ROMANO_FORCE_INLINE hash_uint128_t weak_hash_len_32_with_seeds_vals(uint64_t w,
-                                                                           uint64_t x,
-                                                                           uint64_t y,
-                                                                           uint64_t z,
-                                                                           uint64_t a,
-                                                                           uint64_t b)
+ROMANO_FORCE_INLINE hash_uint128_t weak_hash_len_32_with_seeds_vals(uint64_t w,
+                                                                    uint64_t x,
+                                                                    uint64_t y,
+                                                                    uint64_t z,
+                                                                    uint64_t a,
+                                                                    uint64_t b)
 {
     hash_uint128_t r;
     a += w;
@@ -671,18 +671,18 @@ static ROMANO_FORCE_INLINE hash_uint128_t weak_hash_len_32_with_seeds_vals(uint6
     return r;
 }
 
-static ROMANO_FORCE_INLINE hash_uint128_t weak_hash_len_32_with_seeds(const uint8_t* s,
-                                                                      uint64_t a,
-                                                                      uint64_t b)
+ROMANO_FORCE_INLINE hash_uint128_t weak_hash_len_32_with_seeds(const uint8_t* s,
+                                                               uint64_t a,
+                                                               uint64_t b)
 {
     return weak_hash_len_32_with_seeds_vals(fetch64(s), fetch64(s + 8),
                                             fetch64(s + 16), fetch64(s + 24),
                                             a, b);
 }
 
-static ROMANO_FORCE_INLINE hash_uint128_t city_murmur(const uint8_t* s,
-                                                      size_t len,
-                                                      hash_uint128_t seed)
+ROMANO_FORCE_INLINE hash_uint128_t city_murmur(const uint8_t* s,
+                                               size_t len,
+                                               hash_uint128_t seed)
 {
     uint64_t a = fetch64(s);
     uint64_t b = fetch64(s + 8);
@@ -810,24 +810,24 @@ int hash_city_crc_available(void)
 /* CRC32-C(u64) primitives. Both x86 SSE4.2 and ARMv8 CRC32 compute the
  * same CRC-32C polynomial; only the intrinsic names differ. */
 #if defined(ROMANO_X86_64)
-#   include <nmmintrin.h>
-    static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
-    {
-        return (uint64_t)_mm_crc32_u64(crc, v);
-    }
+#include <nmmintrin.h>
+static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
+{
+    return (uint64_t)_mm_crc32_u64(crc, v);
+}
 #elif defined(ROMANO_AARCH64)
-#   include <arm_acle.h>
-    static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
-    {
-        return (uint64_t)__crc32cd((uint32_t)crc, v);
-    }
+#include <arm_acle.h>
+ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
+{
+    return (uint64_t)__crc32cd((uint32_t)crc, v);
+}
 #else
-    static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
-    {
-        (void)crc; (void)v;
-        return 0; /* unreachable: guarded by hash_city_crc_available() */
-    }
-#endif
+static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
+{
+    (void)crc; (void)v;
+    return 0; /* unreachable: guarded by hash_city_crc_available() */
+}
+#endif /* defined(ROMANO_X86_64) */
 
 /* CRC-accelerated CityHash128/256 over long inputs */
 
