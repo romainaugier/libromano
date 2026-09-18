@@ -811,7 +811,7 @@ int hash_city_crc_available(void)
  * same CRC-32C polynomial; only the intrinsic names differ. */
 #if defined(ROMANO_X86_64)
 #include <nmmintrin.h>
-static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
+ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
 {
     return (uint64_t)_mm_crc32_u64(crc, v);
 }
@@ -822,7 +822,7 @@ ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
     return (uint64_t)__crc32cd((uint32_t)crc, v);
 }
 #else
-static ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
+ROMANO_FORCE_INLINE uint64_t crc_u64(uint64_t crc, uint64_t v)
 {
     (void)crc; (void)v;
     return 0; /* unreachable: guarded by hash_city_crc_available() */

@@ -120,7 +120,7 @@ cmake -S . -B build -DRUN_TESTS=$RUNTESTS \
                     -DTHREADSAN=$THREADSAN \
                     -DUBSAN=$UBSAN \
                     -DADDRSAN=$ADDRSAN \
-                    -DLEAKSAN=LEAK$SAN
+                    -DLEAKSAN=$LEAKSAN
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
