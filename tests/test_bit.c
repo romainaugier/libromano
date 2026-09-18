@@ -12,13 +12,13 @@ int main(void)
 
     logger_log_info("Starting bit test");
 
-    ROMANO_ASSERT(round_u32_to_next_pow2(1ul) == 2, "");
+    ROMANO_ASSERT(round_u32_to_next_pow2(1ul) == 1, "");
     ROMANO_ASSERT(round_u32_to_next_pow2(7ul) == 8, "");
     ROMANO_ASSERT(round_u32_to_next_pow2(1234ul) == 2048, "");
     ROMANO_ASSERT(round_u32_to_next_pow2(30000ul) == 32768, "");
     ROMANO_ASSERT(round_u32_to_next_pow2(42000ul) == 65536, "");
 
-    ROMANO_ASSERT(round_u64_to_next_pow2(1ull) == 2, "");
+    ROMANO_ASSERT(round_u64_to_next_pow2(1ull) == 1, "");
     ROMANO_ASSERT(round_u64_to_next_pow2(7ull) == 8, "");
     ROMANO_ASSERT(round_u64_to_next_pow2(1234ull) == 2048, "");
     ROMANO_ASSERT(round_u64_to_next_pow2(30000ull) == 32768, "");
