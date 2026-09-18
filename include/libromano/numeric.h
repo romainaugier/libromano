@@ -13,7 +13,7 @@
  *   bool T_checked_OP(T a, T b, T* out) true on success, result in *out
  *   T T_overflowing_OP(T a, T b, bool* o) wrapped result, *o = overflowed
  *
- *   OP = add, sub, mul, div, rem          (saturating: add, sub, mul, div)
+ *   OP = add, sub, mul, div, rem, inc (saturating: add, sub, mul, div, inc)
  *   Unary: neg (all), abs (signed only), plus T_unsigned_abs for signed types
  *   Shifts: shl, shr with a u32 amount (wrapping masks the amount like Rust,
  *           checked/overflowing report amount >= bit width)
@@ -105,7 +105,7 @@ typedef int64_t i64;
 
 #if defined(ROMANO__NUM_BUILTINS)
 
-/* The compiler emits add/sub/mul + jo/jc/seto/setc/cmov directly. */
+/* The compiler emits add/sub/mul/inc + jo/jc/seto/setc/cmov directly. */
 #define ROMANO__NUM_OVF(T)                                          \
     ROMANO_FORCE_INLINE T T##_overflowing_add(T a, T b, bool* o)    \
     {                                                               \
@@ -123,6 +123,12 @@ typedef int64_t i64;
     {                                                               \
         T r;                                                        \
         *o = __builtin_mul_overflow(a, b, &r);                      \
+        return r;                                                   \
+    }                                                               \
+    ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
+    {                                                               \
+        T r;                                                        \
+        *o = __builtin_add_overflow(a, (T)1, &r);                   \
         return r;                                                   \
     }
 
@@ -182,6 +188,30 @@ ROMANO__NUM_OVF(i64)
         return (T)(UT)(uint64_t)p;                                  \
     }
 
+#define ROMANO__NUM_OVF_INC_U(T, W)                                 \
+    ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
+    {                                                               \
+        const T r = (T)((W)a + (W)1);                               \
+        *o = r < a;                                                 \
+        return r;                                                   \
+    }                                                               
+
+#define ROMANO__NUM_OVF_INC_I(T, W)                                 \
+    ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
+    {                                                               \
+        const T r = (T)((W)a + (W)1);                               \
+        *o = r < a;                                                 \
+        return r;                                                   \
+    }                                                               
+
+#define ROMANO__NUM_OVF_INC_I(T, UT, W, BITS)                       \
+    ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
+    {                                                               \
+        const W ua = (UT)a, ub = (UT)1, ur = (UT)(ua + ub);         \
+        *o = (bool)((((ua ^ ur) & (ub ^ ur)) >> ((BITS) - 1)) & 1u);\
+        return (T)(UT)ur;                                           \
+    }                                                               \
+
 ROMANO__NUM_OVF_ADDSUB_U(u8, u32)
 ROMANO__NUM_OVF_ADDSUB_U(u16, u32)
 ROMANO__NUM_OVF_ADDSUB_U(u32, u32)
@@ -197,6 +227,15 @@ ROMANO__NUM_OVF_MUL_U(u32, U32_MAX)
 ROMANO__NUM_OVF_MUL_I(i8, u8, I8_MIN, I8_MAX)
 ROMANO__NUM_OVF_MUL_I(i16, u16, I16_MIN, I16_MAX)
 ROMANO__NUM_OVF_MUL_I(i32, u32, I32_MIN, I32_MAX)
+
+ROMANO__NUM_OVF_INC_U(u8, u32)
+ROMANO__NUM_OVF_INC_U(u16, u32)
+ROMANO__NUM_OVF_INC_U(u32, u32)
+ROMANO__NUM_OVF_INC_U(u64, u64)
+ROMANO__NUM_OVF_INC_I(i8, u8, u32, 8)
+ROMANO__NUM_OVF_INC_I(i16, u16, u32, 16)
+ROMANO__NUM_OVF_INC_I(i32, u32, u32, 32)
+ROMANO__NUM_OVF_INC_I(i64, u64, u64, 64)
 
 ROMANO_FORCE_INLINE u64 u64_overflowing_mul(u64 a, u64 b, bool* o)
 {
@@ -246,6 +285,7 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
     ROMANO_FORCE_INLINE T T##_wrapping_sub(T a, T b) { return (T)((W)a - (W)b); } \
     ROMANO_FORCE_INLINE T T##_wrapping_mul(T a, T b) { return (T)((W)a * (W)b); } \
     ROMANO_FORCE_INLINE T T##_wrapping_div(T a, T b) { return (T)(a / b); }  \
+    ROMANO_FORCE_INLINE T T##_wrapping_inc(T a) { return (T)((W)a + (W)1); } \
     ROMANO_FORCE_INLINE T T##_wrapping_rem(T a, T b) { return (T)(a % b); }  \
     ROMANO_FORCE_INLINE T T##_wrapping_neg(T a) { return (T)((W)0 - (W)a); } \
     ROMANO_FORCE_INLINE T T##_wrapping_shl(T a, u32 s)                       \
@@ -305,6 +345,11 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
     }                                                                        \
     ROMANO_FORCE_INLINE T T##_saturating_div(T a, T b) { return (T)(a / b); } \
                                                                              \
+    ROMANO_FORCE_INLINE T T##_saturating_inc(T a)                            \
+    {                                                                        \
+        return T##_saturating_add(a, (T)1);                                  \
+    }                                                                        \
+                                                                             \
     /* checked */                                                            \
     ROMANO_FORCE_INLINE bool T##_checked_add(T a, T b, T* out)               \
     {                                                                        \
@@ -330,6 +375,10 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
             return false;                                                    \
         *out = (T)(a / b);                                                   \
         return true;                                                         \
+    }                                                                        \
+    ROMANO_FORCE_INLINE bool T##_checked_inc(T a, T* out)                    \
+    {                                                                        \
+        return T##_checked_add(a, 1, out);                                   \
     }                                                                        \
     ROMANO_FORCE_INLINE bool T##_checked_rem(T a, T b, T* out)               \
     {                                                                        \
@@ -371,6 +420,10 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
     {                                                                        \
         return (T)(UT)((W)(UT)a * (W)(UT)b);                                 \
     }                                                                        \
+    ROMANO_FORCE_INLINE T T##_wrapping_inc(T a)                              \
+    {                                                                        \
+        return (T)(UT)((W)(UT)a + (W)(UT)1);                                 \
+    }                                                                        \
     ROMANO_FORCE_INLINE T T##_wrapping_neg(T a)                              \
     {                                                                        \
         return (T)(UT)((W)0 - (W)(UT)a);                                     \
@@ -400,13 +453,13 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
     {                                                                        \
         const bool ov = (a == (MINV)) & (b == -1);                           \
         *o = ov;                                                             \
-        return (T)(a / (T)(b + 2 * (int)ov));                                     \
+        return (T)(a / (T)(b + 2 * (int)ov));                                \
     }                                                                        \
     ROMANO_FORCE_INLINE T T##_overflowing_rem(T a, T b, bool* o)             \
     {                                                                        \
         const bool ov = (a == (MINV)) & (b == -1);                           \
         *o = ov;                                                             \
-        return (T)(a % (T)(b + 2 * (int)ov));                                     \
+        return (T)(a % (T)(b + 2 * (int)ov));                                \
     }                                                                        \
     ROMANO_FORCE_INLINE T T##_wrapping_div(T a, T b)                         \
     {                                                                        \
@@ -464,6 +517,10 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
         const bool ov = (a == (MINV)) & (b == -1);                           \
         return (T)((T)(UT)((UT)a + (UT)ov) / b);                             \
     }                                                                        \
+    ROMANO_FORCE_INLINE T T##_saturating_inc(T a)                            \
+    {                                                                        \
+        return T##_saturating_add(a, (T)1);                                  \
+    }                                                                        \
     ROMANO_FORCE_INLINE T T##_saturating_neg(T a)                            \
     {                                                                        \
         bool o;                                                              \
@@ -502,6 +559,10 @@ ROMANO_FORCE_INLINE i64 i64_overflowing_mul(i64 a, i64 b, bool* o)
             return false;                                                    \
         *out = (T)(a / b);                                                   \
         return true;                                                         \
+    }                                                                        \
+    ROMANO_FORCE_INLINE bool T##_checked_inc(T a, T* out)                    \
+    {                                                                        \
+        return T##_checked_add(a, (T)1, out);                                \
     }                                                                        \
     ROMANO_FORCE_INLINE bool T##_checked_rem(T a, T b, T* out)               \
     {                                                                        \

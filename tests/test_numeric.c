@@ -263,6 +263,28 @@ static void test_##T(void)                                                     \
     CHK2(U, T, div, MAX, 0, false, 0);                                         \
     CHK_DIV_ZERO_UNTOUCHED(U, T, div, 1);                                      \
                                                                                \
+    /* ---- inc ---- */                                                        \
+    WRAP1(U, T, inc, 1, 2);                                                    \
+    WRAP1(U, T, inc, 0, 1);                                                    \
+    WRAP1(U, T, inc, MAX, 0);                                                  \
+    WRAP1(U, T, inc, HIGH, HIGH + 1);                                          \
+                                                                               \
+    OVF1(U, T, inc, 1, 2, false);                                              \
+    OVF1(U, T, inc, MAX - 1, MAX, false);                                      \
+    OVF1(U, T, inc, MAX, 0, true);                                             \
+    OVF1(U, T, inc, HIGH, HIGH + 1, false);                                    \
+                                                                               \
+    SAT1(U, T, inc, 1, 2);                                                     \
+    SAT1(U, T, inc, MAX - 1, MAX);                                             \
+    SAT1(U, T, inc, MAX, MAX);                                                 \
+    SAT1(U, T, inc, MAX, MAX);                                                 \
+    SAT1(U, T, inc, HIGH, HIGH + 1);                                           \
+    SAT1(U, T, inc, 0, 1);                                                     \
+                                                                               \
+    CHK1(U, T, inc, 1, true, 2);                                               \
+    CHK1(U, T, inc, MAX - 1, true, MAX);                                       \
+    CHK1(U, T, inc, MAX, false, 0);                                            \
+                                                                               \
     /* ---- rem ---- */                                                        \
     WRAP2(U, T, rem, 7, 2, 1);                                                 \
     WRAP2(U, T, rem, 5, 7, 5);                                                 \
@@ -469,6 +491,25 @@ static void test_##T(void)                                                     \
     CHK2(I, T, div, MIN, -1, false, 0);                                        \
     CHK2(I, T, div, 1, 0, false, 0);                                           \
     CHK_DIV_ZERO_UNTOUCHED(I, T, div, MIN);                                    \
+                                                                               \
+    /* ---- inc ---- */                                                        \
+    WRAP1(I, T, inc, 1, 2);                                                    \
+    WRAP1(I, T, inc, 0, 1);                                                    \
+    WRAP1(I, T, inc, MAX, MIN);                                                \
+                                                                               \
+    OVF1(I, T, inc, 1, 2, false);                                              \
+    OVF1(I, T, inc, MAX - 1, MAX, false);                                      \
+    OVF1(I, T, inc, MAX, MIN, true);                                           \
+                                                                               \
+    SAT1(I, T, inc, 1, 2);                                                     \
+    SAT1(I, T, inc, MAX - 1, MAX);                                             \
+    SAT1(I, T, inc, MAX, MAX);                                                 \
+    SAT1(I, T, inc, MAX, MAX);                                                 \
+    SAT1(I, T, inc, 0, 1);                                                     \
+                                                                               \
+    CHK1(I, T, inc, 1, true, 2);                                               \
+    CHK1(I, T, inc, MAX - 1, true, MAX);                                       \
+    CHK1(I, T, inc, MAX, false, MIN);                                          \
                                                                                \
     /* rem (sign of dividend) */                                               \
     WRAP2(I, T, rem, 7, 2, 1);                                                 \
@@ -800,19 +841,19 @@ int main(void)
     logger_log_info("Starting numeric test");
 
 #if defined(ROMANO__NUM_BUILTINS)
-    logger_log_debug("backend: compiler builtins\n");
+    logger_log_debug("backend: compiler builtins");
 #else
-    logger_log_debug("backend: portable fallback\n");
+    logger_log_debug("backend: portable fallback");
 #endif /* defined(ROMANO__NUM_BUILTINS) */
 
     for(i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
     {
         const unsigned long long failures_before = g_failures;
         tests[i].fn();
-        logger_log_debug("  %-18s %s\n", tests[i].name, g_failures == failures_before ? "ok" : "FAILED");
+        logger_log_debug("  %-18s %s", tests[i].name, g_failures == failures_before ? "ok" : "FAILED");
     }
 
-    logger_log_info("%llu checks, %llu failures\n", g_checks, g_failures);
+    logger_log_info("%llu checks, %llu failures", g_checks, g_failures);
 
     logger_log_info("Finished numeric test");
 
