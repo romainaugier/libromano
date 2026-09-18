@@ -101,6 +101,12 @@ function(set_target_options target_name)
         target_link_options(${target_name} PUBLIC /ignore:4075 /ignore:4300 /NODEFAULTLIB:library $<$<CONFIG:Debug,RelWithDebInfo>:/PROFILE /OPT:NOREF>)
     endif()
 
+    # Code coverage
+    if(COVERAGE AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target_name} PRIVATE --coverage -O0 -g)
+        target_link_options(${target_name} PRIVATE --coverage)
+    endif()
+
     # Provides the macro definition DEBUG_BUILD
     target_compile_definitions(${target_name} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
 endfunction()

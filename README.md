@@ -1,8 +1,9 @@
 # libromano
 
-![Windows x86_64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-windows-x8664.yml/badge.svg)
-![Linux x86_64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-linux-x8664.yml/badge.svg)
-![MacOS aarch64 Build](https://github.com/romainaugier/libromano/actions/workflows/build-macos-aarch64.yml/badge.svg)
+![Windows x86_64](https://github.com/romainaugier/libromano/actions/workflows/build-windows-x8664.yml/badge.svg)
+![Linux x86_64](https://github.com/romainaugier/libromano/actions/workflows/build-linux-x8664.yml/badge.svg)
+![MacOS aarch64](https://github.com/romainaugier/libromano/actions/workflows/build-macos-aarch64.yml/badge.svg)
+[![codecov](https://codecov.io/gh/romainaugier/libromano/branch/main/graph/badge.svg)](https://codecov.io/gh/romainaugier/libromano)
 
 C99 utility library for projects and learning.
 

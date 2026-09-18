@@ -15,6 +15,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 option(RUN_TESTS "Run unit tests" OFF)
 option(WITH_OPENCL "Enable OpenCL support" OFF)
 option(WITH_HTTP "Enable HTTP/HTTPS support" OFF)
+option(COVERAGE "Enable code coverage instrumentation (GCC/Clang)" OFF)
 
 if(RUN_TESTS)
     message(STATUS "RUN_TESTS enabled, building and running tests")
