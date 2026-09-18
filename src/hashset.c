@@ -183,7 +183,7 @@ ROMANO_FORCE_INLINE size_t hashset_index(const Hashset* hashset, const uint32_t 
 
 ROMANO_FORCE_INLINE size_t hashset_get_new_capacity(Hashset* hashset)
 {
-    return round_u64_to_next_pow2(hashset->capacity + 1) + 1;
+    return round_u64_to_next_pow2(hashset->capacity + 1);
 }
 
 void hashset_move_entry(Hashset* hashset, Bucket* entry, const bool rehash);
@@ -242,12 +242,12 @@ Hashset* hashset_new(size_t initial_capacity)
     hashset->hash_func = hash_wyhash32;
     hashset->size = 0;
     hashset->capacity = 0;
-    hashset->hashkey ^= random_next_uint32();
+    hashset->hashkey = random_next_uint32();
 
     if(initial_capacity == 0)
         initial_capacity = HASHSET_INITIAL_CAPACITY;
     else
-        initial_capacity = round_u64_to_next_pow2(initial_capacity + 1) + 1;
+        initial_capacity = round_u64_to_next_pow2(initial_capacity + 1);
 
     hashset_grow(hashset,
                  initial_capacity,

@@ -32,7 +32,7 @@ ROMANO_FORCE_INLINE uint32_t round_u32_to_next_pow2(uint32_t x)
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-    return x++;
+    return ++x;
 }
 
 ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
@@ -44,7 +44,7 @@ ROMANO_FORCE_INLINE uint64_t round_u64_to_next_pow2(uint64_t x)
     x |= x >> 8;
     x |= x >> 16;
     x |= x >> 32;
-    return x++;
+    return ++x;
 }
 
 #if defined(ROMANO_X86_64)
@@ -126,7 +126,6 @@ ROMANO_FORCE_INLINE uint32_t pext_u32(const uint32_t x, const uint32_t y)
 #if defined(ROMANO_X86_64)
     return _pext_u32(x, y);
 #elif defined(ROMANO_AARCH64)
-    uint32_t temp = x;
     uint32_t mask = y;
     uint32_t dest = 0;
     uint32_t k = 0;
@@ -146,7 +145,6 @@ ROMANO_FORCE_INLINE uint64_t pext_u64(const uint64_t x, const uint64_t y)
 #if defined(ROMANO_X86_64)
     return _pext_u64(x, y);
 #elif defined(ROMANO_AARCH64)
-    uint64_t temp = x;
     uint64_t mask = y;
     uint64_t dest = 0;
     uint64_t k = 0;
