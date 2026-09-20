@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #if defined(ROMANO_X86_64)
 #include <immintrin.h>
@@ -24,7 +25,8 @@
 
 /* On aarch64 with clang/gcc, __SIZEOF_INT128__ is defined, so we use the */
 /* native 128-bit integer type via the compiler GNU extension. */
-#if defined(__SIZEOF_INT128__)
+/* Define ROMANO_INT128_NO_NATIVE to use the fallback implementation (mostly for testing) */
+#if defined(__SIZEOF_INT128__) && !defined(ROMANO_INT128_NO_NATIVE)
 #define ROMANO_USE_NATIVE_INT128
 #endif
 
@@ -53,6 +55,19 @@ typedef __m128i uint128_t;
 #error "No int128 implementation available for this platform"
 #endif
 
+ROMANO_FORCE_INLINE void int128_print_parts(uint64_t high, uint64_t low)
+{
+    const int negative = (high >> 63) != 0;
+
+    if(negative)
+    {
+        low = ~low + 1;
+        high = ~high + (low == 0);
+    }
+
+    printf("%s0x%016llX%016llX", negative ? "-" : "", (unsigned long long)high, (unsigned long long)low);
+}
+
 /* Native __int128 implementation (aarch64 / clang / gcc) */
 #if defined(ROMANO_USE_NATIVE_INT128)
 
@@ -69,13 +84,8 @@ ROMANO_FORCE_INLINE void print_uint128(uint128_t x)
 ROMANO_FORCE_INLINE void print_int128(int128_t x)
 {
     const uint128_t ux = (uint128_t)x;
-    const uint64_t low = (uint64_t)ux;
-    const uint64_t high = (uint64_t)(ux >> 64);
 
-    printf("%s0x%016llX%016llX",
-           (high & 0x8000000000000000ULL) ? "-" : "",
-           (unsigned long long)(high & 0x7FFFFFFFFFFFFFFFULL),
-           (unsigned long long)low);
+    int128_print_parts((uint64_t)(ux >> 64), (uint64_t)ux);
 }
 
 ROMANO_FORCE_INLINE uint128_t make_uint128(uint64_t high, uint64_t low)
@@ -99,11 +109,11 @@ ROMANO_FORCE_INLINE uint64_t uint128_high(uint128_t x)
 }
 
 ROMANO_FORCE_INLINE uint128_t uint128_add(uint128_t a, uint128_t b) { return a + b; }
-ROMANO_FORCE_INLINE int128_t int128_add(int128_t a, int128_t b) { return a + b; }
+ROMANO_FORCE_INLINE int128_t int128_add(int128_t a, int128_t b) { return (int128_t)((uint128_t)a + (uint128_t)b); }
 ROMANO_FORCE_INLINE uint128_t uint128_sub(uint128_t a, uint128_t b) { return a - b; }
-ROMANO_FORCE_INLINE int128_t int128_sub(int128_t a, int128_t b) { return a - b; }
+ROMANO_FORCE_INLINE int128_t int128_sub(int128_t a, int128_t b) { return (int128_t)((uint128_t)a - (uint128_t)b); }
 ROMANO_FORCE_INLINE uint128_t uint128_mul(uint128_t a, uint128_t b) { return a * b; }
-ROMANO_FORCE_INLINE int128_t int128_mul(int128_t a, int128_t b) { return a * b; }
+ROMANO_FORCE_INLINE int128_t int128_mul(int128_t a, int128_t b) { return (int128_t)((uint128_t)a * (uint128_t)b); }
 ROMANO_FORCE_INLINE uint128_t uint128_div(uint128_t a, uint128_t b) { return a / b; }
 ROMANO_FORCE_INLINE uint128_t uint128_mod(uint128_t a, uint128_t b) { return a % b; }
 ROMANO_FORCE_INLINE int128_t int128_div(int128_t a, int128_t b) { return a / b; }
@@ -128,7 +138,7 @@ ROMANO_FORCE_INLINE uint128_t uint128_or(uint128_t a, uint128_t b) { return a | 
 ROMANO_FORCE_INLINE uint128_t uint128_xor(uint128_t a, uint128_t b) { return a ^ b; }
 ROMANO_FORCE_INLINE uint128_t uint128_not(uint128_t a) { return ~a; }
 ROMANO_FORCE_INLINE uint128_t uint128_neg(uint128_t a) { return -a; }
-ROMANO_FORCE_INLINE int128_t int128_neg(int128_t a) { return -a; }
+ROMANO_FORCE_INLINE int128_t int128_neg(int128_t a) { return (int128_t)(0 - (uint128_t)a); }
 
 ROMANO_FORCE_INLINE uint128_t uint128_shl(uint128_t a, int count)
 {
@@ -148,7 +158,7 @@ ROMANO_FORCE_INLINE int128_t int128_shl(int128_t a, int count)
 {
     if(count >= 128) return (int128_t)0;
     if(count <= 0) return a;
-    return a << count;
+    return (int128_t)((uint128_t)a << count);
 }
 
 ROMANO_FORCE_INLINE int128_t int128_shr(int128_t a, int count)
@@ -168,10 +178,7 @@ ROMANO_FORCE_INLINE void print_uint128(uint128_t x)
 
 ROMANO_FORCE_INLINE void print_int128(int128_t x)
 {
-    printf("%s0x%016llX%016llX",
-           (x.high < 0) ? "-" : "",
-           (unsigned long long)(x.high & 0x7FFFFFFFFFFFFFFFULL),
-           (unsigned long long)x.low);
+    int128_print_parts((uint64_t)x.high, x.low);
 }
 
 ROMANO_FORCE_INLINE uint128_t make_uint128(uint64_t high, uint64_t low)
@@ -546,11 +553,10 @@ ROMANO_FORCE_INLINE void print_uint128(uint128_t x)
 
 ROMANO_FORCE_INLINE void print_int128(int128_t x)
 {
-    const uint64_t* parts = (const uint64_t*)&x;
-    printf("%s0x%016zX%016zX",
-           (parts[1] & 0x8000000000000000) ? "-" : "",
-           parts[1] & 0x7FFFFFFFFFFFFFFF,
-           parts[0]);
+    uint64_t parts[2];
+
+    memcpy(parts, &x, sizeof(parts));
+    int128_print_parts(parts[1], parts[0]);
 }
 
 ROMANO_FORCE_INLINE uint128_t make_uint128(uint64_t high, uint64_t low)
@@ -696,7 +702,7 @@ ROMANO_FORCE_INLINE uint128_t uint128_shl(uint128_t a, int count)
         if(count >= 128)
             return _mm_setzero_si128();
 
-        return _mm_slli_si128(a, 8);
+        return _mm_slli_epi64(_mm_slli_si128(a, 8), count - 64);
     }
     else if(count > 0)
     {

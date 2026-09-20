@@ -2,47 +2,90 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/backtrace.h"
-#include "libromano/common.h"
-#include "libromano/logger.h"
 
-#define MAX_SYMBOLS 16
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
 
-ROMANO_NO_INLINE int func1(void)
+#define MAX_FRAMES 32
+
+static ROMANO_NO_INLINE uint32_t capture_symbols(uint32_t skip, char** symbols, void** addresses)
 {
+    return backtrace_call_stack_symbols(skip, MAX_FRAMES, symbols, addresses);
+}
+
+static ROMANO_NO_INLINE uint32_t capture_nested(uint32_t skip, char** symbols, void** addresses)
+{
+    return capture_symbols(skip, symbols, addresses);
+}
+
+static void test_call_stack(void)
+{
+    void* addresses[MAX_FRAMES];
+    uint32_t count = backtrace_call_stack(0, MAX_FRAMES, addresses);
     uint32_t i;
-    uint32_t num_symbols;
-    void* addresses[MAX_SYMBOLS];
-    char* symbols[MAX_SYMBOLS];
 
-    num_symbols = backtrace_call_stack_symbols(0, MAX_SYMBOLS, symbols, addresses);
+    TEST_ASSERT(count > 0 && count <= MAX_FRAMES);
 
-    for(i = 0; i < num_symbols; i++)
+    for(i = 0; i < count; i++)
+        TEST_CHECK(addresses[i] != NULL);
+
+    TEST_CHECK(backtrace_call_stack(0, 2, addresses) <= 2);
+}
+
+static void test_call_stack_symbols(void)
+{
+    void* addresses[MAX_FRAMES];
+    char* symbols[MAX_FRAMES];
+    uint32_t count = capture_nested(0, symbols, addresses);
+    uint32_t skipped = capture_nested(1, symbols + count, addresses + count) ;
+    uint32_t i;
+
+    TEST_ASSERT(count > 2);
+    TEST_CHECK(skipped < count);
+
+    for(i = 0; i < count + skipped && i < MAX_FRAMES; i++)
     {
-        logger_log_debug("#%u 0x%p : %s", i, ((uintptr_t**)addresses)[i], symbols[i]);
+        TEST_CHECK(symbols[i] != NULL);
+        logger_log_debug("#%u %p : %s", i, addresses[i], symbols[i]);
         free(symbols[i]);
     }
-
-    return (int)num_symbols;
 }
 
-ROMANO_NO_INLINE int func2(void)
+#if defined(ROMANO_LINUX)
+static void test_signal_handler(void)
 {
-    return func1();
+    pid_t pid = fork();
+    int status = 0;
+
+    TEST_ASSERT(pid >= 0);
+
+    if(pid == 0)
+    {
+        backtrace_install_signal_handler();
+        raise(SIGFPE);
+        _exit(0);
+    }
+
+    TEST_ASSERT(waitpid(pid, &status, 0) == pid);
+    TEST_CHECK(WIFEXITED(status));
+    TEST_CHECK_EQ_INT(WEXITSTATUS(status), 1);
 }
+#endif /* defined(ROMANO_LINUX) */
 
-int main(void)
-{
-    backtrace_install_signal_handler();
+#if defined(ROMANO_LINUX)
+#define PLATFORM_TESTS TEST(test_signal_handler),
+#else
+#define PLATFORM_TESTS
+#endif /* defined(ROMANO_LINUX) */
 
-    logger_init();
-    logger_set_level(LogLevel_Debug);
-
-    int num_symbols = func2();
-
-    logger_log_debug("Found %d stack frames", num_symbols);
-
-    logger_release();
-
-    return 0;
-}
+TEST_MAIN(
+    TEST(test_call_stack),
+    TEST(test_call_stack_symbols),
+    PLATFORM_TESTS
+)

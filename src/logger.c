@@ -50,11 +50,6 @@ void logger_init(void)
 {
     logger_lock_acquire();
 
-    if(g_logger_initialized)
-    {
-        return;
-    }
-
     g_logger_initialized = 1;
 
     logger_lock_release();

@@ -81,6 +81,9 @@ void _vector_grow(Vector* vector)
 
     new_capacity = (size_t)round((float)vector_capacity(vector) * GOLDEN_RATIO);
 
+    if(new_capacity <= vector_capacity(vector))
+        new_capacity = vector_capacity(vector) + 1;
+
     vector_resize(vector, new_capacity);
 }
 
@@ -172,7 +175,9 @@ void vector_remove(Vector* vector, const size_t position)
     elem_size = vector_element_size(vector);
 
     element_address = vector_at(vector, position);
-    memmove(element_address, (char*)element_address + elem_size, (vec_size - position) * elem_size);
+    ROMANO_ASSERT(position < vec_size, "Out of bounds access");
+
+    memmove(element_address, (char*)element_address + elem_size, (vec_size - position - 1) * elem_size);
 
     ((size_t*)vector->data)[0] = vec_size - 1;
 }
@@ -204,7 +209,7 @@ void vector_pop_front(Vector* vector)
 
     memmove(vector_at(vector, 0),
             vector_at(vector, 1),
-            vec_size * vector_element_size(vector));
+            (vec_size - 1) * vector_element_size(vector));
 }
 
 void* vector_at(Vector* vector, const size_t index)
@@ -236,7 +241,10 @@ void vector_shrink_to_fit(Vector* vector)
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);
 
-    new_address = realloc(vector->data, vec_size * elem_size);
+    new_address = realloc(vector->data, 3 * sizeof(size_t) + vec_size * elem_size);
+
+    if(new_address == NULL)
+        return;
 
     vector->data = new_address;
     ((size_t*)vector->data)[1] = vec_size;
@@ -257,6 +265,9 @@ void vector_shuffle(Vector* vector, uint64_t seed)
 
     size = vector_size(vector);
     element_size = vector_element_size(vector);
+
+    if(size < 2)
+        return;
 
     for (i = 0; i < (size - 1); ++i)
     {

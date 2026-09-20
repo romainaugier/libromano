@@ -2,745 +2,218 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/fmt.h"
 
-#include <string.h>
+#include <ctype.h>
+#include <float.h>
 
-int main(void)
+static void check_i64(int64_t value)
 {
-    ROMANO_ASSERT(fmt_size_i64(0) == 1, "");
-    ROMANO_ASSERT(fmt_size_i64(-4580514856618330LL) == 17, "fmt_size_i64(-4580514856618330) should be 17");
-    ROMANO_ASSERT(fmt_size_i64(-305LL) == 4, "fmt_size_i64(-305) should be 4");
-    ROMANO_ASSERT(fmt_size_i64(7962401101072927LL) == 16, "fmt_size_i64(7962401101072927) should be 16");
-    ROMANO_ASSERT(fmt_size_i64(-9454586LL) == 8, "fmt_size_i64(-9454586) should be 8");
-    ROMANO_ASSERT(fmt_size_i64(-835747974LL) == 10, "fmt_size_i64(-835747974) should be 10");
-    ROMANO_ASSERT(fmt_size_i64(-358515706562460LL) == 16, "fmt_size_i64(-358515706562460) should be 16");
-    ROMANO_ASSERT(fmt_size_i64(-886525837LL) == 10, "fmt_size_i64(-886525837) should be 10");
-    ROMANO_ASSERT(fmt_size_i64(1LL) == 1, "fmt_size_i64(1) should be 1");
-    ROMANO_ASSERT(fmt_size_i64(483675379498179LL) == 15, "fmt_size_i64(483675379498179) should be 15");
-    ROMANO_ASSERT(fmt_size_i64(3LL) == 1, "fmt_size_i64(3) should be 1");
-    ROMANO_ASSERT(fmt_size_i64(16LL) == 2, "fmt_size_i64(16) should be 2");
-    ROMANO_ASSERT(fmt_size_i64(163969085003677144LL) == 18, "fmt_size_i64(163969085003677144) should be 18");
-    ROMANO_ASSERT(fmt_size_i64(-15455400LL) == 9, "fmt_size_i64(-15455400) should be 9");
-    ROMANO_ASSERT(fmt_size_i64(382760105617602029LL) == 18, "fmt_size_i64(382760105617602029) should be 18");
-    ROMANO_ASSERT(fmt_size_i64(-12193973554359527LL) == 18, "fmt_size_i64(-12193973554359527) should be 18");
-    ROMANO_ASSERT(fmt_size_i64(-2855460315002LL) == 14, "fmt_size_i64(-2855460315002) should be 14");
-    ROMANO_ASSERT(fmt_size_i64(-331881466062771407LL) == 19, "fmt_size_i64(-331881466062771407) should be 19");
-    ROMANO_ASSERT(fmt_size_i64(4114842176592LL) == 13, "fmt_size_i64(4114842176592) should be 13");
-    ROMANO_ASSERT(fmt_size_i64(-3423332808165625LL) == 17, "fmt_size_i64(-3423332808165625) should be 17");
-    ROMANO_ASSERT(fmt_size_i64(0LL) == 1, "fmt_size_i64(0) should be 1");
-    ROMANO_ASSERT(fmt_size_i64(365LL) == 3, "fmt_size_i64(365) should be 3");
-    ROMANO_ASSERT(fmt_size_i64(138351292264LL) == 12, "fmt_size_i64(138351292264) should be 12");
-    ROMANO_ASSERT(fmt_size_i64(1316783864966381798LL) == 19, "fmt_size_i64(1316783864966381798) should be 19");
-    ROMANO_ASSERT(fmt_size_i64(22845100LL) == 8, "fmt_size_i64(22845100) should be 8");
-    ROMANO_ASSERT(fmt_size_i64(23878697479481LL) == 14, "fmt_size_i64(23878697479481) should be 14");
-    ROMANO_ASSERT(fmt_size_i64(483265360892679250LL) == 18, "fmt_size_i64(483265360892679250) should be 18");
-    ROMANO_ASSERT(fmt_size_i64(-320361107905LL) == 13, "fmt_size_i64(-320361107905) should be 13");
-    ROMANO_ASSERT(fmt_size_i64(-523683496LL) == 10, "fmt_size_i64(-523683496) should be 10");
-    ROMANO_ASSERT(fmt_size_i64(6372744315888743LL) == 16, "fmt_size_i64(6372744315888743) should be 16");
-    ROMANO_ASSERT(fmt_size_i64(-16106LL) == 6, "fmt_size_i64(-16106) should be 6");
-    ROMANO_ASSERT(fmt_size_i64(125389LL) == 6, "fmt_size_i64(125389) should be 6");
-    ROMANO_ASSERT(fmt_size_i64(1006395475614765LL) == 16, "fmt_size_i64(1006395475614765) should be 16");
-    ROMANO_ASSERT(fmt_size_i64(-157843592313LL) == 13, "fmt_size_i64(-157843592313) should be 13");
-    ROMANO_ASSERT(fmt_size_i64(-350681260894819243LL) == 19, "fmt_size_i64(-350681260894819243) should be 19");
-    ROMANO_ASSERT(fmt_size_i64(12222713886080021LL) == 17, "fmt_size_i64(12222713886080021) should be 17");
-    ROMANO_ASSERT(fmt_size_i64(22LL) == 2, "fmt_size_i64(22) should be 2");
-    ROMANO_ASSERT(fmt_size_i64(-7092LL) == 5, "fmt_size_i64(-7092) should be 5");
-    ROMANO_ASSERT(fmt_size_i64(-47461906LL) == 9, "fmt_size_i64(-47461906) should be 9");
-    ROMANO_ASSERT(fmt_size_i64(716LL) == 3, "fmt_size_i64(716) should be 3");
-    ROMANO_ASSERT(fmt_size_i64(-1016LL) == 5, "fmt_size_i64(-1016) should be 5");
-    ROMANO_ASSERT(fmt_size_i64(3886159212LL) == 10, "fmt_size_i64(3886159212) should be 10");
-    ROMANO_ASSERT(fmt_size_i64(1584949547937LL) == 13, "fmt_size_i64(1584949547937) should be 13");
-    ROMANO_ASSERT(fmt_size_i64(-190690047815LL) == 13, "fmt_size_i64(-190690047815) should be 13");
-    ROMANO_ASSERT(fmt_size_i64(-20856644387LL) == 12, "fmt_size_i64(-20856644387) should be 12");
-    ROMANO_ASSERT(fmt_size_i64(-925LL) == 4, "fmt_size_i64(-925) should be 4");
-    ROMANO_ASSERT(fmt_size_i64(-2309654383177LL) == 14, "fmt_size_i64(-2309654383177) should be 14");
-    ROMANO_ASSERT(fmt_size_i64(-614504254LL) == 10, "fmt_size_i64(-614504254) should be 10");
-    ROMANO_ASSERT(fmt_size_i64(-4332641359058704464LL) == 20, "fmt_size_i64(-4332641359058704464) should be 20");
-    ROMANO_ASSERT(fmt_size_i64(-13833951934472076LL) == 18, "fmt_size_i64(-13833951934472076) should be 18");
-    ROMANO_ASSERT(fmt_size_i64(-12177713355LL) == 12, "fmt_size_i64(-12177713355) should be 12");
+    char expected[32];
+    char buffer[32];
+    int expected_size = snprintf(expected, sizeof(expected), "%lld", (long long)value);
+    int size = fmt_i64(buffer, value);
 
-    char i64_buffer[32];
-    int i64_fmt_sz;
-
-    i64_fmt_sz = fmt_i64(i64_buffer, -31436856472LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-31436856472", i64_fmt_sz) == 0, "fmt_i64(-31436856472) should be -31436856472");
-    i64_fmt_sz = fmt_i64(i64_buffer, 87389625744LL);
-    ROMANO_ASSERT(i64_fmt_sz == 11, "i64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(i64_buffer, "87389625744", i64_fmt_sz) == 0, "fmt_i64(87389625744) should be 87389625744");
-    i64_fmt_sz = fmt_i64(i64_buffer, -94562580597096LL);
-    ROMANO_ASSERT(i64_fmt_sz == 15, "i64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-94562580597096", i64_fmt_sz) == 0, "fmt_i64(-94562580597096) should be -94562580597096");
-    i64_fmt_sz = fmt_i64(i64_buffer, -1850LL);
-    ROMANO_ASSERT(i64_fmt_sz == 5, "i64_fmt_sz should be 5");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-1850", i64_fmt_sz) == 0, "fmt_i64(-1850) should be -1850");
-    i64_fmt_sz = fmt_i64(i64_buffer, 520010990675657660LL);
-    ROMANO_ASSERT(i64_fmt_sz == 18, "i64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(i64_buffer, "520010990675657660", i64_fmt_sz) == 0, "fmt_i64(520010990675657660) should be 520010990675657660");
-    i64_fmt_sz = fmt_i64(i64_buffer, 369640586897LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "369640586897", i64_fmt_sz) == 0, "fmt_i64(369640586897) should be 369640586897");
-    i64_fmt_sz = fmt_i64(i64_buffer, 0LL);
-    ROMANO_ASSERT(i64_fmt_sz == 1, "i64_fmt_sz should be 1");
-    ROMANO_ASSERT(memcmp(i64_buffer, "0", i64_fmt_sz) == 0, "fmt_i64(0) should be 0");
-    i64_fmt_sz = fmt_i64(i64_buffer, -1801287LL);
-    ROMANO_ASSERT(i64_fmt_sz == 8, "i64_fmt_sz should be 8");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-1801287", i64_fmt_sz) == 0, "fmt_i64(-1801287) should be -1801287");
-    i64_fmt_sz = fmt_i64(i64_buffer, -1LL);
-    ROMANO_ASSERT(i64_fmt_sz == 2, "i64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-1", i64_fmt_sz) == 0, "fmt_i64(-1) should be -1");
-    i64_fmt_sz = fmt_i64(i64_buffer, -849982735001545637LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-849982735001545637", i64_fmt_sz) == 0, "fmt_i64(-849982735001545637) should be -849982735001545637");
-    i64_fmt_sz = fmt_i64(i64_buffer, -668164811LL);
-    ROMANO_ASSERT(i64_fmt_sz == 10, "i64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-668164811", i64_fmt_sz) == 0, "fmt_i64(-668164811) should be -668164811");
-    i64_fmt_sz = fmt_i64(i64_buffer, -33888LL);
-    ROMANO_ASSERT(i64_fmt_sz == 6, "i64_fmt_sz should be 6");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-33888", i64_fmt_sz) == 0, "fmt_i64(-33888) should be -33888");
-    i64_fmt_sz = fmt_i64(i64_buffer, -3LL);
-    ROMANO_ASSERT(i64_fmt_sz == 2, "i64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-3", i64_fmt_sz) == 0, "fmt_i64(-3) should be -3");
-    i64_fmt_sz = fmt_i64(i64_buffer, 166254057215LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "166254057215", i64_fmt_sz) == 0, "fmt_i64(166254057215) should be 166254057215");
-    i64_fmt_sz = fmt_i64(i64_buffer, -96718010LL);
-    ROMANO_ASSERT(i64_fmt_sz == 9, "i64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-96718010", i64_fmt_sz) == 0, "fmt_i64(-96718010) should be -96718010");
-    i64_fmt_sz = fmt_i64(i64_buffer, 113LL);
-    ROMANO_ASSERT(i64_fmt_sz == 3, "i64_fmt_sz should be 3");
-    ROMANO_ASSERT(memcmp(i64_buffer, "113", i64_fmt_sz) == 0, "fmt_i64(113) should be 113");
-    i64_fmt_sz = fmt_i64(i64_buffer, -275878234804746005LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-275878234804746005", i64_fmt_sz) == 0, "fmt_i64(-275878234804746005) should be -275878234804746005");
-    i64_fmt_sz = fmt_i64(i64_buffer, 595367002063799LL);
-    ROMANO_ASSERT(i64_fmt_sz == 15, "i64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(i64_buffer, "595367002063799", i64_fmt_sz) == 0, "fmt_i64(595367002063799) should be 595367002063799");
-    i64_fmt_sz = fmt_i64(i64_buffer, -20912658763LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-20912658763", i64_fmt_sz) == 0, "fmt_i64(-20912658763) should be -20912658763");
-    i64_fmt_sz = fmt_i64(i64_buffer, 1054559LL);
-    ROMANO_ASSERT(i64_fmt_sz == 7, "i64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(i64_buffer, "1054559", i64_fmt_sz) == 0, "fmt_i64(1054559) should be 1054559");
-    i64_fmt_sz = fmt_i64(i64_buffer, 481950016252LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "481950016252", i64_fmt_sz) == 0, "fmt_i64(481950016252) should be 481950016252");
-    i64_fmt_sz = fmt_i64(i64_buffer, 1403325777965LL);
-    ROMANO_ASSERT(i64_fmt_sz == 13, "i64_fmt_sz should be 13");
-    ROMANO_ASSERT(memcmp(i64_buffer, "1403325777965", i64_fmt_sz) == 0, "fmt_i64(1403325777965) should be 1403325777965");
-    i64_fmt_sz = fmt_i64(i64_buffer, -18051947791295LL);
-    ROMANO_ASSERT(i64_fmt_sz == 15, "i64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-18051947791295", i64_fmt_sz) == 0, "fmt_i64(-18051947791295) should be -18051947791295");
-    i64_fmt_sz = fmt_i64(i64_buffer, 61LL);
-    ROMANO_ASSERT(i64_fmt_sz == 2, "i64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(i64_buffer, "61", i64_fmt_sz) == 0, "fmt_i64(61) should be 61");
-    i64_fmt_sz = fmt_i64(i64_buffer, -3524801962695254LL);
-    ROMANO_ASSERT(i64_fmt_sz == 17, "i64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-3524801962695254", i64_fmt_sz) == 0, "fmt_i64(-3524801962695254) should be -3524801962695254");
-    i64_fmt_sz = fmt_i64(i64_buffer, -525218982868271541LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-525218982868271541", i64_fmt_sz) == 0, "fmt_i64(-525218982868271541) should be -525218982868271541");
-    i64_fmt_sz = fmt_i64(i64_buffer, 3255LL);
-    ROMANO_ASSERT(i64_fmt_sz == 4, "i64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(i64_buffer, "3255", i64_fmt_sz) == 0, "fmt_i64(3255) should be 3255");
-    i64_fmt_sz = fmt_i64(i64_buffer, -218524685991854LL);
-    ROMANO_ASSERT(i64_fmt_sz == 16, "i64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-218524685991854", i64_fmt_sz) == 0, "fmt_i64(-218524685991854) should be -218524685991854");
-    i64_fmt_sz = fmt_i64(i64_buffer, 3192536360LL);
-    ROMANO_ASSERT(i64_fmt_sz == 10, "i64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(i64_buffer, "3192536360", i64_fmt_sz) == 0, "fmt_i64(3192536360) should be 3192536360");
-    i64_fmt_sz = fmt_i64(i64_buffer, 1762LL);
-    ROMANO_ASSERT(i64_fmt_sz == 4, "i64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(i64_buffer, "1762", i64_fmt_sz) == 0, "fmt_i64(1762) should be 1762");
-    i64_fmt_sz = fmt_i64(i64_buffer, -1423873465106LL);
-    ROMANO_ASSERT(i64_fmt_sz == 14, "i64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-1423873465106", i64_fmt_sz) == 0, "fmt_i64(-1423873465106) should be -1423873465106");
-    i64_fmt_sz = fmt_i64(i64_buffer, 2385723816709661904LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "2385723816709661904", i64_fmt_sz) == 0, "fmt_i64(2385723816709661904) should be 2385723816709661904");
-    i64_fmt_sz = fmt_i64(i64_buffer, 8036LL);
-    ROMANO_ASSERT(i64_fmt_sz == 4, "i64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(i64_buffer, "8036", i64_fmt_sz) == 0, "fmt_i64(8036) should be 8036");
-    i64_fmt_sz = fmt_i64(i64_buffer, -533482832638LL);
-    ROMANO_ASSERT(i64_fmt_sz == 13, "i64_fmt_sz should be 13");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-533482832638", i64_fmt_sz) == 0, "fmt_i64(-533482832638) should be -533482832638");
-    i64_fmt_sz = fmt_i64(i64_buffer, -8431244520023LL);
-    ROMANO_ASSERT(i64_fmt_sz == 14, "i64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-8431244520023", i64_fmt_sz) == 0, "fmt_i64(-8431244520023) should be -8431244520023");
-    i64_fmt_sz = fmt_i64(i64_buffer, -420479584233LL);
-    ROMANO_ASSERT(i64_fmt_sz == 13, "i64_fmt_sz should be 13");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-420479584233", i64_fmt_sz) == 0, "fmt_i64(-420479584233) should be -420479584233");
-    i64_fmt_sz = fmt_i64(i64_buffer, 229989615LL);
-    ROMANO_ASSERT(i64_fmt_sz == 9, "i64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(i64_buffer, "229989615", i64_fmt_sz) == 0, "fmt_i64(229989615) should be 229989615");
-    i64_fmt_sz = fmt_i64(i64_buffer, -4154681LL);
-    ROMANO_ASSERT(i64_fmt_sz == 8, "i64_fmt_sz should be 8");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-4154681", i64_fmt_sz) == 0, "fmt_i64(-4154681) should be -4154681");
-    i64_fmt_sz = fmt_i64(i64_buffer, 11511189LL);
-    ROMANO_ASSERT(i64_fmt_sz == 8, "i64_fmt_sz should be 8");
-    ROMANO_ASSERT(memcmp(i64_buffer, "11511189", i64_fmt_sz) == 0, "fmt_i64(11511189) should be 11511189");
-    i64_fmt_sz = fmt_i64(i64_buffer, -509742474102598LL);
-    ROMANO_ASSERT(i64_fmt_sz == 16, "i64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-509742474102598", i64_fmt_sz) == 0, "fmt_i64(-509742474102598) should be -509742474102598");
-    i64_fmt_sz = fmt_i64(i64_buffer, 531459297412035260LL);
-    ROMANO_ASSERT(i64_fmt_sz == 18, "i64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(i64_buffer, "531459297412035260", i64_fmt_sz) == 0, "fmt_i64(531459297412035260) should be 531459297412035260");
-    i64_fmt_sz = fmt_i64(i64_buffer, 8798375438603554LL);
-    ROMANO_ASSERT(i64_fmt_sz == 16, "i64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(i64_buffer, "8798375438603554", i64_fmt_sz) == 0, "fmt_i64(8798375438603554) should be 8798375438603554");
-    i64_fmt_sz = fmt_i64(i64_buffer, 4125432383501731049LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "4125432383501731049", i64_fmt_sz) == 0, "fmt_i64(4125432383501731049) should be 4125432383501731049");
-    i64_fmt_sz = fmt_i64(i64_buffer, -7138564023LL);
-    ROMANO_ASSERT(i64_fmt_sz == 11, "i64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-7138564023", i64_fmt_sz) == 0, "fmt_i64(-7138564023) should be -7138564023");
-    i64_fmt_sz = fmt_i64(i64_buffer, -4875519242987096LL);
-    ROMANO_ASSERT(i64_fmt_sz == 17, "i64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-4875519242987096", i64_fmt_sz) == 0, "fmt_i64(-4875519242987096) should be -4875519242987096");
-    i64_fmt_sz = fmt_i64(i64_buffer, 12289144684231LL);
-    ROMANO_ASSERT(i64_fmt_sz == 14, "i64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(i64_buffer, "12289144684231", i64_fmt_sz) == 0, "fmt_i64(12289144684231) should be 12289144684231");
-    i64_fmt_sz = fmt_i64(i64_buffer, -3568920743355LL);
-    ROMANO_ASSERT(i64_fmt_sz == 14, "i64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-3568920743355", i64_fmt_sz) == 0, "fmt_i64(-3568920743355) should be -3568920743355");
-    i64_fmt_sz = fmt_i64(i64_buffer, 13743440LL);
-    ROMANO_ASSERT(i64_fmt_sz == 8, "i64_fmt_sz should be 8");
-    ROMANO_ASSERT(memcmp(i64_buffer, "13743440", i64_fmt_sz) == 0, "fmt_i64(13743440) should be 13743440");
-    i64_fmt_sz = fmt_i64(i64_buffer, 188014255455LL);
-    ROMANO_ASSERT(i64_fmt_sz == 12, "i64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(i64_buffer, "188014255455", i64_fmt_sz) == 0, "fmt_i64(188014255455) should be 188014255455");
-    i64_fmt_sz = fmt_i64(i64_buffer, -540789814807934059LL);
-    ROMANO_ASSERT(i64_fmt_sz == 19, "i64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(i64_buffer, "-540789814807934059", i64_fmt_sz) == 0, "fmt_i64(-540789814807934059) should be -540789814807934059");
-
-    ROMANO_ASSERT(fmt_size_u64(0) == 1, "");
-    ROMANO_ASSERT(fmt_size_u64(374803546881ULL) == 12, "fmt_size_u64(374803546881) should be 12");
-    ROMANO_ASSERT(fmt_size_u64(3561515313971516ULL) == 16, "fmt_size_u64(3561515313971516) should be 16");
-    ROMANO_ASSERT(fmt_size_u64(50568789674294ULL) == 14, "fmt_size_u64(50568789674294) should be 14");
-    ROMANO_ASSERT(fmt_size_u64(1345331854ULL) == 10, "fmt_size_u64(1345331854) should be 10");
-    ROMANO_ASSERT(fmt_size_u64(13279ULL) == 5, "fmt_size_u64(13279) should be 5");
-    ROMANO_ASSERT(fmt_size_u64(953342640091748ULL) == 15, "fmt_size_u64(953342640091748) should be 15");
-    ROMANO_ASSERT(fmt_size_u64(488582ULL) == 6, "fmt_size_u64(488582) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(3480594039488352ULL) == 16, "fmt_size_u64(3480594039488352) should be 16");
-    ROMANO_ASSERT(fmt_size_u64(3506061ULL) == 7, "fmt_size_u64(3506061) should be 7");
-    ROMANO_ASSERT(fmt_size_u64(266033ULL) == 6, "fmt_size_u64(266033) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(63245507854720ULL) == 14, "fmt_size_u64(63245507854720) should be 14");
-    ROMANO_ASSERT(fmt_size_u64(209447ULL) == 6, "fmt_size_u64(209447) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(220ULL) == 3, "fmt_size_u64(220) should be 3");
-    ROMANO_ASSERT(fmt_size_u64(1659292277897059645ULL) == 19, "fmt_size_u64(1659292277897059645) should be 19");
-    ROMANO_ASSERT(fmt_size_u64(19857215694609135ULL) == 17, "fmt_size_u64(19857215694609135) should be 17");
-    ROMANO_ASSERT(fmt_size_u64(10351000729154ULL) == 14, "fmt_size_u64(10351000729154) should be 14");
-    ROMANO_ASSERT(fmt_size_u64(128388ULL) == 6, "fmt_size_u64(128388) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(3ULL) == 1, "fmt_size_u64(3) should be 1");
-    ROMANO_ASSERT(fmt_size_u64(19945861694ULL) == 11, "fmt_size_u64(19945861694) should be 11");
-    ROMANO_ASSERT(fmt_size_u64(226ULL) == 3, "fmt_size_u64(226) should be 3");
-    ROMANO_ASSERT(fmt_size_u64(841954ULL) == 6, "fmt_size_u64(841954) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(22171884863779813ULL) == 17, "fmt_size_u64(22171884863779813) should be 17");
-    ROMANO_ASSERT(fmt_size_u64(5898829635125ULL) == 13, "fmt_size_u64(5898829635125) should be 13");
-    ROMANO_ASSERT(fmt_size_u64(1554889ULL) == 7, "fmt_size_u64(1554889) should be 7");
-    ROMANO_ASSERT(fmt_size_u64(64804364589ULL) == 11, "fmt_size_u64(64804364589) should be 11");
-    ROMANO_ASSERT(fmt_size_u64(11192127457868643ULL) == 17, "fmt_size_u64(11192127457868643) should be 17");
-    ROMANO_ASSERT(fmt_size_u64(9794884861321ULL) == 13, "fmt_size_u64(9794884861321) should be 13");
-    ROMANO_ASSERT(fmt_size_u64(228950873713732ULL) == 15, "fmt_size_u64(228950873713732) should be 15");
-    ROMANO_ASSERT(fmt_size_u64(14321267722900206ULL) == 17, "fmt_size_u64(14321267722900206) should be 17");
-    ROMANO_ASSERT(fmt_size_u64(5077783ULL) == 7, "fmt_size_u64(5077783) should be 7");
-    ROMANO_ASSERT(fmt_size_u64(8ULL) == 1, "fmt_size_u64(8) should be 1");
-    ROMANO_ASSERT(fmt_size_u64(291635882528ULL) == 12, "fmt_size_u64(291635882528) should be 12");
-    ROMANO_ASSERT(fmt_size_u64(574909848ULL) == 9, "fmt_size_u64(574909848) should be 9");
-    ROMANO_ASSERT(fmt_size_u64(10154957549ULL) == 11, "fmt_size_u64(10154957549) should be 11");
-    ROMANO_ASSERT(fmt_size_u64(53ULL) == 2, "fmt_size_u64(53) should be 2");
-    ROMANO_ASSERT(fmt_size_u64(139ULL) == 3, "fmt_size_u64(139) should be 3");
-    ROMANO_ASSERT(fmt_size_u64(1543686452ULL) == 10, "fmt_size_u64(1543686452) should be 10");
-    ROMANO_ASSERT(fmt_size_u64(35911478125100163ULL) == 17, "fmt_size_u64(35911478125100163) should be 17");
-    ROMANO_ASSERT(fmt_size_u64(413692324012ULL) == 12, "fmt_size_u64(413692324012) should be 12");
-    ROMANO_ASSERT(fmt_size_u64(2801159ULL) == 7, "fmt_size_u64(2801159) should be 7");
-    ROMANO_ASSERT(fmt_size_u64(24963458796ULL) == 11, "fmt_size_u64(24963458796) should be 11");
-    ROMANO_ASSERT(fmt_size_u64(319994072ULL) == 9, "fmt_size_u64(319994072) should be 9");
-    ROMANO_ASSERT(fmt_size_u64(15908430726375ULL) == 14, "fmt_size_u64(15908430726375) should be 14");
-    ROMANO_ASSERT(fmt_size_u64(2612703834ULL) == 10, "fmt_size_u64(2612703834) should be 10");
-    ROMANO_ASSERT(fmt_size_u64(8452829874ULL) == 10, "fmt_size_u64(8452829874) should be 10");
-    ROMANO_ASSERT(fmt_size_u64(43321178320625ULL) == 14, "fmt_size_u64(43321178320625) should be 14");
-    ROMANO_ASSERT(fmt_size_u64(2094725ULL) == 7, "fmt_size_u64(2094725) should be 7");
-    ROMANO_ASSERT(fmt_size_u64(985849ULL) == 6, "fmt_size_u64(985849) should be 6");
-    ROMANO_ASSERT(fmt_size_u64(4820064269ULL) == 10, "fmt_size_u64(4820064269) should be 10");
-    ROMANO_ASSERT(fmt_size_u64(2631872684989ULL) == 13, "fmt_size_u64(2631872684989) should be 13");
-
-    char u64_buffer[32];
-    int u64_fmt_sz;
-
-    u64_fmt_sz = fmt_u64(u64_buffer, 8077350ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "8077350", u64_fmt_sz) == 0, "fmt_u64(8077350) should be 8077350");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1786371164283108ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1786371164283108", u64_fmt_sz) == 0, "fmt_u64(1786371164283108) should be 1786371164283108");
-    u64_fmt_sz = fmt_u64(u64_buffer, 846ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 3, "u64_fmt_sz should be 3");
-    ROMANO_ASSERT(memcmp(u64_buffer, "846", u64_fmt_sz) == 0, "fmt_u64(846) should be 846");
-    u64_fmt_sz = fmt_u64(u64_buffer, 3ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 1, "u64_fmt_sz should be 1");
-    ROMANO_ASSERT(memcmp(u64_buffer, "3", u64_fmt_sz) == 0, "fmt_u64(3) should be 3");
-    u64_fmt_sz = fmt_u64(u64_buffer, 12784385393396515ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "12784385393396515", u64_fmt_sz) == 0, "fmt_u64(12784385393396515) should be 12784385393396515");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1292274393ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 10, "u64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1292274393", u64_fmt_sz) == 0, "fmt_u64(1292274393) should be 1292274393");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1105114002594ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 13, "u64_fmt_sz should be 13");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1105114002594", u64_fmt_sz) == 0, "fmt_u64(1105114002594) should be 1105114002594");
-    u64_fmt_sz = fmt_u64(u64_buffer, 57242118702ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 11, "u64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(u64_buffer, "57242118702", u64_fmt_sz) == 0, "fmt_u64(57242118702) should be 57242118702");
-    u64_fmt_sz = fmt_u64(u64_buffer, 31568943498974ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 14, "u64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(u64_buffer, "31568943498974", u64_fmt_sz) == 0, "fmt_u64(31568943498974) should be 31568943498974");
-    u64_fmt_sz = fmt_u64(u64_buffer, 3520027924528759ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "3520027924528759", u64_fmt_sz) == 0, "fmt_u64(3520027924528759) should be 3520027924528759");
-    u64_fmt_sz = fmt_u64(u64_buffer, 111ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 3, "u64_fmt_sz should be 3");
-    ROMANO_ASSERT(memcmp(u64_buffer, "111", u64_fmt_sz) == 0, "fmt_u64(111) should be 111");
-    u64_fmt_sz = fmt_u64(u64_buffer, 11013935004848871ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "11013935004848871", u64_fmt_sz) == 0, "fmt_u64(11013935004848871) should be 11013935004848871");
-    u64_fmt_sz = fmt_u64(u64_buffer, 4ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 1, "u64_fmt_sz should be 1");
-    ROMANO_ASSERT(memcmp(u64_buffer, "4", u64_fmt_sz) == 0, "fmt_u64(4) should be 4");
-    u64_fmt_sz = fmt_u64(u64_buffer, 37833649223691367ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "37833649223691367", u64_fmt_sz) == 0, "fmt_u64(37833649223691367) should be 37833649223691367");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1259171408356336ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1259171408356336", u64_fmt_sz) == 0, "fmt_u64(1259171408356336) should be 1259171408356336");
-    u64_fmt_sz = fmt_u64(u64_buffer, 349118164073918ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 15, "u64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(u64_buffer, "349118164073918", u64_fmt_sz) == 0, "fmt_u64(349118164073918) should be 349118164073918");
-    u64_fmt_sz = fmt_u64(u64_buffer, 124583008373304292ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 18, "u64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(u64_buffer, "124583008373304292", u64_fmt_sz) == 0, "fmt_u64(124583008373304292) should be 124583008373304292");
-    u64_fmt_sz = fmt_u64(u64_buffer, 179496359926871175ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 18, "u64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(u64_buffer, "179496359926871175", u64_fmt_sz) == 0, "fmt_u64(179496359926871175) should be 179496359926871175");
-    u64_fmt_sz = fmt_u64(u64_buffer, 27ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 2, "u64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(u64_buffer, "27", u64_fmt_sz) == 0, "fmt_u64(27) should be 27");
-    u64_fmt_sz = fmt_u64(u64_buffer, 124797269138820ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 15, "u64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(u64_buffer, "124797269138820", u64_fmt_sz) == 0, "fmt_u64(124797269138820) should be 124797269138820");
-    u64_fmt_sz = fmt_u64(u64_buffer, 958506ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 6, "u64_fmt_sz should be 6");
-    ROMANO_ASSERT(memcmp(u64_buffer, "958506", u64_fmt_sz) == 0, "fmt_u64(958506) should be 958506");
-    u64_fmt_sz = fmt_u64(u64_buffer, 5361306ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "5361306", u64_fmt_sz) == 0, "fmt_u64(5361306) should be 5361306");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 1, "u64_fmt_sz should be 1");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1", u64_fmt_sz) == 0, "fmt_u64(1) should be 1");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1033077884281847ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1033077884281847", u64_fmt_sz) == 0, "fmt_u64(1033077884281847) should be 1033077884281847");
-    u64_fmt_sz = fmt_u64(u64_buffer, 15300759383140810ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "15300759383140810", u64_fmt_sz) == 0, "fmt_u64(15300759383140810) should be 15300759383140810");
-    u64_fmt_sz = fmt_u64(u64_buffer, 8356460ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "8356460", u64_fmt_sz) == 0, "fmt_u64(8356460) should be 8356460");
-    u64_fmt_sz = fmt_u64(u64_buffer, 102244906510ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 12, "u64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(u64_buffer, "102244906510", u64_fmt_sz) == 0, "fmt_u64(102244906510) should be 102244906510");
-    u64_fmt_sz = fmt_u64(u64_buffer, 175329774820408ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 15, "u64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(u64_buffer, "175329774820408", u64_fmt_sz) == 0, "fmt_u64(175329774820408) should be 175329774820408");
-    u64_fmt_sz = fmt_u64(u64_buffer, 481392926686600051ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 18, "u64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(u64_buffer, "481392926686600051", u64_fmt_sz) == 0, "fmt_u64(481392926686600051) should be 481392926686600051");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1389374375ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 10, "u64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1389374375", u64_fmt_sz) == 0, "fmt_u64(1389374375) should be 1389374375");
-    u64_fmt_sz = fmt_u64(u64_buffer, 192463ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 6, "u64_fmt_sz should be 6");
-    ROMANO_ASSERT(memcmp(u64_buffer, "192463", u64_fmt_sz) == 0, "fmt_u64(192463) should be 192463");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 1, "u64_fmt_sz should be 1");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1", u64_fmt_sz) == 0, "fmt_u64(1) should be 1");
-    u64_fmt_sz = fmt_u64(u64_buffer, 13104599138921648ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "13104599138921648", u64_fmt_sz) == 0, "fmt_u64(13104599138921648) should be 13104599138921648");
-    u64_fmt_sz = fmt_u64(u64_buffer, 5361971ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "5361971", u64_fmt_sz) == 0, "fmt_u64(5361971) should be 5361971");
-    u64_fmt_sz = fmt_u64(u64_buffer, 4211698166423780ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "4211698166423780", u64_fmt_sz) == 0, "fmt_u64(4211698166423780) should be 4211698166423780");
-    u64_fmt_sz = fmt_u64(u64_buffer, 68780472832504607ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 17, "u64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(u64_buffer, "68780472832504607", u64_fmt_sz) == 0, "fmt_u64(68780472832504607) should be 68780472832504607");
-    u64_fmt_sz = fmt_u64(u64_buffer, 20ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 2, "u64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(u64_buffer, "20", u64_fmt_sz) == 0, "fmt_u64(20) should be 20");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1998187562887531ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 16, "u64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1998187562887531", u64_fmt_sz) == 0, "fmt_u64(1998187562887531) should be 1998187562887531");
-    u64_fmt_sz = fmt_u64(u64_buffer, 4658411228ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 10, "u64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(u64_buffer, "4658411228", u64_fmt_sz) == 0, "fmt_u64(4658411228) should be 4658411228");
-    u64_fmt_sz = fmt_u64(u64_buffer, 750660826ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 9, "u64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(u64_buffer, "750660826", u64_fmt_sz) == 0, "fmt_u64(750660826) should be 750660826");
-    u64_fmt_sz = fmt_u64(u64_buffer, 533510ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 6, "u64_fmt_sz should be 6");
-    ROMANO_ASSERT(memcmp(u64_buffer, "533510", u64_fmt_sz) == 0, "fmt_u64(533510) should be 533510");
-    u64_fmt_sz = fmt_u64(u64_buffer, 77ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 2, "u64_fmt_sz should be 2");
-    ROMANO_ASSERT(memcmp(u64_buffer, "77", u64_fmt_sz) == 0, "fmt_u64(77) should be 77");
-    u64_fmt_sz = fmt_u64(u64_buffer, 3243160496ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 10, "u64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(u64_buffer, "3243160496", u64_fmt_sz) == 0, "fmt_u64(3243160496) should be 3243160496");
-    u64_fmt_sz = fmt_u64(u64_buffer, 7893ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 4, "u64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(u64_buffer, "7893", u64_fmt_sz) == 0, "fmt_u64(7893) should be 7893");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1728024ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1728024", u64_fmt_sz) == 0, "fmt_u64(1728024) should be 1728024");
-    u64_fmt_sz = fmt_u64(u64_buffer, 1265650ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 7, "u64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(u64_buffer, "1265650", u64_fmt_sz) == 0, "fmt_u64(1265650) should be 1265650");
-    u64_fmt_sz = fmt_u64(u64_buffer, 15258ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 5, "u64_fmt_sz should be 5");
-    ROMANO_ASSERT(memcmp(u64_buffer, "15258", u64_fmt_sz) == 0, "fmt_u64(15258) should be 15258");
-    u64_fmt_sz = fmt_u64(u64_buffer, 822113208905000ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 15, "u64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(u64_buffer, "822113208905000", u64_fmt_sz) == 0, "fmt_u64(822113208905000) should be 822113208905000");
-    u64_fmt_sz = fmt_u64(u64_buffer, 119ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 3, "u64_fmt_sz should be 3");
-    ROMANO_ASSERT(memcmp(u64_buffer, "119", u64_fmt_sz) == 0, "fmt_u64(119) should be 119");
-    u64_fmt_sz = fmt_u64(u64_buffer, 6953885298ULL);
-    ROMANO_ASSERT(u64_fmt_sz == 10, "u64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(u64_buffer, "6953885298", u64_fmt_sz) == 0, "fmt_u64(6953885298) should be 6953885298");
-
-    ROMANO_ASSERT(fmt_size_f64(0.0, 1) == 3, "fmt_size_f64(0.0, 1) should be 3");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 2) == 4, "fmt_size_f64(0.0, 2) should be 4");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 3) == 5, "fmt_size_f64(0.0, 3) should be 5");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 4) == 6, "fmt_size_f64(0.0, 4) should be 6");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 5) == 7, "fmt_size_f64(0.0, 5) should be 7");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 6) == 8, "fmt_size_f64(0.0, 6) should be 8");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 7) == 9, "fmt_size_f64(0.0, 7) should be 9");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 8) == 10, "fmt_size_f64(0.0, 8) should be 10");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 9) == 11, "fmt_size_f64(0.0, 9) should be 11");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 10) == 12, "fmt_size_f64(0.0, 10) should be 12");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 11) == 13, "fmt_size_f64(0.0, 11) should be 13");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 12) == 14, "fmt_size_f64(0.0, 12) should be 14");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 13) == 15, "fmt_size_f64(0.0, 13) should be 15");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 14) == 16, "fmt_size_f64(0.0, 14) should be 16");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 15) == 17, "fmt_size_f64(0.0, 15) should be 17");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 16) == 18, "fmt_size_f64(0.0, 16) should be 18");
-    ROMANO_ASSERT(fmt_size_f64(0.0, 17) == 19, "fmt_size_f64(0.0, 17) should be 19");
-
-    char f64_buffer[312];
-    int f64_fmt_sz;
-
-    f64_fmt_sz = fmt_f64(f64_buffer, 51937.220206291094655, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 21, "f64_fmt_sz should be 21");
-    ROMANO_ASSERT(memcmp(f64_buffer, "51937.220206291094655", f64_fmt_sz) == 0, "fmt_f64(51937.220206291095) should be 51937.220206291095");
-    f64_fmt_sz = fmt_f64(f64_buffer, 7982138784.73897, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 16, "f64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(f64_buffer, "7982138784.73897", f64_fmt_sz) == 0, "fmt_f64(7982138784.738967) should be 7982138784.738967");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2981.783984540418260, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 20, "f64_fmt_sz should be 20");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2981.783984540418260", f64_fmt_sz) == 0, "fmt_f64(2981.7839845404183) should be 2981.7839845404183");
-    f64_fmt_sz = fmt_f64(f64_buffer, 388681.6225600995, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "388681.6225600995", f64_fmt_sz) == 0, "fmt_f64(388681.6225600995) should be 388681.6225600995");
-    f64_fmt_sz = fmt_f64(f64_buffer, 104.4211262988473, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "104.4211262988473", f64_fmt_sz) == 0, "fmt_f64(104.42112629884731) should be 104.42112629884731");
-    f64_fmt_sz = fmt_f64(f64_buffer, 5600589.537, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "5600589.537", f64_fmt_sz) == 0, "fmt_f64(5600589.537176386) should be 5600589.537176386");
-    f64_fmt_sz = fmt_f64(f64_buffer, 62819.98876, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "62819.98876", f64_fmt_sz) == 0, "fmt_f64(62819.988756804116) should be 62819.988756804116");
-    f64_fmt_sz = fmt_f64(f64_buffer, 369.8418, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 8, "f64_fmt_sz should be 8");
-    ROMANO_ASSERT(memcmp(f64_buffer, "369.8418", f64_fmt_sz) == 0, "fmt_f64(369.8418356534259) should be 369.8418356534259");
-    f64_fmt_sz = fmt_f64(f64_buffer, 187033023542342.218750000000000, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 31, "f64_fmt_sz should be 31");
-    ROMANO_ASSERT(memcmp(f64_buffer, "187033023542342.218750000000000", f64_fmt_sz) == 0, "fmt_f64(187033023542342.22) should be 187033023542342.22");
-    f64_fmt_sz = fmt_f64(f64_buffer, 69900433879765.45, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "69900433879765.45", f64_fmt_sz) == 0, "fmt_f64(69900433879765.45) should be 69900433879765.45");
-    f64_fmt_sz = fmt_f64(f64_buffer, 48149748356.918, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "48149748356.918", f64_fmt_sz) == 0, "fmt_f64(48149748356.91801) should be 48149748356.91801");
-    f64_fmt_sz = fmt_f64(f64_buffer, 97.6, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 4, "f64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(f64_buffer, "97.6", f64_fmt_sz) == 0, "fmt_f64(97.5957847070202) should be 97.5957847070202");
-    f64_fmt_sz = fmt_f64(f64_buffer, 4570610734861.0859375000, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 24, "f64_fmt_sz should be 24");
-    ROMANO_ASSERT(memcmp(f64_buffer, "4570610734861.0859375000", f64_fmt_sz) == 0, "fmt_f64(4570610734861.086) should be 4570610734861.086");
-    f64_fmt_sz = fmt_f64(f64_buffer, 390191974.4279, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 14, "f64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(f64_buffer, "390191974.4279", f64_fmt_sz) == 0, "fmt_f64(390191974.42787325) should be 390191974.42787325");
-    f64_fmt_sz = fmt_f64(f64_buffer, 46126605735110.304687500000, 12);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "46126605735110.304687500000", f64_fmt_sz) == 0, "fmt_f64(46126605735110.305) should be 46126605735110.305");
-    f64_fmt_sz = fmt_f64(f64_buffer, 359447093.942961812019, 12);
-    ROMANO_ASSERT(f64_fmt_sz == 22, "f64_fmt_sz should be 22");
-    ROMANO_ASSERT(memcmp(f64_buffer, "359447093.942961812019", f64_fmt_sz) == 0, "fmt_f64(359447093.9429618) should be 359447093.9429618");
-    f64_fmt_sz = fmt_f64(f64_buffer, 10993448030384.771484, 6);
-    ROMANO_ASSERT(f64_fmt_sz == 21, "f64_fmt_sz should be 21");
-    ROMANO_ASSERT(memcmp(f64_buffer, "10993448030384.771484", f64_fmt_sz) == 0, "fmt_f64(10993448030384.771) should be 10993448030384.771");
-    f64_fmt_sz = fmt_f64(f64_buffer, 866024.54300, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "866024.54300", f64_fmt_sz) == 0, "fmt_f64(866024.5430026953) should be 866024.5430026953");
-    f64_fmt_sz = fmt_f64(f64_buffer, 445506234072.56, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "445506234072.56", f64_fmt_sz) == 0, "fmt_f64(445506234072.5638) should be 445506234072.5638");
-    f64_fmt_sz = fmt_f64(f64_buffer, 12579.4522270481611, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 19, "f64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(f64_buffer, "12579.4522270481611", f64_fmt_sz) == 0, "fmt_f64(12579.452227048161) should be 12579.452227048161");
-    f64_fmt_sz = fmt_f64(f64_buffer, 69132699062615248.00000000000000, 14);
-    ROMANO_ASSERT(f64_fmt_sz == 32, "f64_fmt_sz should be 32");
-    ROMANO_ASSERT(memcmp(f64_buffer, "69132699062615248.00000000000000", f64_fmt_sz) == 0, "fmt_f64(6.913269906261525e+16) should be 6.913269906261525e+16");
-    f64_fmt_sz = fmt_f64(f64_buffer, 17614601043751.4492187500, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 25, "f64_fmt_sz should be 25");
-    ROMANO_ASSERT(memcmp(f64_buffer, "17614601043751.4492187500", f64_fmt_sz) == 0, "fmt_f64(17614601043751.45) should be 17614601043751.45");
-    f64_fmt_sz = fmt_f64(f64_buffer, 0.948977023, 9);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "0.948977023", f64_fmt_sz) == 0, "fmt_f64(0.9489770233406265) should be 0.9489770233406265");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2268060164681130496.0, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 21, "f64_fmt_sz should be 21");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2268060164681130496.0", f64_fmt_sz) == 0, "fmt_f64(2.2680601646811305e+18) should be 2.2680601646811305e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1465704200448131328.000000, 6);
-    ROMANO_ASSERT(f64_fmt_sz == 26, "f64_fmt_sz should be 26");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1465704200448131328.000000", f64_fmt_sz) == 0, "fmt_f64(1.4657042004481313e+18) should be 1.4657042004481313e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 186427678385324128.00000000, 8);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "186427678385324128.00000000", f64_fmt_sz) == 0, "fmt_f64(1.8642767838532413e+17) should be 1.8642767838532413e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2891590376778.573, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2891590376778.573", f64_fmt_sz) == 0, "fmt_f64(2891590376778.5728) should be 2891590376778.5728");
-    f64_fmt_sz = fmt_f64(f64_buffer, 819530.95323, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "819530.95323", f64_fmt_sz) == 0, "fmt_f64(819530.9532344886) should be 819530.9532344886");
-    f64_fmt_sz = fmt_f64(f64_buffer, 198332350515793440.00000000000000, 14);
-    ROMANO_ASSERT(f64_fmt_sz == 33, "f64_fmt_sz should be 33");
-    ROMANO_ASSERT(memcmp(f64_buffer, "198332350515793440.00000000000000", f64_fmt_sz) == 0, "fmt_f64(1.9833235051579344e+17) should be 1.9833235051579344e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 3989499057763.9, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "3989499057763.9", f64_fmt_sz) == 0, "fmt_f64(3989499057763.934) should be 3989499057763.934");
-    f64_fmt_sz = fmt_f64(f64_buffer, 15.51534270, 8);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "15.51534270", f64_fmt_sz) == 0, "fmt_f64(15.515342704236698) should be 15.515342704236698");
-    f64_fmt_sz = fmt_f64(f64_buffer, 882738712181993856.0000, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 23, "f64_fmt_sz should be 23");
-    ROMANO_ASSERT(memcmp(f64_buffer, "882738712181993856.0000", f64_fmt_sz) == 0, "fmt_f64(8.827387121819939e+17) should be 8.827387121819939e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 6298187501447021.00000000000000, 14);
-    ROMANO_ASSERT(f64_fmt_sz == 31, "f64_fmt_sz should be 31");
-    ROMANO_ASSERT(memcmp(f64_buffer, "6298187501447021.00000000000000", f64_fmt_sz) == 0, "fmt_f64(6298187501447021.0) should be 6298187501447021.0");
-    f64_fmt_sz = fmt_f64(f64_buffer, 3267294405269586944.000, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 23, "f64_fmt_sz should be 23");
-    ROMANO_ASSERT(memcmp(f64_buffer, "3267294405269586944.000", f64_fmt_sz) == 0, "fmt_f64(3.267294405269587e+18) should be 3.267294405269587e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2114438471582143232.0000000000, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 30, "f64_fmt_sz should be 30");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2114438471582143232.0000000000", f64_fmt_sz) == 0, "fmt_f64(2.1144384715821432e+18) should be 2.1144384715821432e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 8240637.40913001820, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 19, "f64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(f64_buffer, "8240637.40913001820", f64_fmt_sz) == 0, "fmt_f64(8240637.409130018) should be 8240637.409130018");
-    f64_fmt_sz = fmt_f64(f64_buffer, 76457686732.847869873046875, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "76457686732.847869873046875", f64_fmt_sz) == 0, "fmt_f64(76457686732.84787) should be 76457686732.84787");
-    f64_fmt_sz = fmt_f64(f64_buffer, 7237129.077370393089950, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 23, "f64_fmt_sz should be 23");
-    ROMANO_ASSERT(memcmp(f64_buffer, "7237129.077370393089950", f64_fmt_sz) == 0, "fmt_f64(7237129.077370393) should be 7237129.077370393");
-    f64_fmt_sz = fmt_f64(f64_buffer, 11226.3, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 7, "f64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(f64_buffer, "11226.3", f64_fmt_sz) == 0, "fmt_f64(11226.335028265954) should be 11226.335028265954");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1038657249116.300659180, 9);
-    ROMANO_ASSERT(f64_fmt_sz == 23, "f64_fmt_sz should be 23");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1038657249116.300659180", f64_fmt_sz) == 0, "fmt_f64(1038657249116.3007) should be 1038657249116.3007");
-    f64_fmt_sz = fmt_f64(f64_buffer, 17343949180592872.00000000000, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 29, "f64_fmt_sz should be 29");
-    ROMANO_ASSERT(memcmp(f64_buffer, "17343949180592872.00000000000", f64_fmt_sz) == 0, "fmt_f64(1.7343949180592872e+16) should be 1.7343949180592872e+16");
-    f64_fmt_sz = fmt_f64(f64_buffer, 3721.6772797, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "3721.6772797", f64_fmt_sz) == 0, "fmt_f64(3721.677279723495) should be 3721.677279723495");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1465254660.170682430267334, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 26, "f64_fmt_sz should be 26");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1465254660.170682430267334", f64_fmt_sz) == 0, "fmt_f64(1465254660.1706824) should be 1465254660.1706824");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1871550957176.6962890625, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 24, "f64_fmt_sz should be 24");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1871550957176.6962890625", f64_fmt_sz) == 0, "fmt_f64(1871550957176.6963) should be 1871550957176.6963");
-    f64_fmt_sz = fmt_f64(f64_buffer, 235333299180.3529, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "235333299180.3529", f64_fmt_sz) == 0, "fmt_f64(235333299180.3529) should be 235333299180.3529");
-    f64_fmt_sz = fmt_f64(f64_buffer, 125594634.1270588, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "125594634.1270588", f64_fmt_sz) == 0, "fmt_f64(125594634.12705885) should be 125594634.12705885");
-    f64_fmt_sz = fmt_f64(f64_buffer, 137466990041784.421875000000000, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 31, "f64_fmt_sz should be 31");
-    ROMANO_ASSERT(memcmp(f64_buffer, "137466990041784.421875000000000", f64_fmt_sz) == 0, "fmt_f64(137466990041784.42) should be 137466990041784.42");
-    f64_fmt_sz = fmt_f64(f64_buffer, 833710467417521664.0000000, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 26, "f64_fmt_sz should be 26");
-    ROMANO_ASSERT(memcmp(f64_buffer, "833710467417521664.0000000", f64_fmt_sz) == 0, "fmt_f64(8.337104674175217e+17) should be 8.337104674175217e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 14156.83918, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "14156.83918", f64_fmt_sz) == 0, "fmt_f64(14156.839184391716) should be 14156.839184391716");
-    f64_fmt_sz = fmt_f64(f64_buffer, 214.46800707378, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "214.46800707378", f64_fmt_sz) == 0, "fmt_f64(214.4680070737832) should be 214.4680070737832");
-    f64_fmt_sz = fmt_f64(f64_buffer, 108057.1468, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "108057.1468", f64_fmt_sz) == 0, "fmt_f64(108057.14682997577) should be 108057.14682997577");
-    f64_fmt_sz = fmt_f64(f64_buffer, 169297007.5986465812, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 20, "f64_fmt_sz should be 20");
-    ROMANO_ASSERT(memcmp(f64_buffer, "169297007.5986465812", f64_fmt_sz) == 0, "fmt_f64(169297007.59864658) should be 169297007.59864658");
-    f64_fmt_sz = fmt_f64(f64_buffer, 22406494950.0244522, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 19, "f64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(f64_buffer, "22406494950.0244522", f64_fmt_sz) == 0, "fmt_f64(22406494950.024452) should be 22406494950.024452");
-    f64_fmt_sz = fmt_f64(f64_buffer, 260580443096217.9, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "260580443096217.9", f64_fmt_sz) == 0, "fmt_f64(260580443096217.94) should be 260580443096217.94");
-    f64_fmt_sz = fmt_f64(f64_buffer, 9902215551.3663, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "9902215551.3663", f64_fmt_sz) == 0, "fmt_f64(9902215551.366274) should be 9902215551.366274");
-    f64_fmt_sz = fmt_f64(f64_buffer, 289677.027873377664946, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 22, "f64_fmt_sz should be 22");
-    ROMANO_ASSERT(memcmp(f64_buffer, "289677.027873377664946", f64_fmt_sz) == 0, "fmt_f64(289677.02787337766) should be 289677.02787337766");
-    f64_fmt_sz = fmt_f64(f64_buffer, 83.6086351056298, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 16, "f64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(f64_buffer, "83.6086351056298", f64_fmt_sz) == 0, "fmt_f64(83.60863510562979) should be 83.60863510562979");
-    f64_fmt_sz = fmt_f64(f64_buffer, 103035.9823, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 11, "f64_fmt_sz should be 11");
-    ROMANO_ASSERT(memcmp(f64_buffer, "103035.9823", f64_fmt_sz) == 0, "fmt_f64(103035.98231091643) should be 103035.98231091643");
-    f64_fmt_sz = fmt_f64(f64_buffer, 474264029.2577, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 14, "f64_fmt_sz should be 14");
-    ROMANO_ASSERT(memcmp(f64_buffer, "474264029.2577", f64_fmt_sz) == 0, "fmt_f64(474264029.25773233) should be 474264029.25773233");
-    f64_fmt_sz = fmt_f64(f64_buffer, 142443794520753152.000000000000000, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 34, "f64_fmt_sz should be 34");
-    ROMANO_ASSERT(memcmp(f64_buffer, "142443794520753152.000000000000000", f64_fmt_sz) == 0, "fmt_f64(1.4244379452075315e+17) should be 1.4244379452075315e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1096890551.2723634, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 18, "f64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1096890551.2723634", f64_fmt_sz) == 0, "fmt_f64(1096890551.2723634) should be 1096890551.2723634");
-    f64_fmt_sz = fmt_f64(f64_buffer, 654512147605838.625000, 6);
-    ROMANO_ASSERT(f64_fmt_sz == 22, "f64_fmt_sz should be 22");
-    ROMANO_ASSERT(memcmp(f64_buffer, "654512147605838.625000", f64_fmt_sz) == 0, "fmt_f64(654512147605838.6) should be 654512147605838.6");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1012526.7179648060119, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 21, "f64_fmt_sz should be 21");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1012526.7179648060119", f64_fmt_sz) == 0, "fmt_f64(1012526.717964806) should be 1012526.717964806");
-    f64_fmt_sz = fmt_f64(f64_buffer, 473777355.078570545, 9);
-    ROMANO_ASSERT(f64_fmt_sz == 19, "f64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(f64_buffer, "473777355.078570545", f64_fmt_sz) == 0, "fmt_f64(473777355.07857054) should be 473777355.07857054");
-    f64_fmt_sz = fmt_f64(f64_buffer, 138616293377733616.000, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 22, "f64_fmt_sz should be 22");
-    ROMANO_ASSERT(memcmp(f64_buffer, "138616293377733616.000", f64_fmt_sz) == 0, "fmt_f64(1.3861629337773362e+17) should be 1.3861629337773362e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 109180340803.73936, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 18, "f64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(f64_buffer, "109180340803.73936", f64_fmt_sz) == 0, "fmt_f64(109180340803.73936) should be 109180340803.73936");
-    f64_fmt_sz = fmt_f64(f64_buffer, 998450871112.74719, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 18, "f64_fmt_sz should be 18");
-    ROMANO_ASSERT(memcmp(f64_buffer, "998450871112.74719", f64_fmt_sz) == 0, "fmt_f64(998450871112.7472) should be 998450871112.7472");
-    f64_fmt_sz = fmt_f64(f64_buffer, 22511935717.927, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "22511935717.927", f64_fmt_sz) == 0, "fmt_f64(22511935717.927128) should be 22511935717.927128");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1876906992951731712.0000000, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1876906992951731712.0000000", f64_fmt_sz) == 0, "fmt_f64(1.8769069929517317e+18) should be 1.8769069929517317e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 885959736341365760.00, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 21, "f64_fmt_sz should be 21");
-    ROMANO_ASSERT(memcmp(f64_buffer, "885959736341365760.00", f64_fmt_sz) == 0, "fmt_f64(8.859597363413658e+17) should be 8.859597363413658e+17");
-    f64_fmt_sz = fmt_f64(f64_buffer, 938654358294.69128417969, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 24, "f64_fmt_sz should be 24");
-    ROMANO_ASSERT(memcmp(f64_buffer, "938654358294.69128417969", f64_fmt_sz) == 0, "fmt_f64(938654358294.6913) should be 938654358294.6913");
-    f64_fmt_sz = fmt_f64(f64_buffer, 76209984575.373123168945, 12);
-    ROMANO_ASSERT(f64_fmt_sz == 24, "f64_fmt_sz should be 24");
-    ROMANO_ASSERT(memcmp(f64_buffer, "76209984575.373123168945", f64_fmt_sz) == 0, "fmt_f64(76209984575.37312) should be 76209984575.37312");
-    f64_fmt_sz = fmt_f64(f64_buffer, 6123734439460.703125000000000, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 29, "f64_fmt_sz should be 29");
-    ROMANO_ASSERT(memcmp(f64_buffer, "6123734439460.703125000000000", f64_fmt_sz) == 0, "fmt_f64(6123734439460.703) should be 6123734439460.703");
-    f64_fmt_sz = fmt_f64(f64_buffer, 147519326.01, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "147519326.01", f64_fmt_sz) == 0, "fmt_f64(147519326.00906822) should be 147519326.00906822");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2858.6172297, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2858.6172297", f64_fmt_sz) == 0, "fmt_f64(2858.6172296692043) should be 2858.6172296692043");
-    f64_fmt_sz = fmt_f64(f64_buffer, 416516.55446, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 12, "f64_fmt_sz should be 12");
-    ROMANO_ASSERT(memcmp(f64_buffer, "416516.55446", f64_fmt_sz) == 0, "fmt_f64(416516.55445541616) should be 416516.55445541616");
-    f64_fmt_sz = fmt_f64(f64_buffer, 16480043.5, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 10, "f64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(f64_buffer, "16480043.5", f64_fmt_sz) == 0, "fmt_f64(16480043.45440044) should be 16480043.45440044");
-    f64_fmt_sz = fmt_f64(f64_buffer, 0.80859480709338, 14);
-    ROMANO_ASSERT(f64_fmt_sz == 16, "f64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(f64_buffer, "0.80859480709338", f64_fmt_sz) == 0, "fmt_f64(0.8085948070933753) should be 0.8085948070933753");
-    f64_fmt_sz = fmt_f64(f64_buffer, 5969.34862846213, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 16, "f64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(f64_buffer, "5969.34862846213", f64_fmt_sz) == 0, "fmt_f64(5969.348628462131) should be 5969.348628462131");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1116611120500559872.0000000000, 10);
-    ROMANO_ASSERT(f64_fmt_sz == 30, "f64_fmt_sz should be 30");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1116611120500559872.0000000000", f64_fmt_sz) == 0, "fmt_f64(1.1166111205005599e+18) should be 1.1166111205005599e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 61.35, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 5, "f64_fmt_sz should be 5");
-    ROMANO_ASSERT(memcmp(f64_buffer, "61.35", f64_fmt_sz) == 0, "fmt_f64(61.34723629105568) should be 61.34723629105568");
-    f64_fmt_sz = fmt_f64(f64_buffer, 353750.6680494523607, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 20, "f64_fmt_sz should be 20");
-    ROMANO_ASSERT(memcmp(f64_buffer, "353750.6680494523607", f64_fmt_sz) == 0, "fmt_f64(353750.66804945236) should be 353750.66804945236");
-    f64_fmt_sz = fmt_f64(f64_buffer, 93721.6828, 4);
-    ROMANO_ASSERT(f64_fmt_sz == 10, "f64_fmt_sz should be 10");
-    ROMANO_ASSERT(memcmp(f64_buffer, "93721.6828", f64_fmt_sz) == 0, "fmt_f64(93721.68280298679) should be 93721.68280298679");
-    f64_fmt_sz = fmt_f64(f64_buffer, 193226.47, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 9, "f64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(f64_buffer, "193226.47", f64_fmt_sz) == 0, "fmt_f64(193226.4728873678) should be 193226.4728873678");
-    f64_fmt_sz = fmt_f64(f64_buffer, 14612969720445.599609375000000, 15);
-    ROMANO_ASSERT(f64_fmt_sz == 30, "f64_fmt_sz should be 30");
-    ROMANO_ASSERT(memcmp(f64_buffer, "14612969720445.599609375000000", f64_fmt_sz) == 0, "fmt_f64(14612969720445.6) should be 14612969720445.6");
-    f64_fmt_sz = fmt_f64(f64_buffer, 2779036.63709961, 8);
-    ROMANO_ASSERT(f64_fmt_sz == 16, "f64_fmt_sz should be 16");
-    ROMANO_ASSERT(memcmp(f64_buffer, "2779036.63709961", f64_fmt_sz) == 0, "fmt_f64(2779036.6370996083) should be 2779036.6370996083");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1029.336353058694, 12);
-    ROMANO_ASSERT(f64_fmt_sz == 17, "f64_fmt_sz should be 17");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1029.336353058694", f64_fmt_sz) == 0, "fmt_f64(1029.3363530586937) should be 1029.3363530586937");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1047867.6, 1);
-    ROMANO_ASSERT(f64_fmt_sz == 9, "f64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1047867.6", f64_fmt_sz) == 0, "fmt_f64(1047867.6491865494) should be 1047867.6491865494");
-    f64_fmt_sz = fmt_f64(f64_buffer, 6759510236972621824.000, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 23, "f64_fmt_sz should be 23");
-    ROMANO_ASSERT(memcmp(f64_buffer, "6759510236972621824.000", f64_fmt_sz) == 0, "fmt_f64(6.759510236972622e+18) should be 6.759510236972622e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 8.99, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 4, "f64_fmt_sz should be 4");
-    ROMANO_ASSERT(memcmp(f64_buffer, "8.99", f64_fmt_sz) == 0, "fmt_f64(8.993789458498378) should be 8.993789458498378");
-    f64_fmt_sz = fmt_f64(f64_buffer, 4.2048710, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 9, "f64_fmt_sz should be 9");
-    ROMANO_ASSERT(memcmp(f64_buffer, "4.2048710", f64_fmt_sz) == 0, "fmt_f64(4.204870988616409) should be 4.204870988616409");
-    f64_fmt_sz = fmt_f64(f64_buffer, 108.889, 3);
-    ROMANO_ASSERT(f64_fmt_sz == 7, "f64_fmt_sz should be 7");
-    ROMANO_ASSERT(memcmp(f64_buffer, "108.889", f64_fmt_sz) == 0, "fmt_f64(108.88856577042216) should be 108.88856577042216");
-    f64_fmt_sz = fmt_f64(f64_buffer, 3782657055822.1494140625000, 13);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "3782657055822.1494140625000", f64_fmt_sz) == 0, "fmt_f64(3782657055822.1494) should be 3782657055822.1494");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1785344576292842752.00000, 5);
-    ROMANO_ASSERT(f64_fmt_sz == 25, "f64_fmt_sz should be 25");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1785344576292842752.00000", f64_fmt_sz) == 0, "fmt_f64(1.7853445762928428e+18) should be 1.7853445762928428e+18");
-    f64_fmt_sz = fmt_f64(f64_buffer, 22534844855093748.000000000, 9);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "22534844855093748.000000000", f64_fmt_sz) == 0, "fmt_f64(2.2534844855093748e+16) should be 2.2534844855093748e+16");
-    f64_fmt_sz = fmt_f64(f64_buffer, 1545303040665732.0000000, 7);
-    ROMANO_ASSERT(f64_fmt_sz == 24, "f64_fmt_sz should be 24");
-    ROMANO_ASSERT(memcmp(f64_buffer, "1545303040665732.0000000", f64_fmt_sz) == 0, "fmt_f64(1545303040665732.0) should be 1545303040665732.0");
-    f64_fmt_sz = fmt_f64(f64_buffer, 17742.888229792, 9);
-    ROMANO_ASSERT(f64_fmt_sz == 15, "f64_fmt_sz should be 15");
-    ROMANO_ASSERT(memcmp(f64_buffer, "17742.888229792", f64_fmt_sz) == 0, "fmt_f64(17742.888229792214) should be 17742.888229792214");
-    f64_fmt_sz = fmt_f64(f64_buffer, 570139297042056.87500000000, 11);
-    ROMANO_ASSERT(f64_fmt_sz == 27, "f64_fmt_sz should be 27");
-    ROMANO_ASSERT(memcmp(f64_buffer, "570139297042056.87500000000", f64_fmt_sz) == 0, "fmt_f64(570139297042056.9) should be 570139297042056.9");
-    f64_fmt_sz = fmt_f64(f64_buffer, 3718362498240434.00, 2);
-    ROMANO_ASSERT(f64_fmt_sz == 19, "f64_fmt_sz should be 19");
-    ROMANO_ASSERT(memcmp(f64_buffer, "3718362498240434.00", f64_fmt_sz) == 0, "fmt_f64(3718362498240434.0) should be 3718362498240434.0");
-    f64_fmt_sz = fmt_f64(f64_buffer, 212912976183047040.000000000000, 12);
-    ROMANO_ASSERT(f64_fmt_sz == 31, "f64_fmt_sz should be 31");
-    ROMANO_ASSERT(memcmp(f64_buffer, "212912976183047040.000000000000", f64_fmt_sz) == 0, "fmt_f64(2.1291297618304704e+17) should be 2.1291297618304704e+17");
-
-    return 0;
+    TEST_CHECK_EQ_INT(fmt_size_i64(value), expected_size);
+    TEST_CHECK_EQ_INT(size, expected_size);
+    TEST_CHECK_MSG(size == expected_size && memcmp(buffer, expected, (size_t)size) == 0,
+                   "fmt_i64(%s) = %.*s", expected, size, buffer);
 }
+
+static void check_u64(uint64_t value)
+{
+    char expected[32];
+    char buffer[32];
+    int expected_size = snprintf(expected, sizeof(expected), "%llu", (unsigned long long)value);
+    int size = fmt_u64(buffer, value);
+
+    TEST_CHECK_EQ_INT(fmt_size_u64(value), expected_size);
+    TEST_CHECK_EQ_INT(size, expected_size);
+    TEST_CHECK_MSG(size == expected_size && memcmp(buffer, expected, (size_t)size) == 0,
+                   "fmt_u64(%s) = %.*s", expected, size, buffer);
+}
+
+static void test_integers_edge_cases(void)
+{
+    uint64_t power = 1;
+    int i;
+
+    check_i64(0);
+    check_i64(1);
+    check_i64(-1);
+    check_i64(INT64_MAX);
+    check_i64(INT64_MIN);
+    check_u64(0);
+    check_u64(UINT64_MAX);
+
+    for(i = 0; i < 20; i++)
+    {
+        check_u64(power);
+        check_u64(power - 1);
+        check_u64(power + 1);
+        check_i64((int64_t)power);
+        check_i64(-(int64_t)power);
+        check_i64((int64_t)power - 1);
+
+        if(i < 19)
+            power *= 10;
+    }
+}
+
+static bool property_integers(FuzzSource* source, void* user_data)
+{
+    const int64_t i = fuzz_i64_special(source);
+    const uint64_t u = fuzz_u64_special(source);
+    char buffer[32];
+    char expected[32];
+    int size;
+
+    ROMANO_UNUSED(user_data);
+
+    snprintf(expected, sizeof(expected), "%lld", (long long)i);
+    size = fmt_i64(buffer, i);
+    TEST_FUZZ_CHECK_MSG((size_t)size == strlen(expected) && memcmp(buffer, expected, (size_t)size) == 0, "i64 %s", expected);
+    TEST_FUZZ_CHECK(fmt_size_i64(i) == size);
+
+    snprintf(expected, sizeof(expected), "%llu", (unsigned long long)u);
+    size = fmt_u64(buffer, u);
+    TEST_FUZZ_CHECK_MSG((size_t)size == strlen(expected) && memcmp(buffer, expected, (size_t)size) == 0, "u64 %s", expected);
+    TEST_FUZZ_CHECK(fmt_size_u64(u) == size);
+
+    return true;
+}
+
+static void test_fuzz_integers(void)
+{
+    test_fuzz_property("fmt_integers", 50000, property_integers, NULL);
+}
+
+static void test_f64_special_values(void)
+{
+    char buffer[320];
+    int size;
+
+    size = fmt_f64(buffer, NAN, 3);
+    TEST_CHECK_EQ_INT(size, 3);
+    TEST_CHECK_EQ_MEM(buffer, "nan", 3);
+    TEST_CHECK_EQ_INT(fmt_size_f64(NAN, 3), 3);
+
+    size = fmt_f64(buffer, HUGE_VAL, 3);
+    TEST_CHECK_EQ_INT(size, 3);
+    TEST_CHECK_EQ_MEM(buffer, "inf", 3);
+    TEST_CHECK_EQ_INT(fmt_size_f64(HUGE_VAL, 3), 3);
+
+    size = fmt_f64(buffer, -HUGE_VAL, 3);
+    TEST_CHECK_EQ_INT(size, 4);
+    TEST_CHECK_EQ_MEM(buffer, "-inf", 4);
+    TEST_CHECK_EQ_INT(fmt_size_f64(-HUGE_VAL, 3), 4);
+
+    size = fmt_f64(buffer, 0.0, 2);
+    TEST_CHECK_EQ_INT(size, 4);
+    TEST_CHECK_EQ_MEM(buffer, "0.00", 4);
+
+    size = fmt_f64(buffer, -0.0, 1);
+    TEST_CHECK_EQ_INT(size, 4);
+    TEST_CHECK_EQ_MEM(buffer, "-0.0", 4);
+    TEST_CHECK_EQ_INT(fmt_size_f64(-0.0, 1), 4);
+
+    size = fmt_f64(buffer, 0.0, 0);
+    TEST_CHECK_EQ_INT(size, 1);
+    TEST_CHECK_EQ_INT(fmt_size_f64(0.0, 0), 1);
+
+    size = fmt_f64(buffer, 0.0, -1);
+    TEST_CHECK_EQ_INT(size, 8);
+    TEST_CHECK_EQ_MEM(buffer, "0.000000", 8);
+
+    size = fmt_f64(buffer, 9.99, 1);
+    TEST_CHECK_EQ_MEM(buffer, "10.0", 4);
+    TEST_CHECK_EQ_INT(size, 4);
+    TEST_CHECK_EQ_INT(fmt_size_f64(9.99, 1), 4);
+
+    size = fmt_f64(buffer, -9.96, 1);
+    TEST_CHECK_EQ_MEM(buffer, "-10.0", 5);
+    TEST_CHECK_EQ_INT(size, 5);
+
+    size = fmt_f64(buffer, 51937.220206291094655, 6);
+    TEST_CHECK_EQ_MEM(buffer, "51937.220206", 12);
+
+    size = fmt_f64(buffer, 1e300, 2);
+    TEST_CHECK_EQ_INT(size, 3);
+    TEST_CHECK_EQ_MEM(buffer, "ovf", 3);
+    TEST_CHECK_EQ_INT(fmt_size_f64(1e300, 2), 3);
+}
+
+static bool well_formed(const char* buffer, int size, int precision)
+{
+    int i = 0;
+    int digits = 0;
+
+    if(i < size && buffer[i] == '-')
+        i++;
+
+    while(i < size && isdigit((unsigned char)buffer[i]))
+        i++, digits++;
+
+    if(digits == 0)
+        return false;
+
+    if(precision == 0)
+        return i == size;
+
+    if(i >= size || buffer[i++] != '.')
+        return false;
+
+    for(digits = 0; i < size; i++, digits++)
+        if(!isdigit((unsigned char)buffer[i]))
+            return false;
+
+    return digits == precision;
+}
+
+static bool property_f64(FuzzSource* source, void* user_data)
+{
+    const double value = fuzz_f64_finite(source);
+    int precision = (int)fuzz_range_i64(source, -1, 20);
+    const int effective_precision = precision < 0 ? 6 : (precision > 17 ? 17 : precision);
+    char buffer[320];
+    char* end;
+    double parsed;
+    double tolerance;
+    int size;
+
+    ROMANO_UNUSED(user_data);
+
+    if(fabs(value) >= 1.8e19)
+        return true;
+
+    size = fmt_f64(buffer, value, precision);
+    buffer[size] = '\0';
+
+    TEST_FUZZ_CHECK_MSG(fmt_size_f64(value, precision) == size, "size of %.17g (precision %d): %d vs \"%s\"",
+                        value, precision, fmt_size_f64(value, precision), buffer);
+    TEST_FUZZ_CHECK_MSG(well_formed(buffer, size, effective_precision), "\"%s\" for %.17g (precision %d)",
+                        buffer, value, precision);
+    TEST_FUZZ_CHECK_MSG((buffer[0] == '-') == (signbit(value) != 0), "sign of \"%s\" for %.17g", buffer, value);
+
+    parsed = strtod(buffer, &end);
+    tolerance = 0.5 * pow(10.0, -effective_precision) + fabs(value) * 4.0 * DBL_EPSILON + 1e-17;
+
+    TEST_FUZZ_CHECK_MSG(fabs(parsed - value) <= tolerance, "%.17g formatted as \"%s\" (precision %d)",
+                        value, buffer, precision);
+
+    return true;
+}
+
+static void test_fuzz_f64(void)
+{
+    test_fuzz_property("fmt_f64", 50000, property_f64, NULL);
+}
+
+TEST_MAIN(
+    TEST(test_integers_edge_cases),
+    TEST(test_fuzz_integers),
+    TEST(test_f64_special_values),
+    TEST(test_fuzz_f64),
+)

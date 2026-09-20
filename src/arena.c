@@ -63,20 +63,39 @@ Arena* arena_new(const size_t block_size)
 ROMANO_FORCE_INLINE bool arena_check_resize(Arena* arena,
                                             const size_t new_size)
 {
-    return (arena->current_block->offset + new_size) >= arena->current_block->capacity;
+    return (arena->current_block->offset + new_size) > arena->current_block->capacity;
 }
 
-bool arena_resize(Arena* arena)
+bool arena_resize(Arena* arena, const size_t data_size)
 {
-    ArenaBlock* new_block = arena_block_init(arena->block_size);
+    ArenaBlock* current = arena->current_block;
+    ArenaBlock* next = current->next;
+    ArenaBlock* new_block;
+    size_t capacity;
+
+    if(next != NULL && next->capacity >= data_size)
+    {
+        arena->current_block = next;
+        next->offset = 0;
+        return true;
+    }
+
+    capacity = data_size > arena->block_size ? data_size : arena->block_size;
+    new_block = arena_block_init(capacity);
 
     if(new_block == NULL)
         return false;
 
-    new_block->previous = arena->current_block;
+    new_block->previous = current;
+    new_block->next = next;
+
+    if(next != NULL)
+        next->previous = new_block;
+
+    current->next = new_block;
 
     arena->current_block = new_block;
-    arena->capacity += arena->block_size;
+    arena->capacity += capacity;
 
     return true;
 }
@@ -84,7 +103,7 @@ bool arena_resize(Arena* arena)
 void* arena_push(Arena* arena, void* data, const size_t data_size)
 {
     if(arena_check_resize(arena, data_size))
-        if(!arena_resize(arena))
+        if(!arena_resize(arena, data_size))
             return NULL;
 
     void* data_address = (void*)((char*)arena->current_block->address + arena->current_block->offset);

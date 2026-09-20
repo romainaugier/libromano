@@ -88,6 +88,9 @@ void stack_grow(Stack* stack)
 
     new_capacity = (size_t)((float)stack_get_capacity(stack) * GOLDEN_RATIO);
 
+    if(new_capacity <= stack_get_capacity(stack))
+        new_capacity = stack_get_capacity(stack) + 1;
+
     new_data_ptr = realloc(stack->data, 
                            new_capacity * stack_get_element_size(stack) + HEADER_SIZE * sizeof(size_t));
 
@@ -98,6 +101,9 @@ void stack_grow(Stack* stack)
 void stack_push(Stack* stack, void* element)
 {
     ROMANO_ASSERT(stack != NULL, "stack_push() failed: Stack is NULL");
+
+    if(stack_get_size(stack) == stack_get_capacity(stack))
+        stack_grow(stack);
 
     stack_increment_size(stack);
 

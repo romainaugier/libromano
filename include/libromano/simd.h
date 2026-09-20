@@ -119,8 +119,8 @@ ROMANO_FORCE_INLINE float _mm256_hmean_ps(__m256 x)
  */
 ROMANO_FORCE_INLINE float _mm_hmin_ps(__m128 x)
 {
-    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 0)));
-    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(1, 1, 0, 0)));
+    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(1, 0, 3, 2)));
+    x = _mm_min_ps(x, _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 1)));
     return _mm_cvtss_f32(x);
 }
 
@@ -146,8 +146,8 @@ ROMANO_FORCE_INLINE float _mm256_hmin_ps(__m256 v)
  */
 ROMANO_FORCE_INLINE float _mm_hmax_ps(__m128 v)
 {
-    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 0)));
-    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 0, 0)));
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 0, 3, 2)));
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1)));
     return _mm_cvtss_f32(v);
 }
 

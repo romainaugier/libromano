@@ -146,6 +146,13 @@ void* socket_server_main_loop(void* _socket_server)
 
     socket_server_log(socket_server, 0, "Server socket created");
 
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+    {
+        int reuse = 1;
+        setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    }
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
+
     socket_set_timeout(socket, 1);
 
     memset(&server, 0, sizeof(SockAddrIn));
@@ -239,8 +246,11 @@ void* socket_server_main_loop(void* _socket_server)
         {
             result = socket_recv(new_connection, temp_data_buffer, RECV_SIZE, MSG_WAITALL);
 
-            if(!result || data_buffer == NULL)
+            if(result <= 0 || data_buffer == NULL)
             {
+                if(data_buffer != NULL)
+                    data_buffer[rec_data_size] = '\0';
+
                 break;
             }
 
@@ -249,7 +259,12 @@ void* socket_server_main_loop(void* _socket_server)
 
             if(result == RECV_SIZE)
             {
-                data_buffer = (char*)realloc(data_buffer, rec_data_size + RECV_SIZE);
+                char* grown_buffer = (char*)realloc(data_buffer, rec_data_size + RECV_SIZE);
+
+                if(grown_buffer == NULL)
+                    free(data_buffer);
+
+                data_buffer = grown_buffer;
 
                 if(data_buffer == NULL)
                 {
@@ -275,7 +290,7 @@ void* socket_server_main_loop(void* _socket_server)
 
             socket_server_log(socket_server, 0, "Sending client infos about the size of received packet");
 
-            snprintf(send_buffer, SEND_SIZE, "%llu", rec_data_size);
+            snprintf(send_buffer, SEND_SIZE, "%zu", rec_data_size);
 
             sent_data_size = socket_send(new_connection, (const char*)send_buffer, (int)strlen(send_buffer), 0);
 
@@ -307,7 +322,7 @@ void socket_server_start(SocketServer* socket_server)
 {
     ROMANO_ASSERT(socket_server != NULL, "socket_server is NULL");
 
-    if(HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning))
+    if(socket_server_is_running(socket_server))
     {
         socket_server_log(socket_server, 1, "Socket server is already running");
         return;
@@ -383,9 +398,19 @@ int32_t socket_server_get_last_error(SocketServer* socket_server)
 
 bool socket_server_is_running(SocketServer* socket_server)
 {
+    bool running;
+
     ROMANO_ASSERT(socket_server != NULL, "socket_server is NULL");
 
-    return (bool)HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
+    /* The mutex only exists once the server has been started */
+    if(socket_server->mutex == NULL)
+        return false;
+
+    mutex_lock(socket_server->mutex);
+    running = HAS_FLAG(socket_server->flags, SocketServerFlags_IsRunning);
+    mutex_unlock(socket_server->mutex);
+
+    return running;
 }
 
 void socket_server_stop(SocketServer* socket_server)
@@ -405,6 +430,7 @@ void socket_server_stop(SocketServer* socket_server)
     mutex_unlock(socket_server->mutex);
 
     mutex_free(socket_server->mutex);
+    socket_server->mutex = NULL;
 }
 
 void socket_server_free(SocketServer* socket_server)

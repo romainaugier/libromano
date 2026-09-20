@@ -46,6 +46,9 @@ void simd_check_vectorization(void)
     {
         g_vectorization_mode = g_max_vectorization_mode;
     }
+
+    if(g_vectorization_mode > g_max_vectorization_mode)
+        g_vectorization_mode = g_max_vectorization_mode;
 }
 
 int simd_has_sse(void)
@@ -126,6 +129,9 @@ void simd_check_vectorization(void)
     {
         g_vectorization_mode = g_max_vectorization_mode;
     }
+
+    if(g_vectorization_mode > g_max_vectorization_mode)
+        g_vectorization_mode = g_max_vectorization_mode;
 }
 
 int simd_has_neon(void)

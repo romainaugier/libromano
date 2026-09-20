@@ -221,20 +221,23 @@ bool string_setf(String* string, const char* format, ...)
 {
     size_t format_sz;
     size_t string_capacity;
+    int ret;
     va_list args;
     char buffer[LIBROMANO_STRING_MAX_FMT_SIZE];
 
     ROMANO_ASSERT(string != NULL, "string is NULL");
 
     va_start(args, format);
-    format_sz = (size_t)vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args) + 1;
+    ret = vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args);
     va_end(args);
 
-    if(format_sz <= 0)
+    if(ret < 0)
     {
         g_current_error = ErrorCode_FormattingError;
         return false;
     }
+
+    format_sz = ret < LIBROMANO_STRING_MAX_FMT_SIZE ? (size_t)ret : LIBROMANO_STRING_MAX_FMT_SIZE - 1;
 
     string_capacity = GET_CAPACITY_FROM_STR(*string);
 
@@ -313,20 +316,23 @@ bool string_appendf(String* string, const char* format, ...)
     size_t string_capacity;
     size_t string_sz;
     size_t format_sz;
+    int ret;
     va_list args;
     char buffer[LIBROMANO_STRING_MAX_FMT_SIZE];
 
     ROMANO_ASSERT(string != NULL, "string is NULL");
 
     va_start(args, format);
-    format_sz = (size_t)vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args) + 1;
+    ret = vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args);
     va_end(args);
 
-    if(format_sz <= 0)
+    if(ret < 0)
     {
         g_current_error = ErrorCode_FormattingError;
         return false;
     }
+
+    format_sz = ret < LIBROMANO_STRING_MAX_FMT_SIZE ? (size_t)ret : LIBROMANO_STRING_MAX_FMT_SIZE - 1;
 
     string_capacity = GET_CAPACITY_FROM_STR(*string);
     string_sz = GET_SIZE_FROM_STR(*string);
@@ -341,7 +347,7 @@ bool string_appendf(String* string, const char* format, ...)
 
     memcpy((*string) + string_sz, buffer, format_sz);
 
-    GET_SIZE_FROM_STR(*string) = string_sz + format_sz - 1;
+    GET_SIZE_FROM_STR(*string) = string_sz + format_sz;
     SET_NULL_TERMINATOR(*string);
 
     return true;
@@ -412,20 +418,23 @@ bool string_prependf(String* string, const char* format, ...)
     size_t string_capacity;
     size_t string_sz;
     size_t format_sz;
+    int ret;
     va_list args;
     char buffer[LIBROMANO_STRING_MAX_FMT_SIZE];
 
     ROMANO_ASSERT(string != NULL, "string is NULL");
 
     va_start(args, format);
-    format_sz = (size_t)vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args);
+    ret = vsnprintf(buffer, LIBROMANO_STRING_MAX_FMT_SIZE, format, args);
     va_end(args);
 
-    if(format_sz <= 0)
+    if(ret < 0)
     {
         g_current_error = ErrorCode_FormattingError;
         return false;
     }
+
+    format_sz = ret < LIBROMANO_STRING_MAX_FMT_SIZE ? (size_t)ret : LIBROMANO_STRING_MAX_FMT_SIZE - 1;
 
     string_capacity = GET_CAPACITY_FROM_STR(*string);
     string_sz = GET_SIZE_FROM_STR(*string);
@@ -499,7 +508,9 @@ String* string_splitc(char* data, const char* separator, uint32_t* count)
         result[i++] = string_new(token);
         token = strtok(NULL, separator);
     }
-    
+
+    *count = (uint32_t)i;
+
     return result;
 }
 

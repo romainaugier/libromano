@@ -121,42 +121,45 @@ ROMANO_FORCE_INLINE uint32_t ctz_u64(const uint64_t x)
 
 /* https://www.felixcloutier.com/x86/pext */
 
-ROMANO_FORCE_INLINE uint32_t pext_u32(const uint32_t x, const uint32_t y)
-{
-#if defined(ROMANO_X86_64)
-    return _pext_u32(x, y);
-#elif defined(ROMANO_AARCH64)
-    uint32_t mask = y;
-    uint32_t dest = 0;
-    uint32_t k = 0;
+#if defined(ROMANO_X86_64) && (defined(__BMI2__) || defined(ROMANO_MSVC))
+#define ROMANO_HAS_PEXT 1
+#else
+#define ROMANO_HAS_PEXT 0
+#endif /* defined(ROMANO_X86_64) && (defined(__BMI2__) || defined(ROMANO_MSVC)) */
 
-    for(uint32_t m = 0; m < 32; m++)
+ROMANO_FORCE_INLINE uint64_t pext_u64_portable(uint64_t x, uint64_t mask)
+{
+    uint64_t dest = 0;
+    uint64_t bit = 1;
+
+    while(mask != 0)
     {
-        if(mask & (1 << m))
-            dest |= 1 << k++;
+        if(x & mask & (0 - mask))
+            dest |= bit;
+
+        mask &= mask - 1;
+        bit <<= 1;
     }
 
     return dest;
-#endif /* defined(ROMANO_X86_64) */
+}
+
+ROMANO_FORCE_INLINE uint32_t pext_u32(const uint32_t x, const uint32_t y)
+{
+#if ROMANO_HAS_PEXT
+    return _pext_u32(x, y);
+#else
+    return (uint32_t)pext_u64_portable(x, y);
+#endif /* ROMANO_HAS_PEXT */
 }
 
 ROMANO_FORCE_INLINE uint64_t pext_u64(const uint64_t x, const uint64_t y)
 {
-#if defined(ROMANO_X86_64)
+#if ROMANO_HAS_PEXT
     return _pext_u64(x, y);
-#elif defined(ROMANO_AARCH64)
-    uint64_t mask = y;
-    uint64_t dest = 0;
-    uint64_t k = 0;
-
-    for(uint64_t m = 0; m < 64; m++)
-    {
-        if(mask & (1 << m))
-            dest |= 1 << k++;
-    }
-
-    return dest;
-#endif /* defined(ROMANO_X86_64) */
+#else
+    return pext_u64_portable(x, y);
+#endif /* ROMANO_HAS_PEXT */
 }
 
 ROMANO_FORCE_INLINE uint8_t abs_u8(const int8_t x)

@@ -10,8 +10,7 @@
 #include "libromano/common.h"
 
 /*
- * Basic memory arena structure, be careful if you want to push objects that have a size larger
- * than the block size you set
+ * Basic memory arena structure. Objects larger than the block size get a dedicated block
  */
 
 ROMANO_CPP_ENTER

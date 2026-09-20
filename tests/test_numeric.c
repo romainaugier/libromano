@@ -2,78 +2,24 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
-#include "libromano/logger.h"
+#include "test.h"
+
 #include "libromano/numeric.h"
 
-#include <stdio.h>
+#define EXPECT(cond) TEST_CHECK(cond)
 
-/* Minimal test framework */
-
-static unsigned long long g_checks = 0;
-static unsigned long long g_failures = 0;
-
-#define MAX_REPORTED_FAILURES 50
-
-static void report_failure(const char* file, int line, const char* expr)
-{
-    if(g_failures <= MAX_REPORTED_FAILURES)
-        fprintf(stderr, "%s:%d: FAILED: %s\n", file, line, expr);
-}
-
-static void check_bool(bool ok, const char* expr, const char* file, int line)
-{
-    g_checks++;
-
-    if(!ok)
-    {
-        g_failures++;
-        report_failure(file, line, expr);
-    }
-}
-
-static void check_u(bool ok, u64 got, u64 exp, const char* expr, const char* file, int line)
-{
-    g_checks++;
-
-    if(!ok)
-    {
-        g_failures++;
-        report_failure(file, line, expr);
-
-        if(g_failures <= MAX_REPORTED_FAILURES)
-            fprintf(stderr, "    got %llu, expected %llu\n",
-                    (unsigned long long)got, (unsigned long long)exp);
-    }
-}
-
-static void check_i(bool ok, i64 got, i64 exp, const char* expr, const char* file, int line)
-{
-    g_checks++;
-
-    if(!ok)
-    {
-        g_failures++;
-        report_failure(file, line, expr);
-
-        if(g_failures <= MAX_REPORTED_FAILURES)
-            fprintf(stderr, "    got %lld, expected %lld\n", (long long)got, (long long)exp);
-    }
-}
-
-#define EXPECT(cond) check_bool((bool)(cond), #cond, __FILE__, __LINE__)
-
-#define EXPECT_EQ_U(T, actual, expected)                               \
-    do {                                                               \
-        const T a_ = (T)(actual);                                      \
-        const T e_ = (T)(expected);                                    \
-        check_u(a_ == e_, (u64)a_, (u64)e_, #actual, __FILE__, __LINE__); \
+#define EXPECT_EQ_U(T, actual, expected)                                        \
+    do {                                                                        \
+        const T a_ = (T)(actual);                                               \
+        const T e_ = (T)(expected);                                             \
+        test_check_uint((u64)a_, (u64)e_, __FILE__, __LINE__, #actual);         \
     } while(0)
 
-#define EXPECT_EQ_I(T, actual, expected)                               \
-    do {                                                               \
-        const T a_ = (T)(actual);                                      \
-        const T e_ = (T)(expected);                                    \
-        check_i(a_ == e_, (i64)a_, (i64)e_, #actual, __FILE__, __LINE__); \
+#define EXPECT_EQ_I(T, actual, expected)                                        \
+    do {                                                                        \
+        const T a_ = (T)(actual);                                               \
+        const T e_ = (T)(expected);                                             \
+        test_check_int((i64)a_, (i64)e_, __FILE__, __LINE__, #actual);          \
     } while(0)
 
 /* S is U (unsigned) or I (signed): selects how mismatches are printed. */
@@ -743,56 +689,25 @@ static void test_exhaustive_8bit(void)
     }
 }
 
-static u64 g_rng_state = 0x9E3779B97F4A7C15ull;
-
-static u64 rng_next(void)
+static bool property_16_32bit(FuzzSource* source, void* user_data)
 {
-    g_rng_state ^= g_rng_state << 13;
-    g_rng_state ^= g_rng_state >> 7;
-    g_rng_state ^= g_rng_state << 17;
-    return g_rng_state;
+    const u64 a = fuzz_u64_special(source);
+    const u64 b = fuzz_u64_special(source);
+    const u32 s = (u32)fuzz_range(source, 0, 79);
+
+    ROMANO_UNUSED(user_data);
+
+    ref_u16((u16)a, (u16)b, s);
+    ref_i16((i16)(u16)a, (i16)(u16)b, s);
+    ref_u32((u32)a, (u32)b, s);
+    ref_i32((i32)(u32)a, (i32)(u32)b, s);
+
+    return true;
 }
 
-static u64 rng_value(void)
+static void test_fuzz_16_32bit(void)
 {
-    static const u64 edges[] = {
-        0u, 1u, 2u, 3u,
-        0x7Fu, 0x80u, 0xFFu,
-        0x7FFFu, 0x8000u, 0xFFFFu,
-        0x7FFFFFFFu, 0x80000000u, 0xFFFFFFFFu,
-        0x7FFFFFFFFFFFFFFFull, 0x8000000000000000ull, 0xFFFFFFFFFFFFFFFFull,
-    };
-    const u64 kind = rng_next() & 3u;
-
-    if(kind == 0)
-        return edges[rng_next() % (sizeof(edges) / sizeof(edges[0]))];
-
-    if(kind == 1)
-        return ~(u64)0 - (rng_next() & 0xFu);  /* just below the top: MAX, -1, -2... */
-
-    if(kind == 2)
-        return rng_next() >> (rng_next() % 64u); /* all magnitudes */
-
-    return rng_next();
-}
-
-#define RANDOM_ITERATIONS 500000
-
-static void test_random_16_32bit(void)
-{
-    long i;
-
-    for(i = 0; i < RANDOM_ITERATIONS; i++)
-    {
-        const u64 a = rng_value();
-        const u64 b = rng_value();
-        const u32 s = (u32)(rng_next() % 80u);
-
-        ref_u16((u16)a, (u16)b, s);
-        ref_i16((i16)(u16)a, (i16)(u16)b, s);
-        ref_u32((u32)a, (u32)b, s);
-        ref_i32((i32)(u32)a, (i32)(u32)b, s);
-    }
+    test_fuzz_property("numeric_16_32bit", 200000, property_16_32bit, NULL);
 }
 
 /* Misc: typedef widths and limits */
@@ -811,53 +726,16 @@ static void test_types(void)
     EXPECT(I32_MIN == -I32_MAX - 1 && I64_MIN == -I64_MAX - 1);
 }
 
-typedef struct
-{
-    const char* name;
-    void (*fn)(void);
-} TestCase;
-
-int main(void)
-{
-    static const TestCase tests[] = {
-        { "types", test_types },
-        { "u8", test_u8 },
-        { "u16", test_u16 },
-        { "u32", test_u32 },
-        { "u64", test_u64 },
-        { "i8", test_i8 },
-        { "i16", test_i16 },
-        { "i32", test_i32 },
-        { "i64", test_i64 },
-        { "exhaustive 8-bit", test_exhaustive_8bit },
-        { "random 16/32-bit", test_random_16_32bit },
-    };
-
-    size_t i;
-
-    logger_init();
-    logger_set_level(LogLevel_Debug);
-
-    logger_log_info("Starting numeric test");
-
-#if defined(ROMANO__NUM_BUILTINS)
-    logger_log_debug("backend: compiler builtins");
-#else
-    logger_log_debug("backend: portable fallback");
-#endif /* defined(ROMANO__NUM_BUILTINS) */
-
-    for(i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
-    {
-        const unsigned long long failures_before = g_failures;
-        tests[i].fn();
-        logger_log_debug("  %-18s %s", tests[i].name, g_failures == failures_before ? "ok" : "FAILED");
-    }
-
-    logger_log_info("%llu checks, %llu failures", g_checks, g_failures);
-
-    logger_log_info("Finished numeric test");
-
-    logger_release();
-
-    return g_failures == 0 ? 0 : 1;
-}
+TEST_MAIN(
+    TEST(test_types),
+    TEST(test_u8),
+    TEST(test_u16),
+    TEST(test_u32),
+    TEST(test_u64),
+    TEST(test_i8),
+    TEST(test_i16),
+    TEST(test_i32),
+    TEST(test_i64),
+    TEST(test_exhaustive_8bit),
+    TEST(test_fuzz_16_32bit),
+)

@@ -41,10 +41,7 @@ bool fs_file_content_init(FileContent* content,
     content->content = NULL;
     content->content_sz = 0;
 
-    if(read_binary)
-        file_handle = fopen(path, "r");
-    else
-        file_handle = fopen(path, "rb");
+    file_handle = fopen(path, read_binary ? "rb" : "r");
 
     if(file_handle == NULL)
     {
@@ -66,12 +63,17 @@ bool fs_file_content_init(FileContent* content,
 
     read_sz = fread(content->content, sizeof(char), content->content_sz, file_handle);
 
-    if(read_sz == 0 || ferror(file_handle))
+    if(ferror(file_handle) || (read_binary && read_sz != content->content_sz))
     {
         g_current_error = error_get_last_from_system();
         fclose(file_handle);
+        fs_file_content_release(content);
         return false;
     }
+
+    /* Text mode can read less than the file size (e.g. \r\n translation on Windows) */
+    content->content_sz = read_sz;
+    content->content[read_sz] = '\0';
 
     fclose(file_handle);
 
@@ -133,39 +135,66 @@ bool fs_path_exists(const char *path)
 #endif /* defined(ROMANO_WIN) */
 }
 
-bool fs_makedirs(const char *path)
+static bool fs_makedir(const char* path)
 {
-    ROMANO_ASSERT(path != NULL, "path is NULL");
-
     if(fs_path_exists(path))
         return true;
 
 #if defined(ROMANO_WIN)
     return (bool)CreateDirectoryA(path, NULL);
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
-    return mkdir(path, 0755) == 0; /* drwxr-xr-x */
+    return mkdir(path, 0755) == 0 || errno == EEXIST; /* drwxr-xr-x */
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
 }
 
+bool fs_makedirs(const char *path)
+{
+    char buffer[MAX_PATH];
+    size_t path_sz = strlen(path);
+    size_t i;
+
+    if(fs_path_exists(path))
+        return true;
+
+    if(path_sz == 0 || path_sz >= MAX_PATH)
+        return false;
+
+    memcpy(buffer, path, path_sz + 1);
+
+    for(i = 1; i < path_sz; i++)
+    {
+        if(buffer[i] != '/' && buffer[i] != '\\')
+            continue;
+
+        if(buffer[i - 1] == ':' || buffer[i - 1] == '/' || buffer[i - 1] == '\\')
+            continue;
+
+        buffer[i] = '\0';
+
+        if(!fs_makedir(buffer))
+            return false;
+
+        buffer[i] = path[i];
+    }
+
+    return fs_makedir(buffer);
+}
+
 size_t fs_parent_dir(const char* path)
 {
-    ROMANO_ASSERT(path != NULL, "path is NULL");
-
     size_t path_sz = strlen(path);
 
     while(path_sz > 0)
     {
-        char current = path[path_sz--];
+        path_sz--;
 
-        if(current == '\\' || current == '/')
-        {
-            break;
-        }
+        if(path[path_sz] == '\\' || path[path_sz] == '/')
+            return path_sz == 0 ? 1 : path_sz;
     }
 
-    return path_sz + 1;
+    return 0;
 }
 
 char* fs_parent_dir_new(const char* path)
@@ -403,11 +432,12 @@ bool fs_is_dir(const char* path)
         return false;
 
 #if defined(ROMANO_WIN)
-    return GetFileAttributesA(path) & FILE_ATTRIBUTE_DIRECTORY;
+    const DWORD attributes = GetFileAttributesA(path);
+
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct stat stats;
-    stat(path, &stats);
-    return (bool)S_ISREG(stats.st_mode);
+    return stat(path, &stats) == 0 && S_ISDIR(stats.st_mode);
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
@@ -423,11 +453,13 @@ bool fs_is_file(const char* path)
         return false;
 
 #if defined(ROMANO_WIN)
-    return GetFileAttributesA(path) & ~FILE_ATTRIBUTE_DIRECTORY;
+    const DWORD attributes = GetFileAttributesA(path);
+
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct stat stats;
-    stat(path, &stats);
-    return (bool)S_ISDIR(stats.st_mode);
+
+    return stat(path, &stats) == 0 && S_ISREG(stats.st_mode);
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
@@ -511,7 +543,9 @@ void fs_walk_iterator_release(FSWalkIterator* walk_iterator)
 
     walk_iterator->_h_find = INVALID_HANDLE_VALUE;
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
-    closedir(walk_iterator->_dir);
+    if(walk_iterator->_dir != NULL)
+        closedir(walk_iterator->_dir);
+
     walk_iterator->_dir = NULL;
 #endif /* defined(ROMANO_WIN) */
 
@@ -526,47 +560,75 @@ void fs_walk_iterator_free(FSWalkIterator* walk_iterator)
     free(walk_iterator);
 }
 
-#if defined(ROMANO_WIN)
-bool walk_should_skip_entry(FSWalkMode mode,
-                            const char* entry_name,
-                            DWORD attrs)
+static bool walk_set_current_path(FSWalkIterator* walk_iterator, const char* name, char separator)
 {
-    if((attrs & FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldDirs) == 0)
-        return true;
+    const size_t name_sz = strlen(name);
+    const size_t current_path_sz = walk_iterator->_current_dir_sz + 1 + name_sz + 1;
 
-    if((attrs & ~FILE_ATTRIBUTE_DIRECTORY) && (mode & FSWalkMode_YieldFiles) == 0)
-        return true;
-
-    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
-        return true;
-
-    return false;
-}
-#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
-bool walk_should_skip_entry(FSWalkMode mode,
-                            const char* entry_name,
-                            unsigned char entry_type /* struct dirent->d_type */)
-{
-    /* TODO: maybe handle DT_UNKNOWN correctly ? */
-
-    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
-        return true;
-
-    switch(entry_type)
+    while(current_path_sz > walk_iterator->current_path_capacity)
     {
-        case DT_REG:
-            return (mode & FSWalkMode_YieldFiles) == 0;
-        case DT_DIR:
-            return (mode & FSWalkMode_YieldDirs) == 0;
-        default:
-            return true;
+        char* new_path;
+
+        if(walk_iterator->current_path_capacity > SIZE_MAX / 2)
+        {
+            g_current_error = ErrorCode_SizeOverflow;
+            return false;
+        }
+
+        new_path = (char*)realloc(walk_iterator->current_path, walk_iterator->current_path_capacity * 2);
+
+        if(new_path == NULL)
+        {
+            g_current_error = ErrorCode_MemAllocError;
+            return false;
+        }
+
+        walk_iterator->current_path = new_path;
+        walk_iterator->current_path_capacity *= 2;
     }
 
-    return false;
+    memcpy(walk_iterator->current_path, walk_iterator->_current_dir, walk_iterator->_current_dir_sz);
+    walk_iterator->current_path[walk_iterator->_current_dir_sz] = separator;
+    memcpy(walk_iterator->current_path + walk_iterator->_current_dir_sz + 1, name, name_sz + 1);
+    walk_iterator->current_path_sz = current_path_sz - 1;
+
+    return true;
 }
-#else
-#error "Platform not supported"
-#endif /* defined(ROMANO_WIN) */
+
+static bool walk_queue_current_path(FSWalkIterator* walk_iterator)
+{
+    char* dir_path = (char*)malloc(walk_iterator->current_path_sz + 1);
+
+    if(dir_path == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        return false;
+    }
+
+    memcpy(dir_path, walk_iterator->current_path, walk_iterator->current_path_sz + 1);
+    vector_push_back(&walk_iterator->_dir_queue, &dir_path);
+
+    return true;
+}
+
+static bool walk_next_directory(FSWalkIterator* walk_iterator)
+{
+    if(vector_size(&walk_iterator->_dir_queue) == 0)
+        return false;
+
+    free(walk_iterator->_current_dir);
+
+    walk_iterator->_current_dir = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
+    walk_iterator->_current_dir_sz = strlen(walk_iterator->_current_dir);
+    vector_pop_front(&walk_iterator->_dir_queue);
+
+    return true;
+}
+
+static bool walk_is_dot_entry(const char* name)
+{
+    return strcmp(name, ".") == 0 || strcmp(name, "..") == 0;
+}
 
 bool fs_walk(const char* path,
              FSWalkIterator* walk_iterator,
@@ -586,7 +648,6 @@ bool fs_walk(const char* path,
         }
 
         memcpy(path_copy, path, path_sz);
-
         vector_push_back(&walk_iterator->_dir_queue, &path_copy);
 
         walk_iterator->_first_entry = false;
@@ -597,255 +658,98 @@ bool fs_walk(const char* path,
 
     while(true)
     {
+        bool is_dir;
+
         if(walk_iterator->_h_find == INVALID_HANDLE_VALUE)
         {
-            if(vector_size(&walk_iterator->_dir_queue) == 0)
+            char* pattern;
+
+            if(!walk_next_directory(walk_iterator))
                 return false;
 
-            char* search_path = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
-            vector_pop_front(&walk_iterator->_dir_queue);
+            pattern = (char*)malloc(walk_iterator->_current_dir_sz + 3);
 
-            size_t search_path_sz = strlen(search_path);
-
-            search_path = realloc(search_path, search_path_sz + 3);
-
-            if(search_path == NULL)
+            if(pattern == NULL)
             {
                 g_current_error = ErrorCode_MemAllocError;
                 return false;
             }
 
-            search_path[search_path_sz] = '\\';
-            search_path[search_path_sz + 1] = '*';
-            search_path[search_path_sz + 2] = '\0';
+            memcpy(pattern, walk_iterator->_current_dir, walk_iterator->_current_dir_sz);
+            memcpy(pattern + walk_iterator->_current_dir_sz, "\\*", 3);
 
-            walk_iterator->_h_find = FindFirstFileA(search_path, &find_data);
+            walk_iterator->_h_find = FindFirstFileA(pattern, &find_data);
+
+            free(pattern);
 
             if(walk_iterator->_h_find == INVALID_HANDLE_VALUE)
-                return false;
-
-            walk_iterator->_current_dir = search_path;
-            walk_iterator->_current_dir_sz = search_path_sz;
-
-            break;
+                continue;
         }
-        else
+        else if(!FindNextFileA(walk_iterator->_h_find, &find_data))
         {
-            if(!FindNextFileA(walk_iterator->_h_find, &find_data))
-            {
-                if(!FindClose(walk_iterator->_h_find))
-                {
-                    g_current_error = error_get_last_from_system();
-                    return false;
-                }
-
-                walk_iterator->_h_find = INVALID_HANDLE_VALUE;
-
-                DWORD err = GetLastError();
-
-                if(err != ERROR_NO_MORE_FILES)
-                {
-                    g_current_error = (ErrorCode)err;
-                    return false;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    while(true)
-    {
-        if(walk_should_skip_entry(mode, find_data.cFileName, find_data.dwFileAttributes))
-        {
-            if(!FindNextFileA(walk_iterator->_h_find, &find_data))
-                break;
-
+            FindClose(walk_iterator->_h_find);
+            walk_iterator->_h_find = INVALID_HANDLE_VALUE;
             continue;
         }
 
-        size_t c_file_name_sz = strlen(find_data.cFileName);
+        if(walk_is_dot_entry(find_data.cFileName))
+            continue;
 
-        size_t current_path_sz = walk_iterator->_current_dir_sz + 1 + c_file_name_sz + 1;
-
-        if(current_path_sz > walk_iterator->current_path_capacity)
-        {
-            if(walk_iterator->current_path_capacity >= SIZE_MAX)
-            {
-                g_current_error = ErrorCode_SizeOverflow;
-                return false;
-            }
-
-            walk_iterator->current_path_capacity <<= 1;
-            walk_iterator->current_path = realloc(walk_iterator->current_path,
-                                                  walk_iterator->current_path_capacity);
-
-            if(walk_iterator->current_path == NULL)
-            {
-                g_current_error = ErrorCode_MemAllocError;
-                return false;
-            }
-        }
-
-        int ret = snprintf(walk_iterator->current_path,
-                           current_path_sz,
-                           "%.*s\\%s",
-                           (int)walk_iterator->_current_dir_sz,
-                           walk_iterator->_current_dir,
-                           find_data.cFileName);
-
-        if(ret < 0)
-        {
-            g_current_error = ErrorCode_FormattingError;
+        if(!walk_set_current_path(walk_iterator, find_data.cFileName, '\\'))
             return false;
-        }
 
-        walk_iterator->current_path[current_path_sz - 1] = '\0';
+        is_dir = (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-        bool is_dir = (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        if(is_dir && (mode & FSWalkMode_Recursive) && !walk_queue_current_path(walk_iterator))
+            return false;
 
-        if(is_dir && (mode & FSWalkMode_Recursive))
-        {
-            char* dir_path = (char*)calloc(current_path_sz, sizeof(char));
-
-            if(dir_path == NULL)
-            {
-                g_current_error = ErrorCode_MemAllocError;
-                return false;
-            }
-
-            memcpy(dir_path, walk_iterator->current_path, current_path_sz * sizeof(char));
-            vector_push_back(&walk_iterator->_dir_queue, &dir_path);
-        }
-
-        return true;
+        if((is_dir && (mode & FSWalkMode_YieldDirs)) || (!is_dir && (mode & FSWalkMode_YieldFiles)))
+            return true;
     }
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     struct dirent* entry;
 
     while(true)
     {
+        bool is_dir;
+        bool is_file;
+
         if(walk_iterator->_dir == NULL)
         {
-            if(vector_size(&walk_iterator->_dir_queue) == 0)
+            if(!walk_next_directory(walk_iterator))
                 return false;
 
-            char* search_path = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
-            vector_pop_front(&walk_iterator->_dir_queue);
-
-            size_t search_path_sz = strlen(search_path);
-
-            walk_iterator->_dir = opendir(search_path);
+            walk_iterator->_dir = opendir(walk_iterator->_current_dir);
 
             if(walk_iterator->_dir == NULL)
-            {
-                return false;
-            }
-
-            entry = readdir(walk_iterator->_dir);
-
-            if(entry == NULL)
-                return false;
-
-            walk_iterator->_current_dir = search_path;
-            walk_iterator->_current_dir_sz = search_path_sz;
-
-            break;
+                continue;
         }
-        else
+
+        entry = readdir(walk_iterator->_dir);
+
+        if(entry == NULL)
         {
-            int old_errno = errno;
-
-            entry = readdir(walk_iterator->_dir);
-
-            if(entry != NULL)
-                break;
-
             closedir(walk_iterator->_dir);
-
             walk_iterator->_dir = NULL;
-
-            free(walk_iterator->_current_dir);
-            walk_iterator->_current_dir = NULL;
-
-            if(old_errno != errno)
-                return false;
-        }
-    }
-
-    while(true)
-    {
-        if(walk_should_skip_entry(mode, entry->d_name, entry->d_type))
-        {
-            entry = readdir(walk_iterator->_dir);
-
-            if(entry == NULL)
-                break;
-
             continue;
         }
 
-        size_t c_file_name_sz = strlen(entry->d_name);
+        if(walk_is_dot_entry(entry->d_name))
+            continue;
 
-        size_t current_path_sz = walk_iterator->_current_dir_sz + 1 + c_file_name_sz + 1;
-
-        if(current_path_sz > walk_iterator->current_path_capacity)
-        {
-            if(walk_iterator->current_path_capacity >= SIZE_MAX)
-            {
-                g_current_error = ErrorCode_SizeOverflow;
-                return false;
-            }
-
-            walk_iterator->current_path_capacity <<= 1;
-            walk_iterator->current_path = realloc(walk_iterator->current_path,
-                                                  walk_iterator->current_path_capacity);
-
-            if(walk_iterator->current_path == NULL)
-            {
-                g_current_error = ErrorCode_MemAllocError;
-                return false;
-            }
-        }
-
-        int ret = snprintf(walk_iterator->current_path,
-                           current_path_sz,
-                           "%.*s/%s",
-                           (int)walk_iterator->_current_dir_sz,
-                           walk_iterator->_current_dir,
-                           entry->d_name);
-
-        if(ret < 0)
-        {
-            g_current_error = ErrorCode_FormattingError;
+        if(!walk_set_current_path(walk_iterator, entry->d_name, '/'))
             return false;
-        }
 
-        walk_iterator->current_path[current_path_sz - 1] = '\0';
+        is_dir = entry->d_type == DT_UNKNOWN ? fs_is_dir(walk_iterator->current_path) : entry->d_type == DT_DIR;
+        is_file = entry->d_type == DT_UNKNOWN ? fs_is_file(walk_iterator->current_path) : entry->d_type == DT_REG;
 
-        bool is_dir = entry->d_type == DT_UNKNOWN ? fs_is_dir(walk_iterator->current_path) :
-                                                    entry->d_type == DT_DIR;
+        if(is_dir && (mode & FSWalkMode_Recursive) && !walk_queue_current_path(walk_iterator))
+            return false;
 
-        if(is_dir && (mode & FSWalkMode_Recursive))
-        {
-            char* dir_path = (char*)calloc(current_path_sz, sizeof(char));
-
-            if(dir_path == NULL)
-            {
-                g_current_error = ErrorCode_MemAllocError;
-                return false;
-            }
-
-            memcpy(dir_path, walk_iterator->current_path, current_path_sz * sizeof(char));
-            vector_push_back(&walk_iterator->_dir_queue, &dir_path);
-        }
-
-        return true;
+        if((is_dir && (mode & FSWalkMode_YieldDirs)) || (is_file && (mode & FSWalkMode_YieldFiles)))
+            return true;
     }
-
+#else
+#error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
-
-    return false;
 }

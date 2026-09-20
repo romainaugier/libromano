@@ -159,11 +159,19 @@ void conditionalvariable_wait(ConditionalVariable* cond_var, Mutex* mtx, uint32_
     }
     else
     {
-        struct timespec wait_duration;
-        wait_duration.tv_sec = 0;
-        wait_duration.tv_nsec = wait_duration_ms * 1000000;
+        struct timespec deadline;
+        clock_gettime(CLOCK_REALTIME, &deadline);
 
-        pthread_cond_timedwait(cond_var, mtx, &wait_duration);
+        deadline.tv_sec += (time_t)(wait_duration_ms / 1000);
+        deadline.tv_nsec += (long)(wait_duration_ms % 1000) * 1000000L;
+
+        if(deadline.tv_nsec >= 1000000000L)
+        {
+            deadline.tv_sec++;
+            deadline.tv_nsec -= 1000000000L;
+        }
+
+        pthread_cond_timedwait(cond_var, mtx, &deadline);
     }
 #endif /* defined(ROMANO_WIN) */
 }
@@ -363,6 +371,7 @@ struct ThreadPool
     Worker* workers;
 
     uint32_t working_threads_count;
+    uint32_t pending_count;
     uint32_t workers_count;
     uint32_t alive_count;
     uint32_t stop;
@@ -402,7 +411,7 @@ void work_free(Work* work)
     work->arg = NULL;
 
     if(work->waiter != NULL)
-        atomic_sub_32((Atomic32*)&work->waiter->counter, 1, MemoryOrder_Relax);
+        atomic_sub_32((Atomic32*)&work->waiter->counter, 1, MemoryOrder_Release);
 
     free(work);
 }
@@ -434,6 +443,8 @@ void work_execute(ThreadPool* pool, Work* work)
     atomic_sub_32((Atomic32*)&pool->working_threads_count, 1, MemoryOrder_Relax);
 
     work_free(work);
+
+    atomic_sub_32((Atomic32*)&pool->pending_count, 1, MemoryOrder_Release);
 }
 
 Work* threadpool_try_steal(ThreadPool* pool, Worker* self)
@@ -594,6 +605,8 @@ bool threadpool_work_add(ThreadPool* threadpool,
     if(work == NULL)
         return false;
 
+    atomic_add_32((Atomic32*)&threadpool->pending_count, 1, MemoryOrder_Relax);
+
     self = threadpool_current_worker(threadpool);
 
     if(self != NULL)
@@ -602,6 +615,7 @@ bool threadpool_work_add(ThreadPool* threadpool,
         if(!moodycamel_cq_enqueue(self->queue, (MoodycamelValue)work))
         {
             work_free(work);
+            atomic_sub_32((Atomic32*)&threadpool->pending_count, 1, MemoryOrder_Relax);
             return false;
         }
 
@@ -614,6 +628,7 @@ bool threadpool_work_add(ThreadPool* threadpool,
     if(!moodycamel_cq_enqueue(threadpool->workers[idx].queue, (MoodycamelValue)work))
     {
         work_free(work);
+        atomic_sub_32((Atomic32*)&threadpool->pending_count, 1, MemoryOrder_Relax);
         return false;
     }
 
@@ -624,38 +639,15 @@ bool threadpool_work_add(ThreadPool* threadpool,
 
 void threadpool_wait(ThreadPool* threadpool)
 {
-    uint32_t i;
-    bool all_empty;
-
     ROMANO_ASSERT(threadpool != NULL, "");
 
-    while(1)
-    {
-        if(atomic_load_32((Atomic32*)&threadpool->working_threads_count,
-                          MemoryOrder_Relax) == 0)
-        {
-            all_empty = true;
-
-            for(i = 0; i < threadpool->workers_count; i++)
-            {
-                if(moodycamel_cq_size_approx(threadpool->workers[i].queue) != 0)
-                {
-                    all_empty = false;
-                    break;
-                }
-            }
-
-            if(all_empty)
-                break;
-        }
-
+    while(atomic_load_32((Atomic32*)&threadpool->pending_count, MemoryOrder_Acquire) != 0)
         thread_yield();
-    }
 }
 
 void threadpool_waiter_wait(ThreadPoolWaiter* waiter)
 {
-    while(atomic_load_32((Atomic32*)&waiter->counter, MemoryOrder_Relax) != 0)
+    while(atomic_load_32((Atomic32*)&waiter->counter, MemoryOrder_Acquire) != 0)
         thread_yield();
 }
 

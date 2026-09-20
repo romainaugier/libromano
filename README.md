@@ -93,3 +93,23 @@ X* x = x_new();
 /* ... */
 x_free(x);
 ```
+
+## Tests
+
+```bash
+./build.sh --tests                               # or cmake -DRUN_TESTS=1 then ctest
+ctest --test-dir build -LE network               # skip the tests using sockets
+build/tests/test_json -v fuzz                    # verbose, only the cases whose name contains "fuzz"
+```
+
+Every test uses the harness in `tests/test.h` and the fuzzing module `libromano/fuzz.h`. Fuzzing is deterministic by default, and can be controlled with environment variables:
+
+| Variable | Effect |
+| --- | --- |
+| `ROMANO_FUZZ_SEED=<n\|random>` | base seed |
+| `ROMANO_FUZZ_SCALE=<n>` | multiplies the iterations |
+| `ROMANO_FUZZ_ITERATIONS=<n>` | iterations per run |
+| `ROMANO_FUZZ_SECONDS=<n>` | time budget per run |
+| `ROMANO_FUZZ_REPLAY=<seed>` | replays the failing iteration printed on failure |
+
+Benchmarks are built with `-DBUILD_BENCHMARKS=ON`.

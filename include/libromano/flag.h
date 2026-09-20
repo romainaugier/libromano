@@ -14,13 +14,13 @@ ROMANO_CPP_ENTER
 typedef uint32_t flag32;
 typedef uint64_t flag64;
 
-#define BIT_FLAG(bit) 1 << bit
+#define BIT_FLAG(bit) (1 << (bit))
 
-#define HAS_FLAG(flag, bit) flag & bit
+#define HAS_FLAG(flag, bit) (((flag) & (bit)) != 0)
 
-#define SET_FLAG(flag, bit) flag |= bit 
+#define SET_FLAG(flag, bit) ((flag) |= (bit))
 
-#define UNSET_FLAG(flag, bit) flag &= ~bit
+#define UNSET_FLAG(flag, bit) ((flag) &= ~(bit))
 
 ROMANO_CPP_END
 

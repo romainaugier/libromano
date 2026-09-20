@@ -280,6 +280,7 @@ void json_str_set(Json* json, JsonValue* value, const char* str)
     memcpy(str_ptr, str, str_sz * sizeof(char));
     str_ptr[str_sz] = '\0';
 
+    json_set_sz(value->tags, str_sz);
     value->value.str = str_ptr;
 }
 
@@ -362,6 +363,10 @@ void json_array_pop(Json* json, JsonValue* array, size_t index)
     if(index == 0)
     {
         info->head = info->head->next;
+
+        if(info->head == NULL)
+            info->tail = NULL;
+
         json_decr_sz(array->tags);
         return;
     }
@@ -386,7 +391,7 @@ void json_array_pop(Json* json, JsonValue* array, size_t index)
         previous->next = iterator.current->next;
 
         if(iterator.current == info->tail)
-            info->tail = iterator.current->next;
+            info->tail = previous;
     }
 
     json_decr_sz(array->tags);
@@ -540,16 +545,12 @@ void json_dict_pop(Json* json, JsonValue* dict, const char* key)
         return;
 
     if(previous == NULL)
-    {
-        info->head = iterator.current;
-    }
+        info->head = iterator.current->next;
     else
-    {
         previous->next = iterator.current->next;
 
-        if(iterator.current == info->tail)
-            info->tail = iterator.current->next;
-    }
+    if(iterator.current == info->tail)
+        info->tail = previous;
 
     json_decr_sz(dict->tags);
 }
@@ -585,11 +586,14 @@ size_t json_dict_get_size(JsonValue* value)
 /* Json Parser */
 /***************/
 
+#define JSON_MAX_DEPTH 512
+
 typedef struct JsonParser {
     const char* str;
     size_t pos;
     size_t len;
     Json* json;
+    size_t depth;
 } JsonParser;
 
 JsonValue* json_parse_value(JsonParser* p);
@@ -607,114 +611,199 @@ ROMANO_FORCE_INLINE void json_skip_whitespace(JsonParser* p)
     }
 }
 
+static int json_hex_value(char c)
+{
+    if(c >= '0' && c <= '9')
+        return c - '0';
+
+    if(c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+
+    if(c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+
+    return -1;
+}
+
+static bool json_parse_hex4(const char* str, uint32_t* out)
+{
+    uint32_t value = 0;
+    int i;
+
+    for(i = 0; i < 4; i++)
+    {
+        const int digit = json_hex_value(str[i]);
+
+        if(digit < 0)
+            return false;
+
+        value = (value << 4) | (uint32_t)digit;
+    }
+
+    *out = value;
+
+    return true;
+}
+
+static size_t json_encode_utf8(uint32_t codepoint, char* out)
+{
+    if(codepoint < 0x80)
+    {
+        out[0] = (char)codepoint;
+        return 1;
+    }
+
+    if(codepoint < 0x800)
+    {
+        out[0] = (char)(0xC0 | (codepoint >> 6));
+        out[1] = (char)(0x80 | (codepoint & 0x3F));
+        return 2;
+    }
+
+    if(codepoint < 0x10000)
+    {
+        out[0] = (char)(0xE0 | (codepoint >> 12));
+        out[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+        out[2] = (char)(0x80 | (codepoint & 0x3F));
+        return 3;
+    }
+
+    out[0] = (char)(0xF0 | (codepoint >> 18));
+    out[1] = (char)(0x80 | ((codepoint >> 12) & 0x3F));
+    out[2] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+    out[3] = (char)(0x80 | (codepoint & 0x3F));
+    return 4;
+}
+
+/* Decodes the escape sequence at str (after the backslash), returns the number of input chars consumed or 0 if invalid */
+static size_t json_decode_escape(const char* str, size_t available, char* out, size_t* out_sz)
+{
+    uint32_t codepoint;
+    uint32_t low;
+
+    if(available == 0)
+        return 0;
+
+    switch(str[0])
+    {
+        case '"': *out = '"'; *out_sz = 1; return 1;
+        case '\\': *out = '\\'; *out_sz = 1; return 1;
+        case '/': *out = '/'; *out_sz = 1; return 1;
+        case 'b': *out = '\b'; *out_sz = 1; return 1;
+        case 'f': *out = '\f'; *out_sz = 1; return 1;
+        case 'n': *out = '\n'; *out_sz = 1; return 1;
+        case 'r': *out = '\r'; *out_sz = 1; return 1;
+        case 't': *out = '\t'; *out_sz = 1; return 1;
+        case 'u':
+            break;
+        default:
+            return 0;
+    }
+
+    if(available < 5 || !json_parse_hex4(str + 1, &codepoint))
+        return 0;
+
+    if(codepoint >= 0xDC00 && codepoint <= 0xDFFF)
+        return 0;
+
+    if(codepoint >= 0xD800 && codepoint <= 0xDBFF)
+    {
+        if(available < 11 || str[5] != '\\' || str[6] != 'u' || !json_parse_hex4(str + 7, &low))
+            return 0;
+
+        if(low < 0xDC00 || low > 0xDFFF)
+            return 0;
+
+        codepoint = 0x10000 + ((codepoint - 0xD800) << 10) + (low - 0xDC00);
+        *out_sz = json_encode_utf8(codepoint, out);
+        return 11;
+    }
+
+    *out_sz = json_encode_utf8(codepoint, out);
+
+    return 5;
+}
+
 JsonValue* json_parse_string(JsonParser* p)
 {
     JsonValue* value;
     char* str;
+    size_t start;
+    size_t end;
     size_t i;
     size_t j;
-    size_t start;
-    size_t len;
-    bool has_escape;
-    char escape;
+    bool has_escape = false;
 
     if(p->pos >= p->len || p->str[p->pos] != '"')
         return NULL;
 
     p->pos++;
-
     start = p->pos;
-    len = 0;
-    has_escape = false;
 
-    while(p->pos < p->len)
+    while(p->pos < p->len && p->str[p->pos] != '"')
     {
-        char c = p->str[p->pos];
+        const char c = p->str[p->pos];
 
-        if(c == '"')
-        {
-            break;
-        }
-        else if(c == '\\')
+        if((unsigned char)c < 0x20)
+            return NULL;
+
+        if(c == '\\')
         {
             has_escape = true;
             p->pos++;
-
-            if(p->pos >= p->len)
-                return NULL;
-
-            escape = p->str[p->pos];
-
-            if(escape == 'u')
-            {
-                p->pos += 4;
-
-                if(p->pos >= p->len)
-                    return NULL;
-            }
-        }
-        else if((unsigned char)c < 0x20)
-        {
-            return NULL;
         }
 
         p->pos++;
-        len++;
     }
 
     if(p->pos >= p->len)
         return NULL;
 
+    end = p->pos;
+
+    /* Decoded strings are never longer than their escaped form */
+    str = arena_push(&p->json->string_arena, NULL, end - start + 1);
     value = arena_push(&p->json->value_arena, NULL, sizeof(JsonValue));
+
+    if(str == NULL || value == NULL)
+        return NULL;
 
     if(!has_escape)
     {
-        str = arena_push(&p->json->string_arena, NULL, len + 1);
-        memcpy(str, p->str + start, len);
-        str[len] = '\0';
+        memcpy(str, p->str + start, end - start);
+        j = end - start;
     }
     else
     {
-        str = arena_push(&p->json->string_arena, NULL, len + 1);
         j = 0;
 
-        for(i = start; i < p->pos; i++)
+        for(i = start; i < end;)
         {
             if(p->str[i] == '\\')
             {
-                i++;
+                size_t decoded_sz = 0;
+                size_t consumed = json_decode_escape(p->str + i + 1, end - i - 1, str + j, &decoded_sz);
 
-                switch(p->str[i])
-                {
-                    case '"': str[j++] = '"'; break;
-                    case '\\': str[j++] = '\\'; break;
-                    case '/': str[j++] = '/'; break;
-                    case 'b': str[j++] = '\b'; break;
-                    case 'f': str[j++] = '\f'; break;
-                    case 'n': str[j++] = '\n'; break;
-                    case 'r': str[j++] = '\r'; break;
-                    case 't': str[j++] = '\t'; break;
-                    case 'u':
-                    {
-                        /* TODO: unicode handling */
-                        i += 4;
-                        str[j++] = '?';
-                        break;
-                    }
-                }
+                if(consumed == 0)
+                    return NULL;
+
+                i += 1 + consumed;
+                j += decoded_sz;
             }
             else
             {
-                str[j++] = p->str[i];
+                str[j++] = p->str[i++];
             }
         }
-
-        str[j] = '\0';
-        len = j;
     }
 
+    str[j] = '\0';
+
     p->pos++;
+
+    memset(value, 0, sizeof(JsonValue));
     json_set_tags(value->tags, JsonTag_Str);
+    json_set_sz(value->tags, j);
     value->value.str = str;
 
     return value;
@@ -725,117 +814,99 @@ ROMANO_FORCE_INLINE bool is_digit(unsigned int c)
     return (c - 48) < 10;
 }
 
-static const double pow10_table[] = {
-    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
-    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
-    1e20, 1e21, 1e22
-};
-
-static const uint64_t pow10_int_table[] = {
-    1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL,
-    10000000ULL, 100000000ULL, 1000000000ULL, 10000000000ULL,
-    100000000000ULL, 1000000000000ULL, 10000000000000ULL,
-    100000000000000ULL, 1000000000000000ULL, 10000000000000000ULL,
-    100000000000000000ULL, 1000000000000000000ULL, 10000000000000000000ULL
-};
-
-#define POW10_TABLE_SIZE (sizeof(pow10_table) / sizeof(pow10_table[0]))
-#define POW10_INT_TABLE_SIZE (sizeof(pow10_int_table) / sizeof(pow10_int_table[0]))
-
 JsonValue* json_parse_number(JsonParser* p)
 {
+    const size_t start = p->pos;
     bool is_negative = false;
     bool is_float = false;
-    int64_t int_val = 0;
-    double float_val = 0.0;
-    double fraction = 0.0;
-    int exponent = 0;
-    bool exp_negative = false;
+    bool overflow = false;
+    uint64_t int_val = 0;
+    char buffer[128];
+    size_t number_sz;
+
     if(p->pos < p->len && p->str[p->pos] == '-')
     {
         is_negative = true;
         p->pos++;
     }
+
     if(p->pos >= p->len || !is_digit(p->str[p->pos]))
         return NULL;
+
+    if(p->str[p->pos] == '0' && p->pos + 1 < p->len && is_digit(p->str[p->pos + 1]))
+        return NULL;
+
     while(p->pos < p->len && is_digit(p->str[p->pos]))
     {
-        int_val = int_val * 10 + (p->str[p->pos] - '0');
-        float_val = float_val * 10 + (p->str[p->pos] - '0');
+        const uint64_t digit = (uint64_t)(p->str[p->pos] - '0');
+
+        if(int_val > (UINT64_MAX - digit) / 10)
+            overflow = true;
+        else
+            int_val = int_val * 10 + digit;
+
         p->pos++;
     }
+
     if(p->pos < p->len && p->str[p->pos] == '.')
     {
         is_float = true;
         p->pos++;
-        if (p->pos >= p->len || !is_digit(p->str[p->pos]))
+
+        if(p->pos >= p->len || !is_digit(p->str[p->pos]))
             return NULL;
-        int frac_digits = 0;
-        uint64_t frac_int = 0;
-        while(p->pos < p->len && is_digit(p->str[p->pos]) && frac_digits < POW10_INT_TABLE_SIZE)
-        {
-            frac_int = frac_int * 10 + (p->str[p->pos] - '0');
-            frac_digits++;
-            p->pos++;
-        }
+
         while(p->pos < p->len && is_digit(p->str[p->pos]))
             p->pos++;
-        if(frac_digits > 0 && frac_digits < POW10_TABLE_SIZE)
-            fraction = (double)frac_int / pow10_table[frac_digits];
-        else if(frac_digits > 0)
-            fraction = (double)frac_int / pow(10.0, frac_digits);
-        float_val += fraction;
     }
+
     if(p->pos < p->len && (p->str[p->pos] == 'e' || p->str[p->pos] == 'E'))
     {
         is_float = true;
         p->pos++;
-        if(p->pos < p->len && p->str[p->pos] == '-')
-        {
-            exp_negative = true;
+
+        if(p->pos < p->len && (p->str[p->pos] == '-' || p->str[p->pos] == '+'))
             p->pos++;
-        }
-        else if(p->pos < p->len && p->str[p->pos] == '+')
-        {
-            p->pos++;
-        }
+
         if(p->pos >= p->len || !is_digit(p->str[p->pos]))
             return NULL;
+
         while(p->pos < p->len && is_digit(p->str[p->pos]))
-        {
-            exponent = exponent * 10 + (p->str[p->pos] - '0');
             p->pos++;
-        }
     }
-    if(is_float)
+
+    if(!is_float && !overflow)
     {
-        if(exp_negative)
-            exponent = -exponent;
-        if(exponent >= -(int)POW10_TABLE_SIZE && exponent < (int)POW10_TABLE_SIZE)
-        {
-            if(exponent >= 0)
-                float_val *= pow10_table[exponent];
-            else
-                float_val /= pow10_table[-exponent];
-        }
-        else
-        {
-            float_val *= pow(10.0, exponent);
-        }
-        if(is_negative)
-            float_val = -float_val;
-        return json_f64_new(p->json, float_val);
+        if(!is_negative)
+            return json_u64_new(p->json, int_val);
+
+        if(int_val <= (uint64_t)INT64_MAX + 1)
+            return json_i64_new(p->json, (int64_t)(0 - int_val));
+    }
+
+    number_sz = p->pos - start;
+
+    if(number_sz < sizeof(buffer))
+    {
+        memcpy(buffer, p->str + start, number_sz);
+        buffer[number_sz] = '\0';
+
+        return json_f64_new(p->json, strtod(buffer, NULL));
     }
     else
     {
-        if(is_negative)
-        {
-            return json_i64_new(p->json, -int_val);
-        }
-        else
-        {
-            return json_u64_new(p->json, (uint64_t)int_val);
-        }
+        char* heap_buffer = (char*)malloc(number_sz + 1);
+        double value;
+
+        if(heap_buffer == NULL)
+            return NULL;
+
+        memcpy(heap_buffer, p->str + start, number_sz);
+        heap_buffer[number_sz] = '\0';
+        value = strtod(heap_buffer, NULL);
+        free(heap_buffer);
+
+        return json_f64_new(p->json, value);
     }
 }
 
@@ -986,6 +1057,8 @@ JsonValue* json_parse_literal(JsonParser* p)
 
 JsonValue* json_parse_value(JsonParser* p)
 {
+    JsonValue* nested;
+
     json_skip_whitespace(p);
 
     if(p->pos >= p->len)
@@ -995,10 +1068,18 @@ JsonValue* json_parse_value(JsonParser* p)
 
     if(c == '"')
         return json_parse_string(p);
-    else if (c == '{')
-        return parse_dict(p);
-    else if (c == '[')
-        return json_parse_array(p);
+
+    if(c == '{' || c == '[')
+    {
+        if(p->depth >= JSON_MAX_DEPTH)
+            return NULL;
+
+        p->depth++;
+        nested = c == '{' ? parse_dict(p) : json_parse_array(p);
+        p->depth--;
+
+        return nested;
+    }
     else if (c == '-' || isdigit(c))
         return json_parse_number(p);
     else if (c == 't' || c == 'f' || c == 'n')
@@ -1022,6 +1103,7 @@ Json* json_parse(const char* str, size_t str_sz)
     parser.pos = 0;
     parser.len = str_sz;
     parser.json = json;
+    parser.depth = 0;
 
     JsonValue* root = json_parse_value(&parser);
 
@@ -1294,106 +1376,78 @@ bool json_write_i64(JsonWriter* writer, int64_t i64)
 
 bool json_write_f64(JsonWriter* writer, double f64)
 {
+    char buffer[32];
     int buffer_sz;
 
-    buffer_sz = fmt_size_f64(f64, 3);
+    if(!isfinite(f64))
+        return json_write_literal(writer, "null", 4);
 
-    if(buffer_sz < 0)
+    buffer_sz = snprintf(buffer, sizeof(buffer), "%.17g", f64);
+
+    if(buffer_sz <= 0 || (size_t)buffer_sz >= sizeof(buffer) - 2)
     {
         g_current_error = ErrorCode_FormattingError;
         return false;
     }
 
-    if(!json_write_realloc(writer, (size_t)buffer_sz))
-        return false;
+    /* Keeps the value a float when read back */
+    if(strpbrk(buffer, ".eE") == NULL)
+    {
+        buffer[buffer_sz++] = '.';
+        buffer[buffer_sz++] = '0';
+    }
 
-    fmt_f64(writer->str + writer->str_sz, f64, 3);
-
-    writer->str_sz += buffer_sz;
-
-    return true;
+    return json_write_literal(writer, buffer, (size_t)buffer_sz);
 }
 
-ROMANO_FORCE_INLINE bool json_char_is_escaped(char c)
+static size_t json_escape_char(unsigned char c, char* out)
 {
+    static const char hex[] = "0123456789abcdef";
+
     switch(c)
     {
-        case '\'':
-        case '\"':
-        case '\\':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\b':
-        case '\f':
-        case '\v':
-            return true;
+        case '"': out[0] = '\\'; out[1] = '"'; return 2;
+        case '\\': out[0] = '\\'; out[1] = '\\'; return 2;
+        case '\n': out[0] = '\\'; out[1] = 'n'; return 2;
+        case '\r': out[0] = '\\'; out[1] = 'r'; return 2;
+        case '\t': out[0] = '\\'; out[1] = 't'; return 2;
+        case '\b': out[0] = '\\'; out[1] = 'b'; return 2;
+        case '\f': out[0] = '\\'; out[1] = 'f'; return 2;
         default:
-            return false;
+            break;
     }
-}
 
-ROMANO_FORCE_INLINE char json_escaped_to_char(char c)
-{
-    switch(c)
+    if(c < 0x20)
     {
-        case '\'': return 0x27;
-        case '\"': return '"';
-        case '\\': return '\\';
-        case '\n': return 'n';
-        case '\r': return 'r';
-        case '\t': return 't';
-        case '\b': return 'b';
-        case '\f': return 'f';
-        case '\v': return 'v';
-        default: return c;
+        memcpy(out, "\\u00", 4);
+        out[4] = hex[c >> 4];
+        out[5] = hex[c & 0xF];
+        return 6;
     }
+
+    out[0] = (char)c;
+
+    return 1;
 }
 
 bool json_write_str(JsonWriter* writer, const char* str)
 {
-    size_t str_sz;
+    char escaped[6];
+    size_t escaped_sz;
     size_t i;
 
-    str_sz = 0;
-    i = 0;
-
-    while(str[i] != '\0')
-    {
-        if(json_char_is_escaped(str[i]))
-            str_sz += 2;
-
-        str_sz++;
-        i++;
-    }
-
-    if(!json_write_realloc(writer, str_sz + 2))
+    if(!json_write_char(writer, '"'))
         return false;
 
-    i = 0;
-
-    writer->str[writer->str_sz++] = '"';
-
-    while(str[i] != '\0')
+    for(i = 0; str[i] != '\0'; i++)
     {
-        if(json_char_is_escaped(str[i]))
-        {
-            if(str[i] != '\'')
-                writer->str[writer->str_sz++] = '\\';
+        escaped_sz = json_escape_char((unsigned char)str[i], escaped);
 
-            writer->str[writer->str_sz++] = json_escaped_to_char(str[i]);
-        }
-        else
-        {
-            writer->str[writer->str_sz++] = str[i];
-        }
-
-        i++;
+        if(!json_write_literal(writer, escaped, escaped_sz))
+            return false;
     }
 
-    writer->str[writer->str_sz++] = '"';
-
-    return true;
+    return json_write_char(writer, '"');
 }
 
 bool json_write_value(JsonWriter* writer, JsonValue* value)
@@ -1432,12 +1486,14 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
 {
     JsonWriter writer;
 
+    if(json == NULL || json->root == NULL)
+        return NULL;
+
     writer.json = json;
     writer.indent = 0;
     writer.indent_size = indent_size;
     writer.str_capacity = 4096;
     writer.str_sz = 0;
-
     writer.str = (char*)calloc(writer.str_capacity, sizeof(char));
 
     if(writer.str == NULL)
@@ -1446,10 +1502,16 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
         return NULL;
     }
 
-    if(!json_write_value(&writer, json->root))
+    if(!json_write_value(&writer, json->root) || !json_write_realloc(&writer, 1))
+    {
+        free(writer.str);
         return NULL;
+    }
 
-    *written_size = writer.str_sz;
+    writer.str[writer.str_sz] = '\0';
+
+    if(written_size != NULL)
+        *written_size = writer.str_sz;
 
     return writer.str;
 }
@@ -1505,16 +1567,19 @@ Json* json_loadf(const char* file_path)
     size_t file_size = ftell(file);
     rewind(file);
 
-    char* file_buffer = calloc(file_size, sizeof(char));
+    char* file_buffer = calloc(file_size + 1, sizeof(char));
 
     if(file_buffer == NULL)
     {
         logger_log_error("Error while trying to allocate memory to read json file: %s", file_path);
         g_current_error = ErrorCode_MemAllocError;
+        fclose(file);
         return NULL;
     }
 
     size_t file_read_size = fread(file_buffer, sizeof(char), file_size, file);
+
+    fclose(file);
 
     if(file_read_size != file_size)
     {
@@ -1569,7 +1634,7 @@ bool json_dumpf(Json* json, size_t indent_size, const char* file_path)
 
     free(written);
 
-    if(fwritten_sz < written_sz)
+    if(fclose(file) != 0 || fwritten_sz < written_sz)
     {
         g_current_error = error_get_last_from_system();
 

@@ -16,6 +16,7 @@ option(RUN_TESTS "Run unit tests" OFF)
 option(WITH_OPENCL "Enable OpenCL support" OFF)
 option(WITH_HTTP "Enable HTTP/HTTPS support" OFF)
 option(COVERAGE "Enable code coverage instrumentation (GCC/Clang)" OFF)
+option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
 
 if(RUN_TESTS)
     message(STATUS "RUN_TESTS enabled, building and running tests")
@@ -63,4 +64,8 @@ add_subdirectory(src)
 
 if(RUN_TESTS EQUAL 1)
     add_subdirectory(tests)
+endif()
+
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()

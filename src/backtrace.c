@@ -20,56 +20,36 @@
 
 extern ErrorCode g_current_error;
 
-#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
-#if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-ROMANO_FORCE_INLINE uintptr_t* next_stack_frame(uintptr_t* stack_frame)
-{
-    uintptr_t* new_stack_frame;
-
-    new_stack_frame = (uintptr_t*)(*stack_frame);
-
-    if(new_stack_frame <= stack_frame)
-        return NULL;
-
-    if((uintptr_t)new_stack_frame & (sizeof(uintptr_t) - 1))
-        return NULL;
-
-    return new_stack_frame;
-}
-#endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
-#endif /* defined(ROMANO_LINUX) */
+#define BACKTRACE_MAX_FRAMES 256
 
 uint32_t backtrace_call_stack(uint32_t skip, uint32_t max, void** out_stack)
 {
 #if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
-#if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    void* stack_frame;
+    /* Unwind tables work without frame pointers, unlike walking the frame chain */
+    void* frames[BACKTRACE_MAX_FRAMES];
+    uint32_t available;
     uint32_t num;
 
-    stack_frame = (void*)__builtin_frame_address(0);
-    num = 0;
+    /* Skips this function too */
+    skip++;
 
-    while(stack_frame != NULL && num < max)
-    {
-        if(((uintptr_t**)stack_frame)[1] == NULL)
-            break;
+    available = (uint32_t)backtrace(frames, BACKTRACE_MAX_FRAMES);
 
+    if(available <= skip)
+        return 0;
 
-        if(skip > 0)
-            skip--;
-        else
-            out_stack[num++] = (void*)((uintptr_t**)stack_frame)[1];
-
-        stack_frame = next_stack_frame((uintptr_t*)stack_frame);
-    }
+    num = available - skip < max ? available - skip : max;
+    memcpy(out_stack, frames + skip, num * sizeof(void*));
 
     return num;
-#endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
 #elif defined(ROMANO_WIN)
-    return RtlCaptureStackBackTrace(skip, max, out_stack, NULL);
-#endif /* defined(ROMANO_LINUX) */
-
+    return RtlCaptureStackBackTrace(skip + 1, max, out_stack, NULL);
+#else
+    ROMANO_UNUSED(skip);
+    ROMANO_UNUSED(max);
+    ROMANO_UNUSED(out_stack);
     return 0;
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
 }
 
 uint32_t backtrace_call_stack_symbols(uint32_t skip,
@@ -221,30 +201,33 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
 #define SIG_MAX_SYMBOLS 32
 
-#if defined(ROMANO_LINUX) || defined(ROMANO_CLANG)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+/* Only async-signal-safe calls in here: no stdio, no malloc */
 void backtrace_signal_handler(int sig)
 {
+    static const char header[] = "Exception caught: signal ";
     void* addresses[SIG_MAX_SYMBOLS];
-    char* symbols[SIG_MAX_SYMBOLS];
-    uint32_t i;
-    uint32_t num_symbols;
+    char number[16];
+    size_t number_sz = 0;
+    int value = sig;
+    int count;
 
-    fprintf(stderr, "Exception caught: %s\n", strsignal(sig));
-
-    num_symbols = backtrace_call_stack_symbols(0, SIG_MAX_SYMBOLS, symbols, addresses);
-
-    for(i = 0; i < num_symbols; i++)
+    do
     {
-        fprintf(stderr,
-                "#%u 0x%px in %s\n",
-                i,
-                (void*)((uintptr_t**)addresses)[i],
-                symbols[i]);
+        number[sizeof(number) - 2 - number_sz++] = (char)('0' + value % 10);
+        value /= 10;
+    } while(value > 0 && number_sz < sizeof(number) - 2);
 
-        free(symbols[i]);
-    }
+    number[sizeof(number) - 1] = '\n';
 
-    exit(1);
+    if(write(STDERR_FILENO, header, sizeof(header) - 1) < 0 ||
+       write(STDERR_FILENO, number + sizeof(number) - 1 - number_sz, number_sz + 1) < 0)
+        _exit(1);
+
+    count = backtrace(addresses, SIG_MAX_SYMBOLS);
+    backtrace_symbols_fd(addresses, count, STDERR_FILENO);
+
+    _exit(1);
 }
 #elif defined(ROMANO_WIN)
 LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
@@ -275,7 +258,12 @@ LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
 
 void backtrace_install_signal_handler(void)
 {
-#if defined(ROMANO_LINUX) || defined(ROMANO_CLANG)
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+    void* preload[1];
+
+    /* The first call can allocate while loading the unwinder, better here than in the handler */
+    backtrace(preload, 1);
+
     signal(SIGSEGV, backtrace_signal_handler);
     signal(SIGFPE, backtrace_signal_handler);
     signal(SIGABRT, backtrace_signal_handler);

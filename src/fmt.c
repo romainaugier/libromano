@@ -204,91 +204,37 @@ int fmt_u64(char* buffer, uint64_t u64)
     return (int)(utoa_fast(u64, buffer) - buffer);
 }
 
-int fmt_size_f64(double f64, int precision)
-{
-    int size;
-
-    size = 0;
-
-    if(isnan(f64))
-        return 4;
-
-    if(isinf(f64))
-        return f64 < 0 ? 5 : 4;
-
-    if(f64 < 0)
-    {
-        size++;
-        f64 = -f64;
-    }
-
-    if(f64 == 0.0)
-        return precision > 0 ? 2 + precision : 2;
-
-    if(precision < 0)
-        precision = 6;
-
-    if(precision > 17)
-        precision = 17;
-
-    if(f64 >= 1.0)
-        size += (int)log10(f64) + 1;
-    else
-        size++;
-
-    if(precision > 0)
-        size += 1 + precision;
-
-    return size;
-}
+static const uint64_t g_pow10_u64[18] = {
+    1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL, 10000000ULL, 100000000ULL,
+    1000000000ULL, 10000000000ULL, 100000000000ULL, 1000000000000ULL, 10000000000000ULL,
+    100000000000000ULL, 1000000000000000ULL, 10000000000000000ULL, 100000000000000000ULL
+};
 
 int fmt_f64(char* buffer, double f64, int precision)
 {
     char* p = buffer;
+    double int_part;
+    double frac_part;
+    uint64_t int_value;
+    uint64_t frac_value;
+    uint64_t scale;
 
     if(isnan(f64))
     {
         memcpy(p, "nan", 3);
-        p += 3;
         return 3;
+    }
+
+    if(signbit(f64))
+    {
+        *p++ = '-';
+        f64 = -f64;
     }
 
     if(isinf(f64))
     {
-        if(f64 < 0)
-        {
-            *p++ = '-';
-            memcpy(p, "inf", 3);
-            p += 3;
-            return 4;
-        }
-
         memcpy(p, "inf", 3);
-        p += 3;
-
-        return 3;
-    }
-
-    int is_negative = f64 < 0 || f64 == -0.0;
-
-    if(is_negative)
-    {
-        *p++ = '-';
-        f64 = fabs(f64);
-    }
-
-    if(f64 == 0.0)
-    {
-        *p++ = '0';
-
-        if(precision > 0)
-        {
-            *p++ = '.';
-            memset(p, '0', precision);
-            p += precision;
-        }
-
-        return p - buffer;
+        return (int)(p - buffer) + 3;
     }
 
     if(precision < 0)
@@ -297,72 +243,46 @@ int fmt_f64(char* buffer, double f64, int precision)
     if(precision > 17)
         precision = 17;
 
-    double int_part;
-    double frac_part = modf(f64, &int_part);
+    frac_part = modf(f64, &int_part);
 
-    if(int_part > (double)UINT64_MAX)
+    if(int_part >= 18446744073709551616.0)
     {
         memcpy(p, "ovf", 3);
-        p += 3;
-        return 3;
+        return (int)(p - buffer) + 3;
     }
 
-    p = utoa_fast((uint64_t)int_part, p);
+    int_value = (uint64_t)int_part;
+    scale = g_pow10_u64[precision];
+    frac_value = (uint64_t)(frac_part * (double)scale + 0.5);
+
+    if(frac_value >= scale)
+    {
+        frac_value -= scale;
+        int_value++;
+    }
+
+    p = utoa_fast(int_value, p);
 
     if(precision > 0)
     {
+        char digits[20];
+        int digits_size = (int)(utoa_fast(frac_value, digits) - digits);
+
         *p++ = '.';
 
-        static const double pow10[] = {
-            1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
-            1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17
-        };
+        memset(p, '0', (size_t)(precision - digits_size));
+        p += precision - digits_size;
 
-        frac_part = frac_part * pow10[precision];
-
-        if(precision < 17)
-            frac_part += 0.5;
-
-        uint64_t frac_int = (uint64_t)frac_part;
-
-        if(frac_int >= (uint64_t)pow10[precision])
-        {
-            frac_int -= (uint64_t)pow10[precision];
-            int_part += 1.0;
-            p = buffer + is_negative;
-
-            // if(is_negative)
-            //     *p++ = '-';
-
-            p = utoa_fast((uint64_t)int_part, p);
-            *p++ = '.';
-        }
-
-        if(frac_int == 0)
-        {
-            memset(p, '0', precision);
-            p += precision;
-        }
-        else
-        {
-            char temp[20];
-            char* t = utoa_fast(frac_int, temp);
-            int len = t - temp;
-
-            if(len < precision)
-            {
-                memset(p, '0', precision - len);
-                p += precision - len;
-                memcpy(p, temp, len);
-                p += len;
-            }
-            else
-            {
-                memcpy(p, temp, precision);
-                p += precision;
-            }
-        }
+        memcpy(p, digits, (size_t)digits_size);
+        p += digits_size;
     }
 
-    return p - buffer;
+    return (int)(p - buffer);
+}
+
+int fmt_size_f64(double f64, int precision)
+{
+    char buffer[64];
+
+    return fmt_f64(buffer, f64, precision);
 }

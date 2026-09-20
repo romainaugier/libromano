@@ -2,41 +2,18 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/atomic.h"
 #include "libromano/thread.h"
-#include "libromano/logger.h"
 
-/*
- * Test configuration.
- * Keep the counts modest so the suite stays fast under ThreadSanitizer.
- */
+/* Keep the counts modest so the suite stays fast under ThreadSanitizer */
 #define TEST_NUM_THREADS 4
 #define TEST_ITERATIONS 50000
 #define TEST_ITERATIONS_SMALL 10000
 
-static int g_failures = 0;
+#define test_report(name, ok) TEST_CHECK_MSG((ok), "%s", (name))
 
-/*
- * Small helper used to record the outcome of a test. All failures are
- * accumulated so that a full report is printed at the end.
- */
-static void test_report(const char* name, int ok)
-{
-    if(ok)
-    {
-        logger_log(LogLevel_Info, "PASS: %s", name);
-    }
-    else
-    {
-        g_failures++;
-        logger_log(LogLevel_Info, "FAIL: %s", name);
-    }
-}
-
-/*
- * Runs 'count' threads executing 'fn' with the same 'data' pointer and
- * waits for all of them to complete.
- */
 static void run_threads_n(int count, void* (*fn)(void*), void* data)
 {
     Thread* threads[TEST_NUM_THREADS];
@@ -57,10 +34,6 @@ static void run_threads_n(int count, void* (*fn)(void*), void* data)
         thread_join(threads[i]);
     }
 }
-
-/* =============================================================================
- * Single-threaded unit tests
- * ============================================================================= */
 
 static void test_load_store_32(void)
 {
@@ -385,10 +358,6 @@ static void test_fence(void)
     test_report("atomic_thread_fence (all memory orders)", 1);
 }
 
-/* =============================================================================
- * Multi-threaded stress tests
- * ============================================================================= */
-
 /*
  * Each worker increments 'data' TEST_ITERATIONS times using the operation
  * named after it. Together they check that every increment is applied
@@ -709,50 +678,46 @@ static void test_mt_fence(void)
                 atomic_load_32(&ft.observed, MemoryOrder_Relax) == 99);
 }
 
-/* =============================================================================
- * Entry point
- * ============================================================================= */
-
-int main(void)
+/* The fetch functions are documented as returning the new value */
+static void test_fetch_return_values(void)
 {
-    logger_init();
+    Atomic32 v32 = 10;
+    Atomic64 v64 = 10;
 
-    logger_log(LogLevel_Info, "=== Atomic single-threaded tests ===");
-    test_load_store_32();
-    test_load_store_64();
-    test_add_sub_32();
-    test_add_sub_64();
-    test_bitwise_32();
-    test_bitwise_64();
-    test_compare_exchange_32();
-    test_compare_exchange_64();
-    test_exchange_32();
-    test_exchange_64();
-    test_fence();
+    TEST_CHECK_EQ_INT(atomic_fetch_add_32(&v32, 5, MemoryOrder_SeqCst), 15);
+    TEST_CHECK_EQ_INT(atomic_fetch_sub_32(&v32, 3, MemoryOrder_SeqCst), 12);
+    TEST_CHECK_EQ_INT(atomic_fetch_and_32(&v32, 0x8, MemoryOrder_SeqCst), 8);
+    TEST_CHECK_EQ_INT(atomic_fetch_or_32(&v32, 0x3, MemoryOrder_SeqCst), 11);
+    TEST_CHECK_EQ_INT(atomic_fetch_xor_32(&v32, 0x1, MemoryOrder_SeqCst), 10);
 
-    logger_log(LogLevel_Info, "=== Atomic multi-threaded tests ===");
-    test_mt_add_32();
-    test_mt_fetch_add_32();
-    test_mt_sub_32();
-    test_mt_fetch_sub_32();
-    test_mt_add_64();
-    test_mt_fetch_add_64();
-    test_mt_spinlock();
-    test_mt_exchange();
-    test_mt_producer_consumer();
-    test_mt_fence();
-
-    if(g_failures == 0)
-    {
-        logger_log(LogLevel_Info, "All atomic tests passed");
-    }
-    else
-    {
-        logger_log(LogLevel_Info,
-                   "Atomic tests finished with %d failure(s)", g_failures);
-    }
-
-    logger_release();
-
-    return g_failures == 0 ? 0 : 1;
+    TEST_CHECK_EQ_INT(atomic_fetch_add_64(&v64, 5, MemoryOrder_SeqCst), 15);
+    TEST_CHECK_EQ_INT(atomic_fetch_sub_64(&v64, 3, MemoryOrder_SeqCst), 12);
+    TEST_CHECK_EQ_INT(atomic_fetch_and_64(&v64, 0x8, MemoryOrder_SeqCst), 8);
+    TEST_CHECK_EQ_INT(atomic_fetch_or_64(&v64, 0x3, MemoryOrder_SeqCst), 11);
+    TEST_CHECK_EQ_INT(atomic_fetch_xor_64(&v64, 0x1, MemoryOrder_SeqCst), 10);
 }
+
+TEST_MAIN(
+    TEST(test_fetch_return_values),
+    TEST(test_load_store_32),
+    TEST(test_load_store_64),
+    TEST(test_add_sub_32),
+    TEST(test_add_sub_64),
+    TEST(test_bitwise_32),
+    TEST(test_bitwise_64),
+    TEST(test_compare_exchange_32),
+    TEST(test_compare_exchange_64),
+    TEST(test_exchange_32),
+    TEST(test_exchange_64),
+    TEST(test_fence),
+    TEST(test_mt_add_32),
+    TEST(test_mt_fetch_add_32),
+    TEST(test_mt_sub_32),
+    TEST(test_mt_fetch_sub_32),
+    TEST(test_mt_add_64),
+    TEST(test_mt_fetch_add_64),
+    TEST(test_mt_spinlock),
+    TEST(test_mt_exchange),
+    TEST(test_mt_producer_consumer),
+    TEST(test_mt_fence),
+)

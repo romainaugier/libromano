@@ -86,7 +86,7 @@ char* base64_encode(const void* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
     buffer_sz = base64_get_encode_size(data_sz);
     *out_sz = 0;
 
-    buffer = (char*)calloc(buffer_sz, sizeof(char));
+    buffer = (char*)calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -95,42 +95,42 @@ char* base64_encode(const void* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
 
     if(!base64_encode_scalar(data, data_sz, buffer, out_sz))
     {
+        free(buffer);
         return NULL;
     }
 
     return buffer;
 }
 
+#define BASE64_INVALID 0xFF
+
 static const uint8_t decode_table[80] = {
-    62, -1, -1, -1, 63, 52, 53, 54, 55, 56,
-    57, 58, 59, 60, 61, -1, -1, -1, -2, -1,
-    -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,
+    62, 0xFF, 0xFF, 0xFF, 63, 52, 53, 54, 55, 56,
+    57, 58, 59, 60, 61, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF,  0,  1,  2,  3,  4,  5,  6,  7,
      8,  9, 10, 11, 12, 13, 14, 15, 16, 17,
-    18, 19, 20, 21, 22, 23, 24, 25, -1, -1,
-    -1, -1, -1, -1, 26, 27, 28, 29, 30, 31,
+    18, 19, 20, 21, 22, 23, 24, 25, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 26, 27, 28, 29, 30, 31,
     32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
     42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 };
 
-ROMANO_FORCE_INLINE size_t base64_get_decode_size(const char* ROMANO_RESTRICT data, size_t data_sz)
+ROMANO_FORCE_INLINE uint8_t base64_decode_char(const char c)
 {
-    size_t padding;
+    const uint8_t index = (uint8_t)c - (uint8_t)'+';
 
+    return index < sizeof(decode_table) ? decode_table[index] : BASE64_INVALID;
+}
+
+static size_t base64_get_padding(const char* ROMANO_RESTRICT data, size_t data_sz)
+{
     if(data_sz == 0)
         return 0;
 
-    if(data_sz % 4 != 0)
+    if(data[data_sz - 1] != '=')
         return 0;
 
-    padding = 0;
-
-    if(data[data_sz - 1] == '=')
-        padding++;
-
-    if(data[data_sz - 2] == '=')
-        padding++;
-
-    return (data_sz / 4) * 3 - padding;
+    return data[data_sz - 2] == '=' ? 2 : 1;
 }
 
 bool base64_decode_scalar(const char* ROMANO_RESTRICT data,
@@ -138,39 +138,38 @@ bool base64_decode_scalar(const char* ROMANO_RESTRICT data,
                           uint8_t* ROMANO_RESTRICT out_buffer,
                           size_t* out_buffer_sz)
 {
+    const size_t padding = base64_get_padding(data, data_sz);
     size_t i;
     size_t j;
-    uint32_t chunk;
-    uint32_t padding;
 
-    for(i = 0; i < (data_sz - 4); i += 4)
+    for(i = 0; i < data_sz; i += 4)
     {
-        chunk = 0;
+        const size_t chars = i + 4 == data_sz ? 4 - padding : 4;
+        uint32_t chunk = 0;
 
-        chunk |= ((uint32_t)decode_table[data[i + 0] - '+']) << 18;
-        chunk |= ((uint32_t)decode_table[data[i + 1] - '+']) << 12;
-        chunk |= ((uint32_t)decode_table[data[i + 2] - '+']) << 6;
-        chunk |= ((uint32_t)decode_table[data[i + 3] - '+']) << 0;
+        for(j = 0; j < chars; j++)
+        {
+            const uint8_t value = base64_decode_char(data[i + j]);
 
-        out_buffer[(*out_buffer_sz)++] = (chunk >> 16);
-        out_buffer[(*out_buffer_sz)++] = (chunk >> 8) & 0xFF;
-        out_buffer[(*out_buffer_sz)++] = (chunk >> 0) & 0xFF;
+            if(value == BASE64_INVALID)
+                return false;
+
+            chunk |= (uint32_t)value << ((3 - j) * 6);
+        }
+
+        /* Non-canonical encodings (non-zero bits in the padded part) are rejected */
+        if((padding == 1 && chars == 3 && (chunk & 0xFF) != 0) ||
+           (padding == 2 && chars == 2 && (chunk & 0xFFFF) != 0))
+            return false;
+
+        out_buffer[(*out_buffer_sz)++] = (uint8_t)(chunk >> 16);
+
+        if(chars > 2)
+            out_buffer[(*out_buffer_sz)++] = (uint8_t)(chunk >> 8);
+
+        if(chars > 3)
+            out_buffer[(*out_buffer_sz)++] = (uint8_t)chunk;
     }
-
-    padding = (uint32_t)(data[data_sz - 1] == '=') + (uint32_t)(data[data_sz - 2] == '=');
-
-    chunk = 0;
-
-    for(j = 0; j < (4 - padding); j++)
-        chunk |= ((uint32_t)decode_table[data[i + j] - '+']) << ((3 - j) * 6);
-
-    out_buffer[(*out_buffer_sz)++] = (chunk >> 16) & 0xFF;
-
-    if(padding < 2)
-        out_buffer[(*out_buffer_sz)++] = (chunk >> 8) & 0xFF;
-
-    if(padding < 1)
-        out_buffer[(*out_buffer_sz)++] = (chunk >> 0) & 0xFF;
 
     return true;
 }
@@ -180,21 +179,22 @@ void* base64_decode(const char* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
     uint8_t* buffer;
     size_t buffer_sz;
 
+    *out_sz = 0;
+
     if(data_sz % 4 != 0)
         return NULL;
 
-    buffer_sz = base64_get_decode_size(data, data_sz);
-    *out_sz = 0;
+    buffer_sz = (data_sz / 4) * 3 - base64_get_padding(data, data_sz);
 
-    buffer = (uint8_t*)calloc(buffer_sz, sizeof(uint8_t));
+    buffer = (uint8_t*)calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(uint8_t));
 
     if(buffer == NULL)
-    {
         return NULL;
-    }
 
     if(!base64_decode_scalar(data, data_sz, buffer, out_sz))
     {
+        free(buffer);
+        *out_sz = 0;
         return NULL;
     }
 

@@ -2,106 +2,137 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/stack.h"
+#include "libromano/stack_no_alloc.h"
 
-#include <stdio.h>
-
-void test_init(void)
+static void test_push_pop(void)
 {
-    Stack* stack = stack_init(10, sizeof(int));
-    ROMANO_ASSERT(stack != NULL, "stack should not be null");
-    ROMANO_ASSERT(stack_size(stack) == 0, "stack size should be 0 after initialization");
-    stack_free(stack);
-    printf("test_init passed\n");
-}
+    Stack* stack = stack_init(4, sizeof(int));
+    int value;
+    int i;
 
-void test_push_top(void)
-{
-    Stack* stack = stack_init(2, sizeof(int));
-    int element = 42;
-    stack_push(stack, &element);
-    ROMANO_ASSERT(stack_size(stack) == 1, "stack size should be 1");
-    int* top = (int*)stack_top(stack);
-    ROMANO_ASSERT(top != NULL && *top == 42, "stack top should not be null");
-    stack_free(stack);
-    printf("test_push_top passed\n");
-}
+    TEST_ASSERT(stack != NULL);
+    TEST_CHECK_EQ_UINT(stack_size(stack), 0);
+    TEST_CHECK(stack_top(stack) == NULL);
 
-void test_pop(void)
-{
-    Stack* stack = stack_init(3, sizeof(int));
-    int values[] = {10, 20, 30};
-    for (int i = 0; i < 3; ++i) {
-        stack_push(stack, &values[i]);
+    for(i = 0; i < 1000; i++)
+    {
+        stack_push(stack, &i);
+        TEST_ASSERT_EQ_INT(*(int*)stack_top(stack), i);
     }
-    int popped;
-    stack_pop(stack, &popped);
-    ROMANO_ASSERT(popped == 30 && stack_size(stack) == 2, "");
-    stack_pop(stack, &popped);
-    ROMANO_ASSERT(popped == 20 && stack_size(stack) == 1, "");
-    stack_pop(stack, &popped);
-    ROMANO_ASSERT(popped == 10 && stack_size(stack) == 0, "");
-    stack_free(stack);
-    printf("test_pop passed\n");
-}
 
-void test_empty_top(void)
-{
-    Stack* stack = stack_init(5, sizeof(int));
-    ROMANO_ASSERT(stack_top(stack) == NULL, "");
-    stack_free(stack);
-    printf("test_empty_top passed\n");
-}
+    TEST_CHECK_EQ_UINT(stack_size(stack), 1000);
 
-void test_struct_element(void)
-{
-    typedef struct { int a; char b; } TestStruct;
-    TestStruct ts = {5, 'x'};
-    Stack* stack = stack_init(1, sizeof(TestStruct));
-    stack_push(stack, &ts);
-    TestStruct* top = (TestStruct*)stack_top(stack);
-    ROMANO_ASSERT(top->a == 5 && top->b == 'x', "");
-    TestStruct popped;
-    stack_pop(stack, &popped);
-    ROMANO_ASSERT(popped.a == ts.a && popped.b == ts.b, "");
-    stack_free(stack);
-    printf("test_struct_element passed\n");
-}
+    for(i = 999; i >= 0; i--)
+    {
+        stack_pop(stack, &value);
+        TEST_ASSERT_EQ_INT(value, i);
+    }
 
-void test_zero_initial_capacity(void)
-{
-    Stack* stack = stack_init(0, sizeof(int));
-    ROMANO_ASSERT(stack != NULL, "");
-    int element = 123;
-    stack_push(stack, &element);
-    ROMANO_ASSERT(stack_size(stack) == 1, "");
-    ROMANO_ASSERT(*(int*)stack_top(stack) == 123, "");
-    stack_free(stack);
-    printf("test_zero_initial_capacity passed\n");
-}
+    TEST_CHECK_EQ_UINT(stack_size(stack), 0);
 
-void test_pop_with_null(void)
-{
-    Stack* stack = stack_init(2, sizeof(int));
-    int element = 5;
-    stack_push(stack, &element);
+    value = -1;
+    stack_pop(stack, &value);
+    TEST_CHECK_EQ_INT(value, -1);
+
+    stack_push(stack, &value);
     stack_pop(stack, NULL);
-    ROMANO_ASSERT(stack_size(stack) == 0, "");
+    TEST_CHECK_EQ_UINT(stack_size(stack), 0);
+
     stack_free(stack);
-    printf("test_pop_with_null passed\n");
 }
 
-int main(void)
+static void test_small_capacities(void)
 {
-    test_init();
-    test_push_top();
-    test_pop();
-    test_empty_top();
-    test_struct_element();
-    test_zero_initial_capacity();
-    test_pop_with_null();
+    size_t capacity;
 
-    printf("All tests passed!\n");
+    for(capacity = 0; capacity < 4; capacity++)
+    {
+        Stack* stack = stack_init(capacity, sizeof(uint64_t));
+        uint64_t i;
 
-    return 0;
+        for(i = 0; i < 300; i++)
+            stack_push(stack, &i);
+
+        TEST_CHECK_EQ_UINT(*(uint64_t*)stack_top(stack), 299);
+        stack_free(stack);
+    }
 }
+
+static bool property_stack_model(FuzzSource* source, void* user_data)
+{
+    uint32_t reference[4096];
+    size_t reference_size = 0;
+    size_t operations = fuzz_range(source, 1, 4096);
+    Stack* stack = stack_init(fuzz_size(source, 16), sizeof(uint32_t));
+    bool ok = true;
+    size_t i;
+
+    ROMANO_UNUSED(user_data);
+
+    for(i = 0; i < operations && ok; i++)
+    {
+        if(fuzz_range(source, 0, 2) != 0 && reference_size < 4096)
+        {
+            uint32_t value = fuzz_u32(source);
+            stack_push(stack, &value);
+            reference[reference_size++] = value;
+        }
+        else
+        {
+            uint32_t value = 0xFFFFFFFF;
+            stack_pop(stack, &value);
+
+            if(reference_size > 0)
+                ok = value == reference[--reference_size];
+            else
+                ok = value == 0xFFFFFFFF;
+        }
+
+        ok &= stack_size(stack) == reference_size;
+        ok &= reference_size == 0 ? stack_top(stack) == NULL : *(uint32_t*)stack_top(stack) == reference[reference_size - 1];
+    }
+
+    stack_free(stack);
+
+    TEST_FUZZ_CHECK_MSG(ok, "stack diverged from the reference at operation %zu", i);
+
+    return true;
+}
+
+static void test_fuzz_model(void)
+{
+    test_fuzz_property("stack_model", 1000, property_stack_model, NULL);
+}
+
+static void test_no_alloc(void)
+{
+    int i;
+
+    stacknoa_init(int, stack, 5);
+
+    TEST_CHECK(stacknoa_is_empty(stack));
+    TEST_CHECK(stacknoa_top(stack) == NULL);
+
+    for(i = 0; !stacknoa_is_full(stack); i++)
+    {
+        stacknoa_push(stack, i * 10);
+        TEST_CHECK_EQ_INT(*stacknoa_top(stack), i * 10);
+    }
+
+    TEST_CHECK_EQ_INT(i, 5);
+
+    while(!stacknoa_is_empty(stack))
+        TEST_CHECK_EQ_INT(stacknoa_pop(stack), --i * 10);
+
+    TEST_CHECK_EQ_INT(i, 0);
+}
+
+TEST_MAIN(
+    TEST(test_push_pop),
+    TEST(test_small_capacities),
+    TEST(test_fuzz_model),
+    TEST(test_no_alloc),
+)

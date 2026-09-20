@@ -214,7 +214,9 @@ void cli_parser_print_help(CLIParser* parser)
 
     while(hashmap_iterate(parser->args_map, &it, &key, NULL, &value, NULL))
     {
-        CLIArg* arg = *(CLIArg**)value;
+        CLIArg* arg;
+
+        memcpy(&arg, value, sizeof(CLIArg*));
 
         if(CLI_PARG_GET_MODE(arg) == CLIArgMode_Positional)
             continue;
@@ -349,7 +351,7 @@ CLIArg* cli_parser_find_arg(CLIParser* parser, char* arg_str, size_t* name_sz)
     }
 
     if(arg_ptr != NULL)
-        arg = *arg_ptr;
+        memcpy(&arg, arg_ptr, sizeof(CLIArg*));
 
     if(name_sz != NULL)
         *name_sz = arg_name_sz;
@@ -461,6 +463,8 @@ bool cli_parser_parse_named_argument(CLIParser* parser, char* arg_str, int* next
                 str_sz++;
                 value_str++;
             }
+
+            free(arg->data.str);
 
             arg->data.str = (char*)calloc(str_sz + 1, sizeof(char));
 
@@ -635,7 +639,7 @@ bool cli_parser_parse(CLIParser* parser, int argc, char** argv)
         }
     }
 
-    if(pos_index < (vector_size(&parser->positional_args) - 1))
+    if(pos_index < vector_size(&parser->positional_args))
     {
         g_current_error = ErrorCode_CLIMissingPositionalArgs;
         return false;
@@ -647,7 +651,9 @@ bool cli_parser_parse(CLIParser* parser, int argc, char** argv)
 
     while(hashmap_iterate(parser->args_map, &it, &key, NULL, &value, NULL))
     {
-        CLIArg* arg = *(CLIArg**)value;
+        CLIArg* arg;
+
+        memcpy(&arg, value, sizeof(CLIArg*));
 
         if(CLI_PARG_GET_MODE(arg) == CLIArgMode_Named && arg->data_sz == 0)
         {
@@ -664,6 +670,7 @@ bool cli_parser_has_arg(CLIParser* parser,
                         size_t name_sz)
 {
     CLIArg** arg_ptr;
+    CLIArg* arg;
 
     ROMANO_ASSERT(parser != NULL, "parser is NULL");
 
@@ -678,7 +685,9 @@ bool cli_parser_has_arg(CLIParser* parser,
     if(arg_ptr == NULL)
         return false;
 
-    return (*arg_ptr)->data_sz > 0;
+    memcpy(&arg, arg_ptr, sizeof(CLIArg*));
+
+    return arg->data_sz > 0;
 }
 
 int64_t* cli_parser_arg_get_i64(CLIParser* parser,
@@ -701,7 +710,7 @@ int64_t* cli_parser_arg_get_i64(CLIParser* parser,
     if(arg_ptr == NULL)
         return NULL;
 
-    arg = *arg_ptr;
+    memcpy(&arg, arg_ptr, sizeof(CLIArg*));
 
     if(CLI_PARG_GET_TYPE(arg) != CLIArgType_Int)
         return NULL;
@@ -729,7 +738,7 @@ double* cli_parser_arg_get_f64(CLIParser* parser,
     if(arg_ptr == NULL)
         return NULL;
 
-    arg = *arg_ptr;
+    memcpy(&arg, arg_ptr, sizeof(CLIArg*));
 
     if(CLI_PARG_GET_TYPE(arg) != CLIArgType_Float)
         return NULL;
@@ -758,7 +767,7 @@ char* cli_parser_arg_get_str(CLIParser* parser,
     if(arg_ptr == NULL)
         return NULL;
 
-    arg = *arg_ptr;
+    memcpy(&arg, arg_ptr, sizeof(CLIArg*));
 
     if(CLI_PARG_GET_TYPE(arg) != CLIArgType_Str)
         return NULL;
@@ -789,7 +798,7 @@ bool* cli_parser_arg_get_bool(CLIParser* parser,
     if(arg_ptr == NULL)
         return NULL;
 
-    arg = *arg_ptr;
+    memcpy(&arg, arg_ptr, sizeof(CLIArg*));
 
     if(CLI_PARG_GET_TYPE(arg) != CLIArgType_Bool)
         return NULL;
@@ -807,7 +816,9 @@ void cli_parser_release(CLIParser* parser)
 
     while(hashmap_iterate(parser->args_map, &it, &key, NULL, &value, NULL))
     {
-        CLIArg* arg = *(CLIArg**)value;
+        CLIArg* arg;
+
+        memcpy(&arg, value, sizeof(CLIArg*));
 
         if(CLI_PARG_GET_TYPE(arg) == CLIArgType_Str && arg->data.str != NULL)
             free(arg->data.str);

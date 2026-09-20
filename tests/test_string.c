@@ -2,259 +2,225 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/string.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
-void test_string_new(void)
+static void test_constructors(void)
 {
-    String s = string_new("Hello, World!");
-    ROMANO_ASSERT(s != NULL, "string_new should not return NULL");
-    ROMANO_ASSERT(string_length(s) == 13, "Length should be 13");
-    ROMANO_ASSERT(strcmp(s, "Hello, World!") == 0, "Content should match");
-    ROMANO_ASSERT(string_capacity(s) >= string_length(s), "Capacity >= Length");
-    string_free(s);
+    String a = string_new("hello");
+    String b = string_newz(10);
+    String c = string_newf("%s %d %.2f", "value", 42, 1.5);
+    String d = string_copy(a);
+    String e = string_new("");
 
-    s = string_new("");
-    ROMANO_ASSERT(s != NULL, "Empty string creation");
-    ROMANO_ASSERT(string_length(s) == 0, "Empty string length should be 0");
-    string_free(s);
+    TEST_ASSERT(a != NULL && b != NULL && c != NULL && d != NULL && e != NULL);
+
+    TEST_CHECK_EQ_STR(a, "hello");
+    TEST_CHECK_EQ_UINT(string_length(a), 5);
+    TEST_CHECK(string_capacity(a) >= 5);
+
+    TEST_CHECK_EQ_UINT(string_length(b), 10);
+    TEST_CHECK_EQ_UINT(b[0], '\0');
+
+    TEST_CHECK_EQ_STR(c, "value 42 1.50");
+    TEST_CHECK_EQ_UINT(string_length(c), 13);
+
+    TEST_CHECK_EQ_STR(d, "hello");
+    TEST_CHECK(d != a);
+    TEST_CHECK(string_eq(a, d));
+    TEST_CHECK(!string_eq(a, c));
+
+    TEST_CHECK_EQ_UINT(string_length(e), 0);
+    TEST_CHECK(string_appendc(&e, "grown from empty"));
+    TEST_CHECK_EQ_STR(e, "grown from empty");
+
+    string_free(a);
+    string_free(b);
+    string_free(c);
+    string_free(d);
+    string_free(e);
+    string_free(NULL);
 }
 
-void test_string_newz(void)
+static void test_set_append_prepend(void)
 {
-    const size_t length = 10;
-    String s = string_newz(length);
-    ROMANO_ASSERT(s != NULL, "string_newz should not return NULL");
-    ROMANO_ASSERT(string_length(s) == length, "Length should be 10");
-    for (size_t i = 0; i < length; i++) {
-        ROMANO_ASSERT(s[i] == '\0', "All characters should be zero");
-    }
-    ROMANO_ASSERT(string_capacity(s) >= length, "Capacity >= Length");
-    string_free(s);
-}
+    String s = string_new("middle");
+    String other = string_new("<>");
 
-void test_string_newf(void)
-{
-    String s = string_newf("Formatted: %d %s", 42, "test");
-    ROMANO_ASSERT(s != NULL, "string_newf should not return NULL");
-    ROMANO_ASSERT(strcmp(s, "Formatted: 42 test") == 0, "Formatted content mismatch");
-    string_free(s);
+    TEST_ASSERT(string_prependc(&s, "start-"));
+    TEST_ASSERT(string_appendc(&s, "-end"));
+    TEST_CHECK_EQ_STR(s, "start-middle-end");
 
-    s = string_newf("");
-    ROMANO_ASSERT(string_length(s) == 0, "Empty formatted string");
-    string_free(s);
-}
+    TEST_ASSERT(string_appends(&s, other));
+    TEST_ASSERT(string_prepends(&s, other));
+    TEST_CHECK_EQ_STR(s, "<>start-middle-end<>");
 
-void test_string_capacity(void)
-{
-    String s = string_new("Test");
-    size_t cap = string_capacity(s);
-    ROMANO_ASSERT(cap >= string_length(s), "Initial capacity >= length");
-    string_free(s);
-}
+    TEST_ASSERT(string_appendf(&s, "%03d", 7));
+    TEST_ASSERT(string_prependf(&s, "%c|", 'x'));
+    TEST_CHECK_EQ_STR(s, "x|<>start-middle-end<>007");
+    TEST_CHECK_EQ_UINT(string_length(s), strlen(s));
 
-void test_string_length(void)
-{
-    String s = string_new("12345");
-    ROMANO_ASSERT(string_length(s) == 5, "Length should be 5");
-    string_free(s);
-}
+    TEST_ASSERT(string_setc(&s, "reset"));
+    TEST_CHECK_EQ_STR(s, "reset");
+    TEST_ASSERT(string_sets(&s, other));
+    TEST_CHECK_EQ_STR(s, "<>");
+    TEST_ASSERT(string_setf(&s, "%s-%s", "a", "b"));
+    TEST_CHECK_EQ_STR(s, "a-b");
 
-void test_string_resize(void)
-{
-    String s = string_new("Hello");
-    size_t original_size = string_length(s);
-    size_t original_cap = string_capacity(s);
-
-    string_resize(&s, 10);
-    ROMANO_ASSERT(string_length(s) == original_size, "Size changed after resize");
-    ROMANO_ASSERT(string_capacity(s) >= 10, "Capacity after resize up");
-    ROMANO_ASSERT(s[original_size] == '\0', "Null terminator present after resize");
-    string_free(s);
-}
-
-void test_string_copy(void)
-{
-    String s1 = string_new("Original");
-    String s2 = string_copy(s1);
-    ROMANO_ASSERT(string_eq(s1, s2), "Copied string should be equal");
-    ROMANO_ASSERT(string_capacity(s2) == string_capacity(s1), "Copy capacity match");
-
-    string_appendc(&s1, " modified");
-    ROMANO_ASSERT(!string_eq(s1, s2), "Modification affects only original");
-    string_free(s1);
-    string_free(s2);
-}
-
-void test_string_setc(void)
-{
-    String s = string_new("Initial");
-    string_setc(&s, "New");
-    ROMANO_ASSERT(strcmp(s, "New") == 0, "Content after string_setc");
-    ROMANO_ASSERT(string_length(s) == 3, "Length after setc");
-    string_free(s);
-}
-
-void test_string_sets(void)
-{
-    String s1 = string_new("Source");
-    String s2 = string_new("Destination");
-    string_sets(&s2, s1);
-    ROMANO_ASSERT(string_eq(s1, s2), "Sets copies content");
-    string_free(s1);
-    string_free(s2);
-}
-
-void test_string_setf(void)
-{
-    String s = string_new("Before");
-    string_setf(&s, "Formatted %d", 123);
-    ROMANO_ASSERT(strcmp(s, "Formatted 123") == 0, "Formatted set");
-    string_free(s);
-}
-
-void test_string_appendc(void)
-{
-    String s = string_new("Hello");
-    string_appendc(&s, ", World!");
-    ROMANO_ASSERT(strcmp(s, "Hello, World!") == 0, "Append C string");
-    ROMANO_ASSERT(string_length(s) == 13, "Length after append");
-    string_free(s);
-
-    s = string_new("");
-    string_appendc(&s, "Append to empty");
-    ROMANO_ASSERT(strcmp(s, "Append to empty") == 0, "Append to empty string");
-    string_free(s);
-}
-
-void test_string_appends(void)
-{
-    String s1 = string_new("Hello");
-    String s2 = string_new(", World!");
-    string_appends(&s1, s2);
-    ROMANO_ASSERT(strcmp(s1, "Hello, World!") == 0, "Append String");
-    string_free(s1);
-    string_free(s2);
-}
-
-void test_string_appendf(void)
-{
-    String s = string_new("Count: ");
-    string_appendf(&s, "%d", 42);
-    ROMANO_ASSERT(strcmp(s, "Count: 42") == 0, "Append formatted");
-    string_free(s);
-}
-
-void test_string_prependc(void)
-{
-    String s = string_new("World");
-    string_prependc(&s, "Hello ");
-    ROMANO_ASSERT(strcmp(s, "Hello World") == 0, "Prepend C string");
-    string_free(s);
-}
-
-void test_string_prepends(void)
-{
-    String s1 = string_new("World");
-    String s2 = string_new("Hello ");
-    string_prepends(&s1, s2);
-    ROMANO_ASSERT(strcmp(s1, "Hello World") == 0, "Prepend String");
-    string_free(s1);
-    string_free(s2);
-}
-
-void test_string_prependf(void)
-{
-    String s = string_new("World");
-    string_prependf(&s, "Hello %s ", "there");
-    ROMANO_ASSERT(strcmp(s, "Hello there World") == 0, "Prepend formatted");
-    string_free(s);
-}
-
-void test_string_clear(void)
-{
-    String s = string_new("Content");
-    size_t cap = string_capacity(s);
     string_clear(s);
-    ROMANO_ASSERT(string_length(s) == 0, "Length after clear");
-    ROMANO_ASSERT(string_capacity(s) == cap, "Capacity remains after clear");
-    ROMANO_ASSERT(s[0] == '\0', "Data is cleared");
+    TEST_CHECK_EQ_UINT(string_length(s), 0);
+    TEST_CHECK_EQ_STR(s, "");
+
+    TEST_ASSERT(string_resize(&s, 1000));
+    TEST_CHECK(string_capacity(s) >= 1000);
+    TEST_CHECK_EQ_STR(s, "");
+
     string_free(s);
+    string_free(other);
 }
 
-void test_string_split(void)
+static void test_split(void)
 {
-    char* data = strdup("a,b,c");
+    char data[] = "a,bb,,ccc";
+    char empty[] = "";
     uint32_t count;
-    String* arr = string_splitc(data, ",", &count);
-    ROMANO_ASSERT(count == 3, "Split into 3 parts");
-    ROMANO_ASSERT(strcmp(arr[0], "a") == 0, "First part 'a'");
-    ROMANO_ASSERT(strcmp(arr[1], "b") == 0, "Second part 'b'");
-    ROMANO_ASSERT(strcmp(arr[2], "c") == 0, "Third part 'c'");
-    for (uint32_t i = 0; i < count; i++) string_free(arr[i]);
-    free(arr);
-    free(data);
+    String* parts = string_splitc(data, ",", &count);
+    uint32_t i;
 
-    data = strdup("");
-    arr = string_splitc(data, ",", &count);
-    ROMANO_ASSERT(count == 0, "Empty data split");
-    free(arr);
-    free(data);
+    TEST_ASSERT(parts != NULL);
+    TEST_ASSERT_EQ_UINT(count, 3);
+    TEST_CHECK_EQ_STR(parts[0], "a");
+    TEST_CHECK_EQ_STR(parts[1], "bb");
+    TEST_CHECK_EQ_STR(parts[2], "ccc");
 
-    data = strdup("single");
-    arr = string_splitc(data, ":", &count);
-    ROMANO_ASSERT(count == 1, "No separator found");
-    ROMANO_ASSERT(strcmp(arr[0], "single") == 0, "Single part");
-    for (uint32_t i = 0; i < count; i++) string_free(arr[i]);
-    free(arr);
-    free(data);
+    for(i = 0; i < count; i++)
+        string_free(parts[i]);
+
+    free(parts);
+
+    TEST_CHECK(string_splitc(empty, ",", &count) == NULL);
+    TEST_CHECK_EQ_UINT(count, 0);
 }
 
-void test_string_eq(void)
+static bool property_string_model(FuzzSource* source, void* user_data)
 {
-    String s1 = string_new("Same");
-    String s2 = string_new("Same");
-    String s3 = string_new("Different");
-    ROMANO_ASSERT(string_eq(s1, s2), "Equal strings");
-    ROMANO_ASSERT(!string_eq(s1, s3), "Different strings");
-    string_free(s1);
-    string_free(s2);
-    string_free(s3);
+    char reference[8192];
+    char chunk[128];
+    size_t reference_size;
+    size_t operations = fuzz_range(source, 1, 48);
+    String string;
+    String other;
+    bool ok = true;
+    size_t i;
 
-    s1 = string_new("");
-    s2 = string_new("");
-    ROMANO_ASSERT(string_eq(s1, s2), "Empty strings are equal");
-    string_free(s1);
-    string_free(s2);
+    ROMANO_UNUSED(user_data);
+
+    reference_size = fuzz_string(source, reference, 64, FUZZ_ALPHABET_PRINTABLE);
+    string = string_new(reference);
+
+    TEST_FUZZ_CHECK(string != NULL);
+
+    for(i = 0; i < operations && ok; i++)
+    {
+        size_t chunk_size = fuzz_string(source, chunk, sizeof(chunk) - 1, FUZZ_ALPHABET_ALNUM);
+
+        if(reference_size + chunk_size + 16 >= sizeof(reference))
+            break;
+
+        other = NULL;
+
+        switch(fuzz_range(source, 0, 10))
+        {
+            case 0:
+                ok = string_appendc(&string, chunk);
+                memcpy(reference + reference_size, chunk, chunk_size + 1);
+                reference_size += chunk_size;
+                break;
+            case 1:
+                other = string_new(chunk);
+                ok = string_appends(&string, other);
+                memcpy(reference + reference_size, chunk, chunk_size + 1);
+                reference_size += chunk_size;
+                break;
+            case 2:
+                ok = string_appendf(&string, "%s#", chunk);
+                memcpy(reference + reference_size, chunk, chunk_size);
+                reference[reference_size + chunk_size] = '#';
+                reference_size += chunk_size + 1;
+                reference[reference_size] = '\0';
+                break;
+            case 3:
+                ok = string_prependc(&string, chunk);
+                memmove(reference + chunk_size, reference, reference_size + 1);
+                memcpy(reference, chunk, chunk_size);
+                reference_size += chunk_size;
+                break;
+            case 4:
+                other = string_new(chunk);
+                ok = string_prepends(&string, other);
+                memmove(reference + chunk_size, reference, reference_size + 1);
+                memcpy(reference, chunk, chunk_size);
+                reference_size += chunk_size;
+                break;
+            case 5:
+                ok = string_prependf(&string, "#%s", chunk);
+                memmove(reference + chunk_size + 1, reference, reference_size + 1);
+                reference[0] = '#';
+                memcpy(reference + 1, chunk, chunk_size);
+                reference_size += chunk_size + 1;
+                break;
+            case 6:
+                ok = string_setc(&string, chunk);
+                memcpy(reference, chunk, chunk_size + 1);
+                reference_size = chunk_size;
+                break;
+            case 7:
+                other = string_new(chunk);
+                ok = string_sets(&string, other);
+                memcpy(reference, chunk, chunk_size + 1);
+                reference_size = chunk_size;
+                break;
+            case 8:
+                ok = string_setf(&string, "%s", chunk);
+                memcpy(reference, chunk, chunk_size + 1);
+                reference_size = chunk_size;
+                break;
+            case 9:
+                string_clear(string);
+                reference[0] = '\0';
+                reference_size = 0;
+                break;
+            default:
+            {
+                String copy = string_copy(string);
+                string_free(string);
+                string = copy;
+                break;
+            }
+        }
+
+        string_free(other);
+
+        ok &= string != NULL && string_length(string) == reference_size && strcmp(string, reference) == 0;
+        ok &= string_capacity(string) >= reference_size;
+    }
+
+    TEST_FUZZ_CHECK_MSG(ok, "string \"%s\" diverged from \"%s\" at operation %zu", string, reference, i);
+
+    string_free(string);
+
+    return true;
 }
 
-int main(void)
+static void test_fuzz_model(void)
 {
-    test_string_new();
-    test_string_newz();
-    test_string_newf();
-    test_string_capacity();
-    test_string_length();
-    test_string_resize();
-    test_string_copy();
-    test_string_setc();
-    test_string_sets();
-    test_string_setf();
-    test_string_appendc();
-    test_string_appends();
-    test_string_appendf();
-    test_string_prependc();
-    test_string_prepends();
-    test_string_prependf();
-    test_string_clear();
-    test_string_split();
-    test_string_eq();
-
-    printf("All tests passed\n");
-
-    return 0;
+    test_fuzz_property("string_model", 3000, property_string_model, NULL);
 }
+
+TEST_MAIN(
+    TEST(test_constructors),
+    TEST(test_set_append_prepend),
+    TEST(test_split),
+    TEST(test_fuzz_model),
+)

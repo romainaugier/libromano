@@ -60,7 +60,7 @@ float __stats_mean_sse(const float* ROMANO_RESTRICT array, size_t n)
     __m128 v;
     __m128 t;
 
-    sse_loop = n % 4;
+    sse_loop = n - n % 4;
     mean = 0.0f;
 
     m = _mm_setzero_ps();
@@ -68,7 +68,7 @@ float __stats_mean_sse(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < sse_loop; i += 4)
     {
         v = _mm_loadu_ps(&array[i]);
-        t = _mm_set1_ps(1.0f / (float)(i + 1));
+        t = _mm_set1_ps(1.0f / (float)(i / 4 + 1));
         m = _mm_lerp_ps(m, v, t);
     }
 
@@ -91,7 +91,7 @@ float __stats_mean_avx(const float* ROMANO_RESTRICT array, size_t n)
     __m256 v;
     __m256 t;
 
-    avx_loop = n % 8;
+    avx_loop = n - n % 8;
     mean = 0.0f;
 
     m = _mm256_setzero_ps();
@@ -99,7 +99,7 @@ float __stats_mean_avx(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < avx_loop; i += 8)
     {
         v = _mm256_loadu_ps(&array[i]);
-        t = _mm256_set1_ps(1.0f / (float)(i + 1));
+        t = _mm256_set1_ps(1.0f / (float)(i / 8 + 1));
         m = _mm256_lerp_ps(m, v, t);
     }
 
@@ -127,7 +127,7 @@ float __stats_mean_neon(const float* ROMANO_RESTRICT array, size_t n)
     float32x4_t t;
 
     i = 0;
-    neon_loop = n % 4;
+    neon_loop = n - n % 4;
     mean = 0.0f;
 
     m = vdupq_n_f32(0.0f);
@@ -135,7 +135,7 @@ float __stats_mean_neon(const float* ROMANO_RESTRICT array, size_t n)
     for(i = 0; i < neon_loop; i += 4)
     {
         v = vld1q_f32(&array[i]);
-        t = vdupq_n_f32(1.0f / (float)(i + 1));
+        t = vdupq_n_f32(1.0f / (float)(i / 4 + 1));
         m = vlerpq_f32(m, v, t);
     }
 
@@ -234,7 +234,7 @@ float __stats_min_sse(const float* ROMANO_RESTRICT array, size_t n)
     float min;
 
     min = array[0];
-    sse_loop = n % 4;
+    sse_loop = n - n % 4;
 
     for(i = 0; i < sse_loop; i += 4)
     {
@@ -258,7 +258,7 @@ float __stats_min_avx(const float* ROMANO_RESTRICT array, size_t n)
     float min;
 
     min = array[0];
-    avx_loop = n % 8;
+    avx_loop = n - n % 8;
 
     for(i = 0; i < avx_loop; i += 8)
     {
@@ -292,7 +292,7 @@ float __stats_min_neon(const float* ROMANO_RESTRICT array, size_t n)
     float32x4_t m;
 
     min = array[0];
-    neon_loop = n % 4;
+    neon_loop = n - n % 4;
     m = vdupq_n_f32(min);
 
     for(i = 0; i < neon_loop; i += 4)
@@ -357,7 +357,7 @@ float __stats_max_sse(const float* ROMANO_RESTRICT array, size_t n)
     float max;
 
     max = array[0];
-    sse_loop = n % 4;
+    sse_loop = n - n % 4;
 
     for(i = 0; i < sse_loop; i += 4)
     {
@@ -381,7 +381,7 @@ float __stats_max_avx(const float* ROMANO_RESTRICT array, size_t n)
     float max;
 
     max = array[0];
-    avx_loop = n % 8;
+    avx_loop = n - n % 8;
 
     for(i = 0; i < avx_loop; i += 8)
     {
@@ -415,7 +415,7 @@ float __stats_max_neon(const float* ROMANO_RESTRICT array, size_t n)
     float32x4_t m;
 
     max = array[0];
-    neon_loop = n % 4;
+    neon_loop = n - n % 4;
     m = vdupq_n_f32(max);
 
     for(i = 0; i < neon_loop; i += 4)
@@ -485,7 +485,7 @@ float __stats_range_sse(const float* ROMANO_RESTRICT array, size_t n)
 
     min = array[0];
     max = array[0];
-    sse_loop = n % 4;
+    sse_loop = n - n % 4;
 
     for(i = 0; i < sse_loop; i += 4)
     {
@@ -513,7 +513,7 @@ float __stats_range_avx(const float* ROMANO_RESTRICT array, size_t n)
 
     min = array[0];
     max = array[0];
-    avx_loop = n % 8;
+    avx_loop = n - n % 8;
 
     for(i = 0; i < avx_loop; i += 8)
     {
@@ -550,7 +550,7 @@ float __stats_range_neon(const float* ROMANO_RESTRICT array, size_t n)
 
     min = array[0];
     max = array[0];
-    neon_loop = n % 4;
+    neon_loop = n - n % 4;
     v_min = vdupq_n_f32(min);
     v_max = vdupq_n_f32(max);
 

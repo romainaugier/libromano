@@ -2,14 +2,12 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/hashmap.h"
-#include "libromano/logger.h"
+#include "libromano/random.h"
 
 #include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 /* Configuration */
@@ -41,8 +39,7 @@
 #define MAX_KEY_SIZE 300
 #define MAX_VALUE_SIZE 4096
 
-static uint64_t g_seed = 0;
-static size_t g_scale = HASHMAP_TEST_SCALE;
+static const size_t g_scale = HASHMAP_TEST_SCALE;
 static const char* g_phase = "init";
 
 /* Observed semantics, used to make sure the map behaves consistently */
@@ -51,40 +48,26 @@ static size_t g_dup_insert_kept = 0;
 static size_t g_update_missing_inserted = 0;
 static size_t g_update_missing_ignored = 0;
 
-/* Failure reporting */
-
-static void test_fail(const char* file,
-                      int line,
-                      const char* expr,
-                      const char* fmt,
-                      ...)
+static void test_fail(const char* file, int line, const char* expr, const char* fmt, ...)
 {
+    char message[512];
     va_list args;
 
-    logger_log_error("[test_hashmap] FAILURE in phase '%s'", g_phase);
-    logger_log_error("  %s:%d: CHECK(%s)  ", file, line, expr);
-
     va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
+    vsnprintf(message, sizeof(message), fmt, args);
     va_end(args);
 
-    fflush(stderr);
-
-    printf("\n");
-
-    logger_log_error("reproduce with: test_hashmap %llu %zu",
-                     (unsigned long long)g_seed, g_scale);
-
-    abort();
+    test_checkf(false, file, line, expr, "phase '%s': %s", g_phase, message);
+    test_abort();
 }
 
 #define CHECK(cond, ...)                                                    \
     do                                                                      \
     {                                                                       \
         if(!(cond))                                                         \
-        {                                                                   \
             test_fail(__FILE__, __LINE__, #cond, __VA_ARGS__);              \
-        }                                                                   \
+        else                                                                \
+            test_check(true, __FILE__, __LINE__, #cond);                    \
     } while(0)
 
 /* Randomness: PRNG or fuzzer-provided bytes behind the same interface */
@@ -97,84 +80,10 @@ static uint64_t splitmix64(uint64_t* state)
     return z ^ (z >> 31);
 }
 
-typedef struct
-{
-    uint64_t state;
-    const uint8_t* data;
-    size_t size;
-    size_t pos;
-    int from_data;
-    int exhausted;
-} Source;
+typedef FuzzSource Source;
 
-static void source_init_seed(Source* s, uint64_t seed)
-{
-    memset(s, 0, sizeof(Source));
-    s->state = seed;
-}
-
-static void source_init_data(Source* s, const uint8_t* data, size_t size)
-{
-    memset(s, 0, sizeof(Source));
-    s->data = data;
-    s->size = size;
-    s->from_data = 1;
-}
-
-static uint32_t source_bytes(Source* s, uint32_t count)
-{
-    uint32_t v = 0;
-    uint32_t i;
-
-    for(i = 0; i < count; i++)
-    {
-        if(s->pos >= s->size)
-        {
-            s->exhausted = 1;
-            break;
-        }
-
-        v |= (uint32_t)s->data[s->pos++] << (8 * i);
-    }
-
-    return v;
-}
-
-static uint32_t source_u32(Source* s)
-{
-    if(!s->from_data)
-    {
-        return (uint32_t)(splitmix64(&s->state) >> 32);
-    }
-
-    return source_bytes(s, 4);
-}
-
-/* Returns a value in [0, n). Consumes as few fuzzer bytes as possible. */
-static uint32_t source_range(Source* s, uint32_t n)
-{
-    if(n <= 1)
-    {
-        return 0;
-    }
-
-    if(!s->from_data)
-    {
-        return source_u32(s) % n;
-    }
-
-    if(n <= 0x100)
-    {
-        return source_bytes(s, 1) % n;
-    }
-
-    if(n <= 0x10000)
-    {
-        return source_bytes(s, 2) % n;
-    }
-
-    return source_bytes(s, 4) % n;
-}
+#define source_u32(s) fuzz_u32(s)
+#define source_range(s, n) ((uint32_t)fuzz_index((s), (n)))
 
 /* Small helpers */
 
@@ -697,7 +606,7 @@ static void fuzz_run(Source* src,
         hashmap_set_hash_func(map, hash_func);
     }
 
-    for(op = 0; op < max_ops && !src->exhausted; op++)
+    for(op = 0; op < max_ops && !fuzz_source_exhausted(src); op++)
     {
         uint32_t roll;
         uint32_t id;
@@ -791,7 +700,7 @@ static void fuzz_run(Source* src,
 
     if(verbose)
     {
-        printf("  %-22s %8zu ops  size %6zu  capacity %8zu  %.2fs\n",
+        logger_log_debug("  %-22s %8zu ops  size %6zu  capacity %8zu  %.2fs",
                name, op, hashmap_size(map), hashmap_capacity(map), now_seconds() - start);
     }
 
@@ -1536,7 +1445,7 @@ static void test_semantics_probe(void)
     memcpy(&stored, got, sizeof(stored));
     CHECK(stored == a || stored == b, "duplicate-inserted key has a garbage value %d", stored);
 
-    printf("  insert on existing key : %s\n", stored == b ? "overwrites" : "keeps the old value");
+    logger_log_debug("insert on existing key: %s", stored == b ? "overwrites" : "keeps the old value");
 
     if(stored == b)
     {
@@ -1553,7 +1462,7 @@ static void test_semantics_probe(void)
     hashmap_update(map, "ghost", 5, &a, sizeof(a));
     got = hashmap_get(map, "ghost", 5, &got_size);
 
-    printf("  update on missing key  : %s\n", got != NULL ? "inserts" : "is a no-op");
+    logger_log_debug("update on missing key: %s", got != NULL ? "inserts" : "is a no-op");
 
     if(got != NULL)
     {
@@ -1617,13 +1526,139 @@ static void test_string_keys_stress(void)
     t3 = now_seconds();
     expect_size(map, 0, "string stress remove");
 
-    printf("  %zu string keys: insert %.1f ns/op, get %.1f ns/op, remove %.1f ns/op\n",
+    logger_log_debug("%zu string keys: insert %.1f ns/op, get %.1f ns/op, remove %.1f ns/op",
            count,
            (t1 - t0) * 1e9 / (double)count,
            (t2 - t1) * 1e9 / (double)count,
            (t3 - t2) * 1e9 / (double)count);
 
     hashmap_free(map);
+}
+
+/* Distinct keys of various shapes, like the former per-type stress tests */
+
+typedef enum KeyShape {
+    KeyShape_U32,
+    KeyShape_U64,
+    KeyShape_U64Incremental,
+    KeyShape_U64IdentityHash,
+    KeyShape_String10,
+    KeyShape_String64,
+    KeyShape_String256,
+    KeyShape_StringRandomLength,
+    KeyShape_Count,
+} KeyShape;
+
+static const char* const g_key_shape_names[KeyShape_Count] = {
+    "u32", "u64", "u64_incremental", "u64_identity_hash", "string_10", "string_64", "string_256", "string_random_length",
+};
+
+static uint32_t hash_identity(const void* key, const size_t key_size, const uint32_t seed)
+{
+    uint64_t v = 0;
+
+    ROMANO_UNUSED(seed);
+
+    memcpy(&v, key, key_size < sizeof(v) ? key_size : sizeof(v));
+
+    return (uint32_t)(v ^ (v >> 32));
+}
+
+/* Bijective in index, so every key is distinct */
+static uint32_t make_shaped_key(KeyShape shape, uint64_t index, uint64_t seed, uint8_t* out)
+{
+    uint64_t state = seed ^ index;
+    uint32_t size;
+    uint32_t i;
+
+    switch(shape)
+    {
+        case KeyShape_U32:
+        {
+            uint32_t v = (uint32_t)index * 0x9E3779B1u;
+            v ^= v >> 16;
+            memcpy(out, &v, 4);
+            return 4;
+        }
+        case KeyShape_U64:
+        {
+            uint64_t v = murmur_64(index + seed);
+            memcpy(out, &v, 8);
+            return 8;
+        }
+        case KeyShape_U64Incremental:
+        case KeyShape_U64IdentityHash:
+            memcpy(out, &index, 8);
+            return 8;
+        case KeyShape_String10:
+            size = 10;
+            break;
+        case KeyShape_String64:
+            size = 64;
+            break;
+        case KeyShape_String256:
+            size = 256;
+            break;
+        default:
+            size = 9 + (uint32_t)(splitmix64(&state) % 60);
+            break;
+    }
+
+    for(i = 0; i < size; i++)
+        out[i] = (uint8_t)(32 + splitmix64(&state) % 95);
+
+    for(i = 0; i < 8; i++)
+        out[i] = (uint8_t)"0123456789abcdef"[(index >> (4 * i)) & 0xF];
+
+    out[8] = ':';
+
+    return size;
+}
+
+static void test_key_types(void)
+{
+    const uint64_t count = test_scaled(0xFFFF);
+    uint8_t key[256];
+    int shape;
+
+    for(shape = 0; shape < KeyShape_Count; shape++)
+    {
+        const uint64_t seed = 0x1234567ULL * (uint64_t)(shape + 1);
+        HashMap* map;
+        uint64_t i;
+
+        g_phase = g_key_shape_names[shape];
+
+        map = new_map(shape % 2 == 0 ? 57381 : 0);
+
+        if(shape == KeyShape_U64IdentityHash)
+            hashmap_set_hash_func(map, hash_identity);
+
+        for(i = 0; i < count; i++)
+        {
+            uint32_t key_size = make_shaped_key((KeyShape)shape, i, seed, key);
+            hashmap_insert(map, key, key_size, &i, sizeof(i));
+        }
+
+        expect_size(map, count, "insert");
+
+        for(i = 0; i < count; i++)
+        {
+            uint32_t key_size = make_shaped_key((KeyShape)shape, i, seed, key);
+            expect_value(map, key, key_size, &i, sizeof(i), "get");
+        }
+
+        CHECK(count_entries(map) == count, "iteration count");
+
+        for(i = 0; i < count; i++)
+        {
+            uint32_t key_size = make_shaped_key((KeyShape)shape, i, seed, key);
+            hashmap_remove(map, key, key_size);
+        }
+
+        expect_size(map, 0, "remove");
+        hashmap_free(map);
+    }
 }
 
 /* Entry points */
@@ -1638,11 +1673,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     size_t initial_capacity;
 
     if(size < 4)
-    {
         return 0;
-    }
 
-    source_init_data(&src, data, size);
+    fuzz_source_init_data(&src, data, size);
 
     config = &k_fuzz_configs[source_range(&src, (uint32_t)NUM_FUZZ_CONFIGS)];
     num_keys = 1 + source_range(&src, config->num_keys < 512 ? config->num_keys : 512);
@@ -1655,70 +1688,65 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
 #else
 
-int main(int argc, char** argv)
+static size_t g_config_index = 0;
+
+static bool property_differential(FuzzSource* src, void* user_data)
 {
-    size_t i;
-    double start = now_seconds();
+    static const size_t capacities[] = { 0, 1, 2, 7, 64, 1000 };
+    const FuzzConfig* config = &k_fuzz_configs[g_config_index];
 
-    g_seed = (uint64_t)time(NULL) ^ ((uint64_t)clock() << 32);
+    ROMANO_UNUSED(user_data);
 
-    if(argc > 1)
-    {
-        g_seed = strtoull(argv[1], NULL, 0);
-    }
+    fuzz_run(src,
+             config->name,
+             config->hash_func,
+             config->num_keys,
+             config->ops * g_scale / 4,
+             capacities[source_range(src, sizeof(capacities) / sizeof(capacities[0]))],
+             1);
 
-    if(argc > 2)
-    {
-        g_scale = (size_t)strtoull(argv[2], NULL, 0);
-        g_scale = g_scale == 0 ? 1 : g_scale;
-    }
-
-    printf("test_hashmap: seed %llu, scale %zu\n", (unsigned long long)g_seed, g_scale);
-
-    printf("[deterministic tests]\n");
-    test_semantics_probe();
-    test_empty_maps();
-    test_basic();
-    test_ownership();
-    test_binary_keys();
-    test_update();
-    test_remove_reinsert();
-    test_many_maps();
-    test_large_entries();
-#if HASHMAP_TEST_ZERO_SIZES
-    test_zero_sizes();
-#endif
-    test_collisions();
-#if HASHMAP_TEST_ALIASING
-    test_aliasing();
-#endif
-    test_churn();
-    test_growth();
-    test_string_keys_stress();
-
-    printf("[differential fuzzing]\n");
-
-    for(i = 0; i < NUM_FUZZ_CONFIGS; i++)
-    {
-        static const size_t capacities[] = { 0, 1, 2, 7, 64, 1000 };
-        const FuzzConfig* config = &k_fuzz_configs[i];
-        Source src;
-
-        source_init_seed(&src, g_seed ^ (0xD1B54A32D192ED03ULL * (i + 1)));
-
-        fuzz_run(&src,
-                 config->name,
-                 config->hash_func,
-                 config->num_keys,
-                 config->ops * g_scale,
-                 capacities[source_range(&src, sizeof(capacities) / sizeof(capacities[0]))],
-                 1);
-    }
-
-    printf("All hashmap tests passed in %.2fs (seed %llu)\n",
-           now_seconds() - start, (unsigned long long)g_seed);
-
-    return 0;
+    return true;
 }
+
+static void test_differential_fuzzing(void)
+{
+    for(g_config_index = 0; g_config_index < NUM_FUZZ_CONFIGS; g_config_index++)
+        test_fuzz_property(k_fuzz_configs[g_config_index].name, 4, property_differential, NULL);
+}
+
+#define DETERMINISTIC_TESTS                 \
+    TEST(test_semantics_probe),             \
+    TEST(test_empty_maps),                  \
+    TEST(test_basic),                       \
+    TEST(test_ownership),                   \
+    TEST(test_binary_keys),                 \
+    TEST(test_update),                      \
+    TEST(test_remove_reinsert),             \
+    TEST(test_many_maps),                   \
+    TEST(test_large_entries),               \
+    TEST(test_collisions),                  \
+    TEST(test_churn),                       \
+    TEST(test_growth),                      \
+    TEST(test_string_keys_stress),          \
+    TEST(test_key_types),
+
+#if HASHMAP_TEST_ZERO_SIZES
+#define ZERO_SIZES_TESTS TEST(test_zero_sizes),
+#else
+#define ZERO_SIZES_TESTS
+#endif /* HASHMAP_TEST_ZERO_SIZES */
+
+#if HASHMAP_TEST_ALIASING
+#define ALIASING_TESTS TEST(test_aliasing),
+#else
+#define ALIASING_TESTS
+#endif /* HASHMAP_TEST_ALIASING */
+
+TEST_MAIN(
+    DETERMINISTIC_TESTS
+    ZERO_SIZES_TESTS
+    ALIASING_TESTS
+    TEST(test_differential_fuzzing),
+)
 
 #endif /* defined(HASHMAP_TEST_LIBFUZZER) */

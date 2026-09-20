@@ -13,7 +13,7 @@ bool buffer_init(Buffer* buffer, size_t initial_capacity)
 {
     ROMANO_ASSERT(buffer != NULL, "buffer is NULL");
 
-    buffer->data = calloc(initial_capacity, sizeof(char));
+    buffer->data = calloc(initial_capacity > 0 ? initial_capacity : 1, sizeof(char));
 
     if(buffer->data == NULL)
     {
@@ -37,7 +37,7 @@ bool buffer_resize(Buffer* buffer, size_t to_add_sz)
     void* new_data;
     size_t new_capacity;
 
-    new_capacity = buffer->capacity;
+    new_capacity = buffer->capacity > 0 ? buffer->capacity : 16;
 
     while(new_capacity < (buffer->sz + to_add_sz) &&
           new_capacity < INT64_MAX)

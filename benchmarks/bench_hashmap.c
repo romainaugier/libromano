@@ -46,7 +46,7 @@ uint32_t hash_identity(const void* key, const size_t key_len, const uint32_t has
             return *(uint32_t*)key;
         case 8:
             return *(uint64_t*)key;
-        
+
         default:
             return hash_murmur3(key, key_len, hashkey);
     }

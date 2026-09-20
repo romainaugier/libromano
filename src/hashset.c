@@ -188,6 +188,13 @@ ROMANO_FORCE_INLINE size_t hashset_get_new_capacity(Hashset* hashset)
 
 void hashset_move_entry(Hashset* hashset, Bucket* entry, const bool rehash);
 
+bool hashset_contains(Hashset* hashset, const void* key, const uint32_t key_size);
+
+ROMANO_FORCE_INLINE bool hashset_should_grow_on_probe(const Hashset* hashset)
+{
+    return hashset->size * 2 >= hashset->capacity;
+}
+
 void hashset_grow(Hashset* hashset,
                   const size_t capacity,
                   const bool rehash)
@@ -360,7 +367,7 @@ void hashset_insert_bucket(Hashset* hashset,
             index = (index + 1) & (hashset->capacity - 1);
             entry->probe_length++;
 
-            if(entry->probe_length >= hashset->max_probes)
+            if(entry->probe_length >= hashset->max_probes && hashset_should_grow_on_probe(hashset))
             {
                 hashset_grow(hashset, hashset_get_new_capacity(hashset), false);
 
@@ -391,6 +398,9 @@ bool hashset_add(Hashset* hashset,
     size_t index;
     uint32_t hash;
 
+    if(hashset_contains(hashset, key, key_size))
+        return false;
+
     if((hashset->size + 1) > hashset->capacity * HASHSET_MAX_LOAD)
         hashset_grow(hashset, hashset_get_new_capacity(hashset), false);
 
@@ -405,12 +415,6 @@ bool hashset_add(Hashset* hashset,
 
         if(!bucket_is_empty(bucket))
         {
-            if(bucket_compare_key(bucket, key, key_size, hash))
-            {
-                hashset_bucket_free(&entry);
-                return false;
-            }
-
             if(entry.probe_length > bucket_get_probe_length(bucket))
             {
                 tmp = entry;
@@ -421,7 +425,7 @@ bool hashset_add(Hashset* hashset,
             index = (index + 1) & (hashset->capacity - 1);
             entry.probe_length++;
 
-            if(entry.probe_length >= hashset->max_probes)
+            if(entry.probe_length >= hashset->max_probes && hashset_should_grow_on_probe(hashset))
             {
                 hashset_grow(hashset, hashset_get_new_capacity(hashset), false);
 

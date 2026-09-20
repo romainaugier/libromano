@@ -145,7 +145,7 @@ void matrixf_transpose(MatrixF* A)
     if(M == N)
     {
         for(i = 0; i < M; i++)
-            for(j = 0; j < N; j++)
+            for(j = i + 1; j < N; j++)
                 SWAP_FLOAT(A->data[i * M + j], A->data[j * M + i]);
     }
     else
@@ -164,8 +164,8 @@ void matrixf_transpose(MatrixF* A)
         A->data = new_data;
     }
 
-    A->M = M;
-    A->N = N;
+    A->M = N;
+    A->N = M;
 }
 
 MatrixF matrixf_transpose_from(MatrixF* A)
@@ -256,7 +256,7 @@ void _matrixf_mul_avx512(const float* ROMANO_RESTRICT A,
     _matrixf_mul_scalar(A, B, C, M, N, P);
 }
 
-#elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
+#elif defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
 
 #define NUM_MATRIXF_MUL_FUNCS 2
 
@@ -275,6 +275,11 @@ void _matrixf_mul_accelerate(const float* ROMANO_RESTRICT A,
                 0.0f,
                 C, P);            /* ldc = cols of C */
 }
+
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_MATRIXF_MUL_FUNCS 2
+#define _matrixf_mul_accelerate _matrixf_mul_scalar
 
 #else
 
@@ -296,7 +301,7 @@ matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
     _matrixf_mul_avx,
     _matrixf_mul_avx256,
     _matrixf_mul_avx512,
-#elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
+#elif defined(ROMANO_AARCH64)
     _matrixf_mul_accelerate,
 #endif /* defined(ROMANO_X86_64) */
 };
@@ -307,9 +312,6 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
     uint32_t N;
     uint32_t P;
 
-    MatrixF B_t;
-
-    float sum;
 
     ROMANO_ASSERT(A->N == B->M, "");
 
@@ -322,15 +324,7 @@ void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
 
     if(M >= 8)
     {
-#if defined(ROMANO_X86_64)
-        B_t = matrixf_transpose_from(B);
-
-        __matmul_funcs[simd_get_vectorization_mode()](A->data, B_t.data, C->data, M, N, P);
-
-        matrixf_destroy(&B_t);
-#else
         __matmul_funcs[simd_get_vectorization_mode()](A->data, B->data, C->data, M, N, P);
-#endif /* defined(ROMANO_X86_64) */
     }
     else
     {
@@ -662,7 +656,7 @@ bool _matrixf_cholesky_solve_avx512(MatrixF* A, MatrixF* b, MatrixF* x)
 {
     return _matrixf_cholesky_solve_scalar(A, b, x);
 }
-#elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
+#elif defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
 
 #define NUM_CHOL_SOLVE_FUNCS 2
 
@@ -671,36 +665,40 @@ bool _matrixf_cholesky_solve_accelerate(MatrixF* A, MatrixF* b, MatrixF* x)
     __LAPACK_int n = (__LAPACK_int)A->N;
     __LAPACK_int nrhs = (__LAPACK_int)b->N;
     __LAPACK_int info = 0;
+    MatrixF Ac;
+    MatrixF b_col_major;
 
-    /* LAPACK is column-major; a symmetric matrix is its own transpose,
-       so row-major A == column-major A^T == column-major A. Same for
-       the RHS as long as we treat 'uplo' consistently. */
+    /*
+     * LAPACK is column-major. A is symmetric so its layout does not matter, but b (n x nrhs,
+     * row-major) has to be transposed, the row-major transpose being the column-major b
+     */
+    b_col_major = matrixf_transpose_from(b);
 
-    matrixf_resize(x, b->M, b->N);
-    memcpy(x->data, b->data, b->M * b->N * sizeof(float));
+    /* sposv overwrites A with its factorization */
+    Ac = matrixf_copy(A);
 
-    /* Copy A because sposv destroys it (overwrites with L) */
-    MatrixF Ac = matrixf_copy(A);
-
-    sposv_("L",          /* lower triangle; symmetric so row/col-major doesn't matter */
-           &n,
-           &nrhs,
-           Ac.data,
-           &n,
-           x->data,
-           &n,  /* b overwritten with the solution */
-           &info);
+    sposv_("L", &n, &nrhs, Ac.data, &n, b_col_major.data, &n, &info);
 
     matrixf_destroy(&Ac);
 
     if(info != 0)
     {
+        matrixf_destroy(&b_col_major);
         logger_log(LogLevel_Error, "Cholesky solve failed: info=%d (not positive definite)", (int)info);
         return false;
     }
 
+    matrixf_destroy(x);
+    *x = matrixf_transpose_from(&b_col_major);
+    matrixf_destroy(&b_col_major);
+
     return true;
 }
+#elif defined(ROMANO_AARCH64)
+
+#define NUM_CHOL_SOLVE_FUNCS 2
+#define _matrixf_cholesky_solve_accelerate _matrixf_cholesky_solve_scalar
+
 #else
 #define NUM_CHOL_SOLVE_FUNCS 1
 #endif /* defined(ROMANO_X86_64) */
@@ -714,7 +712,7 @@ cholesky_solve_func __cholesky_solver_funcs[NUM_CHOL_SOLVE_FUNCS] = {
     _matrixf_cholesky_solve_avx,
     _matrixf_cholesky_solve_avx256,
     _matrixf_cholesky_solve_avx512,
-#elif defined(ROMANO_AARCH64) || defined(ROMANO_APPLE)
+#elif defined(ROMANO_AARCH64)
     _matrixf_cholesky_solve_accelerate,
 #endif /* defined(ROMANO_X86_64) */
 };

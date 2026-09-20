@@ -10,6 +10,8 @@
 #include "libromano/common.h"
 #include "libromano/simd.h"
 
+#include <math.h>
+
 #if defined(ROMANO_X86_64)
 #include <immintrin.h>
 #elif defined(ROMANO_AARCH64)
@@ -34,8 +36,8 @@ ROMANO_CPP_ENTER
 #define INF __builtin_huge_valf()
 #define NEGINF -__builtin_huge_valf()
 #elif defined(ROMANO_MSVC)
-#define INF FP_INFINITE
-#define NEGINF FP_INFINITE
+#define INF HUGE_VALF
+#define NEGINF (-HUGE_VALF)
 #endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
 
 #define SQRT2 1.41421356237309504880f
@@ -69,13 +71,13 @@ ROMANO_FORCE_INLINE bool mathf_float_lt(const float a, const float b) { return a
 
 
 #if defined(ROMANO_MSVC)
-ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return _finitef(x) == 0; }
+ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return _finitef(x) == 0 && _isnanf(x) == 0; }
 ROMANO_FORCE_INLINE bool mathf_isnan(const float x) { return _isnanf(x) != 0; }
 ROMANO_FORCE_INLINE bool mathf_isfinite(const float x) { return _finitef(x) != 0; }
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return __builtin_isinf(x) == 0; }
+ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return __builtin_isinf(x) != 0; }
 ROMANO_FORCE_INLINE bool mathf_isnan(const float x) { return __builtin_isnan(x) != 0; }
-ROMANO_FORCE_INLINE bool mathf_isfinite(const float x) { return __builtin_isinf(x) != 0; }
+ROMANO_FORCE_INLINE bool mathf_isfinite(const float x) { return __builtin_isfinite(x) != 0; }
 #endif /* defined(ROMANO_MSVC) */
 
 ROMANO_FORCE_INLINE int mathf_to_int(const float a) { return (int)a; }

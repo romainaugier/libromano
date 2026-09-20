@@ -220,52 +220,24 @@ HTTPHeaderEntry* http_header_find(HTTPHeader* header, const char* key)
 void http_header_remove_entry(HTTPHeader* header, const char* key)
 {
     HTTPHeaderEntry* entry;
-    HTTPHeaderEntry* previous;
-    size_t key_sz;
+    HTTPHeaderEntry* previous = NULL;
 
     ROMANO_ASSERT(header != NULL, "header is NULL");
 
-    if(header->head == NULL)
+    for(entry = header->head; entry != NULL; previous = entry, entry = entry->next)
+        if(strcmp(entry->key, key) == 0)
+            break;
+
+    if(entry == NULL)
         return;
-
-    key_sz = strlen(key);
-
-    if(header->head == header->tail)
-    {
-        if(strlen(header->head->key) == key_sz &&
-           memcmp(header->head->key, key, key_sz * sizeof(char)) == 0)
-        {
-            header->head = NULL;
-            header->tail = NULL;
-        }
-
-        return;
-    }
-
-    entry = header->head;
-    previous = NULL;
-
-    while(entry != NULL &&
-          strlen(entry->key) != key_sz &&
-          memcmp(entry->key, key, key_sz * sizeof(char)) != 0)
-    {
-        previous = entry;
-        entry = entry->next;
-    }
 
     if(previous == NULL)
-    {
-        header->head = entry;
-    }
-    else if(entry == header->tail)
-    {
-        header->tail = previous;
-        previous->next = NULL;
-    }
+        header->head = entry->next;
     else
-    {
-        previous->next = entry;
-    }
+        previous->next = entry->next;
+
+    if(entry == header->tail)
+        header->tail = previous;
 }
 
 void http_header_release(HTTPHeader* header)
@@ -631,6 +603,7 @@ bool http_context_connect(HTTPContext* ctx)
     if(socket_connect(ctx->socket, (SockAddr*)&ctx->server, sizeof(SockAddr)) < 0)
     {
         g_current_error = error_get_last_from_system();
+        socket_free(ctx->socket);
         return false;
     }
 
@@ -660,11 +633,13 @@ bool http_context_init(HTTPContext* ctx, const char* host, int port)
 
     if(!socket_resolve_dns_ipv4(host, &res))
     {
+        socket_dns_result_release(&res);
         return false;
     }
 
     if(socket_dns_result_get_count(&res) == 0)
     {
+        socket_dns_result_release(&res);
         g_current_error = ErrorCode_DNSCantFindHost;
         return false;
     }
@@ -711,28 +686,81 @@ bool http_context_is_alive(HTTPContext* ctx)
 
 #define HTTP_RESPONSE_BUFFER_SZ 512
 
+static bool http_ascii_iequal(const char* a, const char* b, size_t size)
+{
+    size_t i;
+
+    for(i = 0; i < size; i++)
+    {
+        const char ca = (a[i] >= 'A' && a[i] <= 'Z') ? (char)(a[i] - 'A' + 'a') : a[i];
+        const char cb = (b[i] >= 'A' && b[i] <= 'Z') ? (char)(b[i] - 'A' + 'a') : b[i];
+
+        if(ca != cb)
+            return false;
+    }
+
+    return true;
+}
+
+/* Returns the Content-Length announced in the headers block, or -1 if there is none */
+static long long http_find_content_length(const char* headers, size_t headers_sz)
+{
+    static const char name[] = "\r\ncontent-length:";
+    const size_t name_sz = sizeof(name) - 1;
+    size_t i;
+
+    for(i = 0; i + name_sz <= headers_sz; i++)
+    {
+        if(http_ascii_iequal(headers + i, name, name_sz))
+        {
+            const char* value = headers + i + name_sz;
+
+            while(*value == ' ' || *value == '\t')
+                value++;
+
+            return strtoll(value, NULL, 10);
+        }
+    }
+
+    return -1;
+}
+
+static const char* http_find_headers_end(const char* data, size_t data_sz)
+{
+    size_t i;
+
+    for(i = 0; i + 4 <= data_sz; i++)
+        if(memcmp(data + i, "\r\n\r\n", 4) == 0)
+            return data + i + 4;
+
+    return NULL;
+}
+
 bool http_context_send_request(HTTPContext *ctx,
                                HTTPRequest *request,
                                HTTPResponse *response)
 {
     char* request_body;
     size_t request_sz;
+    size_t response_sz;
     ssize_t sent_sz;
     ssize_t recv_sz;
-    const char* headers_end;
+    const char* headers_end = NULL;
+    long long content_length = -1;
     HTTPHeaderEntry* resp_entry;
 
     ROMANO_ASSERT(ctx != NULL, "ctx is NULL");
     ROMANO_ASSERT(request != NULL, "request is NULL");
     ROMANO_ASSERT(response != NULL, "response is NULL");
 
-    if(!ctx->is_alive)
+    if(!ctx->is_alive && !http_context_connect(ctx))
     {
         g_current_error = ErrorCode_HTTPContextNotAlive;
         return false;
     }
 
-    http_header_add_entry(&request->headers, "Host", 4, ctx->host, 0);
+    if(http_header_find(&request->headers, "Host") == NULL)
+        http_header_add_entry(&request->headers, "Host", 4, ctx->host, 0);
 
     http_builder_reset(&ctx->builder);
 
@@ -741,7 +769,7 @@ bool http_context_send_request(HTTPContext *ctx,
 
     if(request_body == NULL)
     {
-        g_current_error = ErrorCode_InvalidHTTPRequest;
+        g_current_error = ErrorCode_HTTPInvalidRequest;
         return false;
     }
 
@@ -768,23 +796,52 @@ bool http_context_send_request(HTTPContext *ctx,
         if(recv_sz < 0)
             return false;
 
-        buffer_emplace_size(&ctx->recv_buffer, recv_sz);
-
-        if(recv_sz < HTTP_RESPONSE_BUFFER_SZ)
+        if(recv_sz == 0)
+        {
+            http_context_disconnect(ctx);
             break;
+        }
+
+        buffer_emplace_size(&ctx->recv_buffer, (size_t)recv_sz);
+
+        if(headers_end == NULL)
+        {
+            headers_end = http_find_headers_end((const char*)buffer_front(&ctx->recv_buffer),
+                                                buffer_size(&ctx->recv_buffer));
+
+            if(headers_end != NULL)
+                content_length = http_find_content_length((const char*)buffer_front(&ctx->recv_buffer),
+                                                          (size_t)(headers_end - (const char*)buffer_front(&ctx->recv_buffer)));
+        }
+        else
+        {
+            /* The buffer may have been reallocated */
+            headers_end = http_find_headers_end((const char*)buffer_front(&ctx->recv_buffer),
+                                                buffer_size(&ctx->recv_buffer));
+        }
+
+        if(headers_end != NULL && content_length >= 0)
+        {
+            const size_t headers_sz = (size_t)(headers_end - (const char*)buffer_front(&ctx->recv_buffer));
+
+            if(buffer_size(&ctx->recv_buffer) >= headers_sz + (size_t)content_length)
+                break;
+        }
     }
+
+    response_sz = buffer_size(&ctx->recv_buffer);
 
     if(!buffer_append(&ctx->recv_buffer, "\0", 1))
         return false;
 
     if(!http_response_parse(response,
                             (const char*)buffer_front(&ctx->recv_buffer),
-                            buffer_size(&ctx->recv_buffer)))
+                            response_sz))
         return false;
 
     resp_entry = http_header_find(&response->headers, "Connection");
 
-    if(resp_entry != NULL && strcmp(resp_entry->value, "close"))
+    if(resp_entry != NULL && strlen(resp_entry->value) == 5 && http_ascii_iequal(resp_entry->value, "close", 5))
         http_context_disconnect(ctx);
 
     return true;

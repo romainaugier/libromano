@@ -21,7 +21,7 @@ StringView strview_new(const char* data, size_t count)
 
 int strview_cmp(const StringView lhs, const StringView rhs)
 {
-    return lhs.size != rhs.size && memcmp(lhs.data, rhs.data, lhs.size) == 0;    
+    return lhs.size == rhs.size && memcmp(lhs.data, rhs.data, lhs.size) == 0;
 }
 
 int strview_split(const char* data, const char* separator, StringView* string_view)
@@ -92,24 +92,25 @@ StringView strview_rsplit(const char* data, const char* separator, StringView* s
 
     const size_t string_size = strlen(data);
     const size_t separator_len = strlen(separator);
-    size_t size = 0;
+    size_t i = string_size;
 
-    const char* start = data;
-
-    size_t i = string_size - 1;
-
-    while((i - separator_len) >= 0 && memcmp(&data[i - separator_len], separator, separator_len) != 0)
+    while(i >= separator_len && separator_len > 0)
     {
-        size++;
+        if(memcmp(&data[i - separator_len], separator, separator_len) == 0)
+            break;
+
         i--;
     }
 
+    if(i < separator_len || separator_len == 0)
+        i = 0;
+
     res.data = (char*)&data[i];
-    res.size = size + 1;
+    res.size = string_size - i;
 
     if(stringview != NULL)
     {
-        stringview->data = (char*)start;
+        stringview->data = (char*)data;
         stringview->size = i;
     }
 
@@ -156,31 +157,49 @@ bool strview_endswith(const StringView s, const char* substr, const int substr_l
 
 StringView strview_trim(const char* data)
 {
-   StringView result;
+    StringView result;
 
-   ROMANO_ASSERT(data != NULL, "Data is null");
+    ROMANO_ASSERT(data != NULL, "Data is null");
 
-   while(isspace((unsigned char)*data)) data++;
+    while(isspace((unsigned char)*data))
+        data++;
 
-   if(*data == 0)
-   {
-      return STRVIEW_NULL;
-   }
+    result.data = (char*)data;
+    result.size = strlen(data);
 
-   result.data = (char*)data;
-   result.size = strlen(data);
+    while(result.size > 0 && isspace((unsigned char)data[result.size - 1]))
+        result.size--;
 
-   while((result.size > 0 && isspace(data[result.size--])) || data[result.size--] == '\0')
-   {
-      continue;
-   }
+    return result;
+}
 
-   return result;
+#define STRVIEW_PARSE_BUFFER_SIZE 512
+
+static size_t strview_to_cstr(const StringView s, char* buffer)
+{
+    size_t size = s.size < (STRVIEW_PARSE_BUFFER_SIZE - 1) ? s.size : (STRVIEW_PARSE_BUFFER_SIZE - 1);
+
+    if(size > 0)
+        memcpy(buffer, s.data, size);
+
+    buffer[size] = '\0';
+
+    return size;
 }
 
 int strview_parse_int(const StringView s)
 {
-    return strtol(s.data, NULL, 10);
+    char buffer[STRVIEW_PARSE_BUFFER_SIZE];
+    long long value;
+
+    strview_to_cstr(s, buffer);
+
+    value = strtoll(buffer, NULL, 10);
+
+    if(value > INT_MAX || value < INT_MIN)
+        return 0;
+
+    return (int)value;
 }
 
 bool strview_parse_bool(const StringView s)
@@ -195,7 +214,7 @@ bool strview_parse_bool(const StringView s)
         return true;
     }
 
-    if(s.size >= 5 && (memcmp(s.data, "false", 5) == 0 || memcmp(s.data, "False", 5)))
+    if(s.size >= 5 && (memcmp(s.data, "false", 5) == 0 || memcmp(s.data, "False", 5) == 0))
     {
         return false;
     }
@@ -205,5 +224,9 @@ bool strview_parse_bool(const StringView s)
 
 double strview_parse_double(const StringView s)
 {
-    return strtod(s.data, NULL);
+    char buffer[STRVIEW_PARSE_BUFFER_SIZE];
+
+    strview_to_cstr(s, buffer);
+
+    return strtod(buffer, NULL);
 }

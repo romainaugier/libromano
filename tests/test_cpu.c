@@ -2,22 +2,68 @@
 /* Copyright (c) 2023 - Present Romain Augier */
 /* All rights reserved. */
 
+#include "test.h"
+
 #include "libromano/cpu.h"
-#include "libromano/logger.h"
 
-int main(void)
+static void test_name(void)
 {
-    logger_init();
+    char name[ROMANO_CPU_NAME_SZ];
 
-    char cpu_name[ROMANO_CPU_NAME_SZ];
+    memset(name, 0x7F, sizeof(name));
+    cpu_get_name(name);
 
-    cpu_get_name(cpu_name);
+    TEST_CHECK(memchr(name, '\0', sizeof(name)) != NULL);
+    logger_log_info("CPU name: %s", name);
+}
 
-    logger_log(LogLevel_Info, "CPU Name: %s", cpu_name);
+static void test_frequency(void)
+{
+    const uint32_t frequency = cpu_get_frequency();
+    const uint32_t current = cpu_get_current_frequency();
+
+    logger_log_info("CPU frequency: %u MHz (current: %u MHz)", frequency, current);
+
+    TEST_CHECK(frequency < 20000);
+    TEST_CHECK(current < 20000);
+}
+
+static void test_rdtsc(void)
+{
+    const uint64_t start = cpu_rdtsc();
+    volatile uint64_t sink = 0;
+    uint64_t i;
+
+    for(i = 0; i < 100000; i++)
+        sink += i;
+
+    TEST_CHECK(cpu_rdtsc() > start);
+}
+
+static void test_features(void)
+{
+    int feature;
+    int count = 0;
+
+    cpu_check();
+
+    for(feature = 0; feature < CPUFeature_COUNT; feature++)
+        count += cpu_has_feature((CPUFeature)feature);
+
+#if defined(ROMANO_X86_64)
+    TEST_CHECK(cpu_has_feature(CPUFeature_SSE2));
+    TEST_CHECK(!cpu_has_feature(CPUFeature_AVX2) || cpu_has_feature(CPUFeature_AVX));
+#endif /* defined(ROMANO_X86_64) */
+
+    TEST_CHECK(!cpu_has_feature(CPUFeature_COUNT));
+    TEST_CHECK(count > 0);
 
     cpu_print_features();
-
-    logger_release();
-
-    return 0;
 }
+
+TEST_MAIN(
+    TEST(test_name),
+    TEST(test_frequency),
+    TEST(test_rdtsc),
+    TEST(test_features),
+)
