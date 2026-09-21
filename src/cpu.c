@@ -912,6 +912,492 @@ uint32_t cpu_get_current_frequency(void)
     return g_cpu_cur_freq_mhz;
 }
 
+/* Caches */
+
+static CPUCacheInfo g_cpu_caches[CPUCacheLevel_COUNT];
+static uint32_t g_cpu_cache_line_size = ROMANO_CACHE_LINE_SIZE;
+
+/*
+ * Records a data or unified cache of the given level (1-based). Only fills the fields still
+ * unknown: the first source to report a value wins, the next ones only complete it.
+ */
+ROMANO_CPU_UNUSED static void cpu_cache_set(CPUCacheInfo* caches,
+                                            uint32_t level,
+                                            size_t size,
+                                            uint32_t line_size,
+                                            uint32_t shared_by)
+{
+    CPUCacheInfo* cache;
+
+    if(level < 1 || level > (uint32_t)CPUCacheLevel_COUNT)
+        return;
+
+    cache = &caches[level - 1];
+
+    if(cache->size == 0)
+        cache->size = size;
+
+    if(cache->line_size == 0)
+        cache->line_size = line_size;
+
+    if(cache->shared_by == 0)
+        cache->shared_by = shared_by;
+}
+
+#if defined(ROMANO_LINUX)
+
+/* Reads the first line of a sysfs-like file without the line break, returns false on failure */
+static bool cpu_read_line_file(const char* path, char* buffer, size_t buffer_size)
+{
+    FILE* f = fopen(path, "r");
+
+    if(f == NULL)
+        return false;
+
+    if(fgets(buffer, (int)buffer_size, f) == NULL)
+    {
+        fclose(f);
+        return false;
+    }
+
+    fclose(f);
+
+    buffer[strcspn(buffer, "\r\n")] = '\0';
+
+    return true;
+}
+
+/* "48K", "2048K", "8M", "32768" -> bytes */
+static size_t cpu_parse_cache_size(const char* str)
+{
+    char* end = NULL;
+    unsigned long long value = strtoull(str, &end, 10);
+
+    if(end == str)
+        return 0;
+
+    switch(*end)
+    {
+        case 'K': case 'k': value *= 1024ull; break;
+        case 'M': case 'm': value *= 1024ull * 1024ull; break;
+        case 'G': case 'g': value *= 1024ull * 1024ull * 1024ull; break;
+        default: break;
+    }
+
+    return (size_t)value;
+}
+
+/* Counts the cpus of a kernel cpu list: "0-3,8,10-11" -> 7 */
+static uint32_t cpu_count_cpu_list(const char* str)
+{
+    uint32_t count = 0;
+
+    while(*str != '\0')
+    {
+        char* end = NULL;
+        unsigned long first = strtoul(str, &end, 10);
+        unsigned long last = first;
+
+        if(end == str)
+            break;
+
+        if(*end == '-')
+        {
+            str = end + 1;
+            last = strtoul(str, &end, 10);
+
+            if(end == str)
+                break;
+        }
+
+        if(last >= first)
+            count += (uint32_t)(last - first + 1);
+
+        str = end;
+
+        if(*str != ',')
+            break;
+
+        str++;
+    }
+
+    return count;
+}
+
+static void cpu_detect_caches_linux(CPUCacheInfo* caches)
+{
+    char path[128];
+    char buffer[256];
+    uint32_t index;
+
+    for(index = 0; index < 32; index++)
+    {
+        unsigned long level;
+        size_t size = 0;
+        uint32_t line_size;
+        uint32_t shared_by = 0;
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu0/cache/index%u/level", index);
+        level = cpu_read_ulong_file(path);
+
+        /* Indices are contiguous, a missing one ends the list */
+        if(level == 0)
+            break;
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu0/cache/index%u/type", index);
+
+        if(!cpu_read_line_file(path, buffer, sizeof(buffer)) ||
+           (strcmp(buffer, "Data") != 0 && strcmp(buffer, "Unified") != 0))
+            continue;
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu0/cache/index%u/size", index);
+
+        if(cpu_read_line_file(path, buffer, sizeof(buffer)))
+            size = cpu_parse_cache_size(buffer);
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu0/cache/index%u/coherency_line_size", index);
+        line_size = (uint32_t)cpu_read_ulong_file(path);
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu0/cache/index%u/shared_cpu_list", index);
+
+        if(cpu_read_line_file(path, buffer, sizeof(buffer)))
+            shared_by = cpu_count_cpu_list(buffer);
+
+        cpu_cache_set(caches, (uint32_t)level, size, line_size, shared_by);
+    }
+}
+
+#elif defined(ROMANO_APPLE)
+
+/* Reads an integer sysctl of 32 or 64 bits, returns 0 on failure */
+static uint64_t cpu_sysctl_u64(const char* name)
+{
+    uint64_t value64 = 0;
+    size_t size = sizeof(value64);
+
+    if(sysctlbyname(name, &value64, &size, NULL, 0) != 0)
+        return 0;
+
+    if(size == sizeof(uint32_t))
+    {
+        uint32_t value32;
+        memcpy(&value32, &value64, sizeof(value32));
+        return value32;
+    }
+
+    return size == sizeof(uint64_t) ? value64 : 0;
+}
+
+static void cpu_detect_caches_apple(CPUCacheInfo* caches)
+{
+    const uint32_t line_size = (uint32_t)cpu_sysctl_u64("hw.cachelinesize");
+    uint64_t cache_config[8];
+    size_t cache_config_size = sizeof(cache_config);
+
+    /*
+     * Apple Silicon reports its caches per performance level, 0 being the performance cores.
+     * The global hw.l*cachesize keys describe the efficiency cores there, so read these first.
+     * There is no core-private L3 (the SLC is not reported).
+     */
+    if(cpu_sysctl_u64("hw.nperflevels") > 0)
+    {
+        cpu_cache_set(caches, 1, (size_t)cpu_sysctl_u64("hw.perflevel0.l1dcachesize"), line_size, 1);
+        cpu_cache_set(caches,
+                      2,
+                      (size_t)cpu_sysctl_u64("hw.perflevel0.l2cachesize"),
+                      line_size,
+                      (uint32_t)cpu_sysctl_u64("hw.perflevel0.cpusperl2"));
+        cpu_cache_set(caches,
+                      3,
+                      (size_t)cpu_sysctl_u64("hw.perflevel0.l3cachesize"),
+                      line_size,
+                      (uint32_t)cpu_sysctl_u64("hw.perflevel0.cpusperl3"));
+    }
+
+    /* hw.cacheconfig: logical cpus sharing each level, index 0 being the memory */
+    memset(cache_config, 0, sizeof(cache_config));
+
+    if(sysctlbyname("hw.cacheconfig", cache_config, &cache_config_size, NULL, 0) != 0 ||
+       cache_config_size % sizeof(uint64_t) != 0)
+        memset(cache_config, 0, sizeof(cache_config));
+
+    cpu_cache_set(caches, 1, (size_t)cpu_sysctl_u64("hw.l1dcachesize"), line_size, (uint32_t)cache_config[1]);
+    cpu_cache_set(caches, 2, (size_t)cpu_sysctl_u64("hw.l2cachesize"), line_size, (uint32_t)cache_config[2]);
+    cpu_cache_set(caches, 3, (size_t)cpu_sysctl_u64("hw.l3cachesize"), line_size, (uint32_t)cache_config[3]);
+}
+
+#elif defined(ROMANO_WIN)
+
+static uint32_t cpu_popcount64(uint64_t x)
+{
+    uint32_t count = 0;
+
+    while(x != 0)
+    {
+        x &= x - 1;
+        count++;
+    }
+
+    return count;
+}
+
+static void cpu_detect_caches_windows(CPUCacheInfo* caches)
+{
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer;
+    DWORD length = 0;
+    DWORD count;
+    DWORD i;
+    int pass;
+
+    if(GetLogicalProcessorInformation(NULL, &length) || GetLastError() != ERROR_INSUFFICIENT_BUFFER || length == 0)
+        return;
+
+    buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)malloc(length);
+
+    if(buffer == NULL)
+        return;
+
+    if(!GetLogicalProcessorInformation(buffer, &length))
+    {
+        free(buffer);
+        return;
+    }
+
+    count = length / (DWORD)sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+
+    /*
+     * First pass: the caches of logical processor 0 (a performance core on current hybrid x86
+     * cpus), the caches of other cores differ on hybrid cpus. Second pass: anything else.
+     */
+    for(pass = 0; pass < 2; pass++)
+    {
+        for(i = 0; i < count; i++)
+        {
+            const SYSTEM_LOGICAL_PROCESSOR_INFORMATION* entry = &buffer[i];
+            const CACHE_DESCRIPTOR* cache = &entry->Cache;
+
+            if(entry->Relationship != RelationCache)
+                continue;
+
+            if(cache->Type != CacheData && cache->Type != CacheUnified)
+                continue;
+
+            if(pass == 0 && (entry->ProcessorMask & 1) == 0)
+                continue;
+
+            cpu_cache_set(caches,
+                          (uint32_t)cache->Level,
+                          (size_t)cache->Size,
+                          (uint32_t)cache->LineSize,
+                          cpu_popcount64((uint64_t)entry->ProcessorMask));
+        }
+    }
+
+    free(buffer);
+}
+
+#endif /* defined(ROMANO_LINUX) */
+
+#if defined(ROMANO_X86_64) || defined(ROMANO_X86)
+
+/* CPUID leaf 4 (Intel) and 0x8000001D (AMD with TOPOEXT) share the same layout */
+static void cpu_detect_caches_cpuid_deterministic(CPUCacheInfo* caches, uint32_t leaf)
+{
+    uint32_t r[4];
+    uint32_t subleaf;
+
+    for(subleaf = 0; subleaf < 16; subleaf++)
+    {
+        cpuid(r, leaf, subleaf);
+
+        const uint32_t type = r[0] & 0x1F; /* 0: no more caches, 1: data, 2: instruction, 3: unified */
+
+        if(type == 0)
+            break;
+
+        if(type != 1 && type != 3)
+            continue;
+
+        const uint32_t level = (r[0] >> 5) & 0x7;
+        const uint32_t shared_by = ((r[0] >> 14) & 0xFFF) + 1;
+        const uint32_t line_size = (r[1] & 0xFFF) + 1;
+        const uint32_t partitions = ((r[1] >> 12) & 0x3FF) + 1;
+        const uint32_t ways = ((r[1] >> 22) & 0x3FF) + 1;
+        const uint32_t sets = r[2] + 1;
+
+        cpu_cache_set(caches,
+                      level,
+                      (size_t)ways * partitions * line_size * sets,
+                      line_size,
+                      shared_by);
+    }
+}
+
+/*
+ * Fills what the OS did not report from CPUID, and returns the CLFLUSH line size as a last
+ * resort line size (0 if unavailable)
+ */
+static uint32_t cpu_detect_caches_cpuid(CPUCacheInfo* caches)
+{
+    uint32_t r[4];
+    uint32_t max_leaf;
+    uint32_t max_ext_leaf;
+    uint32_t clflush_line_size = 0;
+    char vendor[13];
+    bool amd;
+
+    cpuid(r, 0, 0);
+    max_leaf = r[0];
+
+    memcpy(vendor + 0, &r[1], 4);
+    memcpy(vendor + 4, &r[3], 4);
+    memcpy(vendor + 8, &r[2], 4);
+    vendor[12] = '\0';
+
+    amd = strcmp(vendor, "AuthenticAMD") == 0 || strcmp(vendor, "HygonGenuine") == 0;
+
+    if(max_leaf >= 1)
+    {
+        cpuid(r, 1, 0);
+        clflush_line_size = ((r[1] >> 8) & 0xFF) * 8;
+    }
+
+    cpuid(r, 0x80000000, 0);
+    max_ext_leaf = r[0];
+
+    if(amd)
+    {
+        bool topoext = false;
+
+        if(max_ext_leaf >= 0x80000001)
+        {
+            cpuid(r, 0x80000001, 0);
+            topoext = ((r[2] >> 22) & 1) != 0;
+        }
+
+        if(topoext && max_ext_leaf >= 0x8000001D)
+        {
+            cpu_detect_caches_cpuid_deterministic(caches, 0x8000001D);
+            return clflush_line_size;
+        }
+
+        /* Legacy AMD leaves: sizes and line sizes only */
+        if(max_ext_leaf >= 0x80000005)
+        {
+            cpuid(r, 0x80000005, 0);
+            cpu_cache_set(caches, 1, (size_t)(r[2] >> 24) * 1024, r[2] & 0xFF, 0);
+        }
+
+        if(max_ext_leaf >= 0x80000006)
+        {
+            cpuid(r, 0x80000006, 0);
+            cpu_cache_set(caches, 2, (size_t)(r[2] >> 16) * 1024, r[2] & 0xFF, 0);
+            cpu_cache_set(caches, 3, (size_t)(r[3] >> 18) * 512 * 1024, r[3] & 0xFF, 0);
+        }
+
+        return clflush_line_size;
+    }
+
+    if(max_leaf >= 4)
+        cpu_detect_caches_cpuid_deterministic(caches, 4);
+
+    return clflush_line_size;
+}
+
+#elif defined(ROMANO_AARCH64) && (defined(ROMANO_LINUX) || defined(__FreeBSD__)) && defined(__GNUC__)
+
+/*
+ * CTR_EL0.DminLine: log2 of the words in the smallest data cache line of all levels.
+ * Readable from EL0 on Linux and FreeBSD (or trapped and emulated by the kernel).
+ */
+static uint32_t cpu_aarch64_ctr_line_size(void)
+{
+    uint64_t ctr;
+
+    __asm__ volatile("mrs %0, ctr_el0" : "=r"(ctr));
+
+    return 4u << ((ctr >> 16) & 0xF);
+}
+
+#endif /* defined(ROMANO_X86_64) || defined(ROMANO_X86) */
+
+static bool cpu_is_valid_line_size(uint32_t line_size)
+{
+    /* A power of two in a plausible range, rejects garbage from VMs and odd firmwares */
+    return line_size >= 16 && line_size <= 1024 && (line_size & (line_size - 1)) == 0;
+}
+
+static void cpu_detect_caches(void)
+{
+    uint32_t fallback_line_size = 0;
+    uint32_t i;
+
+    memset(g_cpu_caches, 0, sizeof(g_cpu_caches));
+
+#if defined(ROMANO_LINUX)
+    cpu_detect_caches_linux(g_cpu_caches);
+#elif defined(ROMANO_APPLE)
+    cpu_detect_caches_apple(g_cpu_caches);
+#elif defined(ROMANO_WIN)
+    cpu_detect_caches_windows(g_cpu_caches);
+#endif /* defined(ROMANO_LINUX) */
+
+#if defined(ROMANO_X86_64) || defined(ROMANO_X86)
+    fallback_line_size = cpu_detect_caches_cpuid(g_cpu_caches);
+#elif defined(ROMANO_AARCH64) && (defined(ROMANO_LINUX) || defined(__FreeBSD__)) && defined(__GNUC__)
+    fallback_line_size = cpu_aarch64_ctr_line_size();
+#endif /* defined(ROMANO_X86_64) || defined(ROMANO_X86) */
+
+    if(cpu_is_valid_line_size(g_cpu_caches[CPUCacheLevel_L1].line_size))
+        g_cpu_cache_line_size = g_cpu_caches[CPUCacheLevel_L1].line_size;
+    else if(cpu_is_valid_line_size(fallback_line_size))
+        g_cpu_cache_line_size = fallback_line_size;
+    else
+        g_cpu_cache_line_size = ROMANO_CACHE_LINE_SIZE;
+
+    for(i = 0; i < (uint32_t)CPUCacheLevel_COUNT; i++)
+    {
+        CPUCacheInfo* cache = &g_cpu_caches[i];
+
+        if(cache->size == 0)
+        {
+            memset(cache, 0, sizeof(CPUCacheInfo));
+            continue;
+        }
+
+        if(!cpu_is_valid_line_size(cache->line_size))
+            cache->line_size = g_cpu_cache_line_size;
+    }
+}
+
+bool cpu_get_cache_info(CPUCacheLevel level, CPUCacheInfo* info)
+{
+    ROMANO_ASSERT(info != NULL, "info is NULL");
+
+    if((uint32_t)level >= (uint32_t)CPUCacheLevel_COUNT || g_cpu_caches[level].size == 0)
+    {
+        memset(info, 0, sizeof(CPUCacheInfo));
+        return false;
+    }
+
+    *info = g_cpu_caches[level];
+
+    return true;
+}
+
+size_t cpu_get_cache_size(CPUCacheLevel level)
+{
+    if((uint32_t)level >= (uint32_t)CPUCacheLevel_COUNT)
+        return 0;
+
+    return g_cpu_caches[level].size;
+}
+
+uint32_t cpu_get_cache_line_size(void)
+{
+    return g_cpu_cache_line_size;
+}
+
 /* cpu_check (ran on dll/dylib/so load, see dll_main.c) */
 
 void cpu_check(void) 
@@ -924,6 +1410,7 @@ void cpu_check(void)
     g_cpu_cur_freq_ctr = 0;
 
     cpu_detect_features();
+    cpu_detect_caches();
 }
 
 /* Features print */
@@ -1029,6 +1516,31 @@ void cpu_print_features(void)
         printf("Current    : %u MHz\n", cur_mhz);
     else
         printf("Current    : unknown\n");
+
+    for(uint32_t level = 0; level < (uint32_t)CPUCacheLevel_COUNT; level++)
+    {
+        CPUCacheInfo cache;
+        static const char* const cache_names[CPUCacheLevel_COUNT] = { "L1d", "L2", "L3" };
+
+        if(!cpu_get_cache_info((CPUCacheLevel)level, &cache))
+            continue;
+
+        printf("Cache %-5s: ", cache_names[level]);
+
+        if(cache.size >= 1024 * 1024 && cache.size % (1024 * 1024) == 0)
+            printf("%llu MiB", (unsigned long long)(cache.size / (1024 * 1024)));
+        else
+            printf("%llu KiB", (unsigned long long)(cache.size / 1024));
+
+        printf(", %u B lines", cache.line_size);
+
+        if(cache.shared_by > 0)
+            printf(", shared by %u logical cpu%s", cache.shared_by, cache.shared_by > 1 ? "s" : "");
+
+        printf("\n");
+    }
+
+    printf("Line size  : %u B\n", cpu_get_cache_line_size());
 
     printf("Features   :");
 

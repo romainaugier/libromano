@@ -15,6 +15,8 @@ ROMANO_CPP_ENTER
 
 ROMANO_API void cpu_check(void);
 
+/* Features */
+
 typedef enum {
     /* x86_64 Features */
     CPUFeature_MMX,
@@ -98,8 +100,64 @@ ROMANO_API uint32_t cpu_get_current_frequency(void);
 /* Returns the current timestamp counter () */
 ROMANO_API uint64_t cpu_rdtsc(void);
 
-/* Prins the detected cpu features */
+/* Prints the detected cpu features and caches */
 ROMANO_API void cpu_print_features(void);
+
+/* Caches */
+
+/*
+ * Compile-time cache line size, for struct padding and alignment
+ * (avoiding false sharing, like std::hardware_destructive_interference in C++)
+ * Apple Silicon uses 128 bytes lines, the other supported targets 64 bytes.
+ * Use cpu_get_cache_line_size() for the value detected at runtime.
+ */
+#if defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
+#define ROMANO_CACHE_LINE_SIZE 128
+#else
+#define ROMANO_CACHE_LINE_SIZE 64
+#endif /* defined(ROMANO_AARCH64) && defined(ROMANO_APPLE) */
+
+typedef enum {
+    CPUCacheLevel_L1 = 0,
+    CPUCacheLevel_L2 = 1,
+    CPUCacheLevel_L3 = 2,
+    CPUCacheLevel_COUNT = 3,
+} CPUCacheLevel;
+
+typedef struct CPUCacheInfo {
+    /* Size in bytes of one instance of the cache, 0 if absent or unknown */
+    size_t size;
+
+    /* Line size in bytes, 0 if unknown */
+    uint32_t line_size;
+
+    /*
+     * Number of logical cpus sharing one instance of the cache, 0 if unknown.
+     * When it comes from CPUID (no OS information), this is the maximum the topology allows and
+     * can be above the real count.
+     */
+    uint32_t shared_by;
+} CPUCacheInfo;
+
+/*
+ * Fills info with the given data/unified cache level, detected when the library is loaded.
+ * Returns false (and zeroes info) if the level does not exist or could not be detected.
+ *
+ * Sources: sysfs on Linux, sysctl on macOS, GetLogicalProcessorInformation on Windows, completed
+ * by CPUID on x86 (the only source on the BSDs). On other aarch64 systems only the line size is
+ * known (CTR_EL0).
+ *
+ * On hybrid cpus the caches of the cores differ. The values are the ones of the performance
+ * cores on Apple Silicon, and of logical cpu 0 elsewhere: a performance core on current Intel
+ * hybrid cpus, often a little core on ARM big.LITTLE.
+ */
+ROMANO_API bool cpu_get_cache_info(CPUCacheLevel level, CPUCacheInfo* info);
+
+/* Size in bytes of one instance of the given cache level, 0 if absent or unknown */
+ROMANO_API size_t cpu_get_cache_size(CPUCacheLevel level);
+
+/* L1 data cache line size in bytes, never 0 (falls back to ROMANO_CACHE_LINE_SIZE) */
+ROMANO_API uint32_t cpu_get_cache_line_size(void);
 
 ROMANO_CPP_END
 

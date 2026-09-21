@@ -5,6 +5,7 @@
 #include "libromano/threadpool.h"
 #include "libromano/thread.h"
 #include "libromano/atomic.h"
+#include "libromano/cpu.h"
 #include "libromano/error.h"
 
 #include "concurrentqueue/concurrentqueue.h"
@@ -67,7 +68,7 @@ typedef struct Worker
     struct ThreadPool* pool;
     Thread* thread;
     uint32_t index;
-    char _pad[64];
+    char _pad[ROMANO_CACHE_LINE_SIZE];
 } Worker;
 
 struct ThreadPool
@@ -80,17 +81,17 @@ struct ThreadPool
     uint32_t stop;
     uint32_t submit_rr;
 
-    char _pad0[64];
+    char _pad0[ROMANO_CACHE_LINE_SIZE];
 
     /* Free list head: low 32 bits = slab index, high 32 bits = ABA tag */
     Atomic64 free_head;
 
-    char _pad1[64];
+    char _pad1[ROMANO_CACHE_LINE_SIZE];
 
     uint32_t working_threads_count;
     uint32_t pending_count;
 
-    char _pad2[64];
+    char _pad2[ROMANO_CACHE_LINE_SIZE];
 
     /*
      * Idle workers park on sleep_cv. work_epoch is bumped by every submission, a worker only
