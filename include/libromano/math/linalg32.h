@@ -9,6 +9,7 @@
 
 #include "libromano/common.h"
 #include "libromano/math/common32.h"
+#include "libromano/math/linalg_ctx.h"
 
 #include <stdlib.h>
 
@@ -115,6 +116,12 @@ typedef struct matrix44f {
     float data[16];
 } matrix44f_t;
 
+/*
+ * Row-major dense matrix: M rows, N columns, element (i, j) at data[i * N + j]
+ *
+ * The compute functions take a LinAlgCtx* as their first argument to control threading,
+ * pass NULL to run on the calling thread (see libromano/math/linalg_ctx.h)
+ */
 typedef struct MatrixF {
     float* data;
     uint32_t M;
@@ -129,6 +136,7 @@ ROMANO_API MatrixF matrixf_copy(MatrixF* A);
 
 ROMANO_API void matrixf_size(MatrixF* A, int* M, int* N);
 
+/* Resizes A, the content is undefined afterwards. Keeps the allocation if the size is the same */
 ROMANO_API void matrixf_resize(MatrixF* A, const int M, const int N);
 
 ROMANO_API int matrixf_row_size(MatrixF* A);
@@ -143,25 +151,30 @@ ROMANO_API float matrixf_trace(MatrixF* A);
 
 ROMANO_API void matrixf_zero(MatrixF* A);
 
-ROMANO_API void matrixf_transpose(MatrixF* A);
+ROMANO_API void matrixf_transpose(LinAlgCtx* ctx, MatrixF* A);
 
-ROMANO_API MatrixF matrixf_transpose_from(MatrixF* A);
+ROMANO_API MatrixF matrixf_transpose_from(LinAlgCtx* ctx, MatrixF* A);
 
-ROMANO_API void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C);
+/* C = A * B. C is resized as needed and must not alias A or B */
+ROMANO_API void matrixf_mul(LinAlgCtx* ctx, MatrixF* A, MatrixF* B, MatrixF* C);
 
-ROMANO_API void matrixf_add_f(MatrixF* A, const float f);
+ROMANO_API void matrixf_add_f(LinAlgCtx* ctx, MatrixF* A, const float f);
 
-ROMANO_API void matrixf_sub_f(MatrixF* A, const float f);
+ROMANO_API void matrixf_sub_f(LinAlgCtx* ctx, MatrixF* A, const float f);
 
-ROMANO_API void matrixf_mul_by_f(MatrixF* A, const float f);
+ROMANO_API void matrixf_mul_by_f(LinAlgCtx* ctx, MatrixF* A, const float f);
 
-ROMANO_API void matrixf_div_by_f(MatrixF* A, const float f);
+ROMANO_API void matrixf_div_by_f(LinAlgCtx* ctx, MatrixF* A, const float f);
 
 ROMANO_API void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns);
 
 ROMANO_API void matrixf_destroy(MatrixF* A);
 
-ROMANO_API bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x);
+/*
+ * Solves A x = b for a symmetric positive definite A. The factorization runs on the calling
+ * thread, the triangular solves are parallelized over the columns of b
+ */
+ROMANO_API bool matrixf_cholesky_solve(LinAlgCtx* ctx, MatrixF* A, MatrixF* b, MatrixF* x);
 
 ROMANO_CPP_END
 

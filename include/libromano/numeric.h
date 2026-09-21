@@ -196,21 +196,13 @@ ROMANO__NUM_OVF(i64)
         return r;                                                   \
     }                                                               
 
-#define ROMANO__NUM_OVF_INC_I(T, W)                                 \
-    ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
-    {                                                               \
-        const T r = (T)((W)a + (W)1);                               \
-        *o = r < a;                                                 \
-        return r;                                                   \
-    }                                                               
-
 #define ROMANO__NUM_OVF_INC_I(T, UT, W, BITS)                       \
     ROMANO_FORCE_INLINE T T##_overflowing_inc(T a, bool* o)         \
     {                                                               \
         const W ua = (UT)a, ub = (UT)1, ur = (UT)(ua + ub);         \
         *o = (bool)((((ua ^ ur) & (ub ^ ur)) >> ((BITS) - 1)) & 1u);\
         return (T)(UT)ur;                                           \
-    }                                                               \
+    }
 
 ROMANO__NUM_OVF_ADDSUB_U(u8, u32)
 ROMANO__NUM_OVF_ADDSUB_U(u16, u32)

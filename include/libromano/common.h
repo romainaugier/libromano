@@ -198,6 +198,12 @@ typedef long long ssize_t;
 #define ROMANO_UNUSED(x) (void)(x)
 
 #if defined(ROMANO_MSVC)
+#define ROMANO_THREAD_LOCAL __declspec(thread)
+#else
+#define ROMANO_THREAD_LOCAL __thread
+#endif /* defined(ROMANO_MSVC) */
+
+#if defined(ROMANO_MSVC)
 #define ROMANO_NO_VECTORIZATION __pragma(loop(no_vector))
 #else
 #define ROMANO_NO_VECTORIZATION

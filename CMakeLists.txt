@@ -6,6 +6,11 @@ include(CMakePrintHelpers)
 
 cmake_minimum_required(VERSION 3.15)
 
+# build.sh / build.bat always pass it, default it for plain cmake invocations
+if(NOT DEFINED VERSION OR VERSION STREQUAL "")
+    set(VERSION "0.0.0")
+endif()
+
 project(libromano VERSION ${VERSION})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -38,7 +43,7 @@ find_package(concurrentqueue_c_api CONFIG REQUIRED)
 
 add_subdirectory(src)
 
-if(RUN_TESTS EQUAL 1)
+if(RUN_TESTS)
     add_subdirectory(tests)
 endif()
 

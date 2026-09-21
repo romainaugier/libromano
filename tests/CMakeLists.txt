@@ -15,7 +15,7 @@ target_compile_definitions(romano_test PUBLIC TESTS_TMP_DIR="${TESTS_TMP_DIR}")
 file(GLOB TEST_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/test_*.c)
 
 set(NETWORK_TESTS test_socket test_socket_server test_http)
-set(SLOW_TESTS test_hashmap test_atomic test_numeric test_thread)
+set(SLOW_TESTS test_hashmap test_atomic test_numeric test_thread test_threadpool)
 
 foreach(test_file ${TEST_FILES})
     get_filename_component(TESTNAME ${test_file} NAME_WLE)

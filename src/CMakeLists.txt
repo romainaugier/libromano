@@ -5,7 +5,7 @@
 include(GNUInstallDirs)
 include(target_options)
 
-file(GLOB_RECURSE src_files *.c)
+file(GLOB_RECURSE src_files CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 
 add_library(${PROJECT_NAME} SHARED ${src_files})
 

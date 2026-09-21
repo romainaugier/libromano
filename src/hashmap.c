@@ -528,7 +528,6 @@ void hashmap_update(HashMap* hashmap,
                     const uint32_t value_size)
 {
     Bucket* bucket;
-    Bucket entry;
 
     size_t index;
     uint32_t hash;

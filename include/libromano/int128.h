@@ -682,7 +682,7 @@ ROMANO_FORCE_INLINE uint128_t uint128_xor(uint128_t a, uint128_t b)
 
 ROMANO_FORCE_INLINE uint128_t uint128_not(uint128_t a)
 {
-    return _mm_xor_si128(a, _mm_set1_epi8(0xFF));
+    return _mm_xor_si128(a, _mm_set1_epi8((char)-1));
 }
 
 ROMANO_FORCE_INLINE uint128_t uint128_neg(uint128_t a)
@@ -745,7 +745,7 @@ ROMANO_FORCE_INLINE int128_t int128_shl(int128_t a, int count)
 ROMANO_FORCE_INLINE int128_t int128_shr(int128_t a, int count)
 {
     if(count >= 128)
-        return (int128_lt(a, _mm_setzero_si128())) ? _mm_set1_epi8(0xFF) : _mm_setzero_si128();
+        return (int128_lt(a, _mm_setzero_si128())) ? _mm_set1_epi8((char)-1) : _mm_setzero_si128();
 
     if(count <= 0)
         return a;

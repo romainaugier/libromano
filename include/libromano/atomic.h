@@ -495,6 +495,18 @@ ROMANO_FORCE_INLINE Atomic64 atomic_fetch_xor_64(Atomic64* volatile dest,
 
 /* All compare exchange functions return a bool if the exchange has been successful */
 
+#if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
+/*
+ * The failure path of a compare-exchange is a plain load: it cannot use a release or acq_rel
+ * order (GCC/Clang reject or silently strengthen it). Derive the strongest valid one.
+ */
+ROMANO_FORCE_INLINE int atomic__cas_failure_order(MemoryOrder mo)
+{
+    return mo == MemoryOrder_Release ? __ATOMIC_RELAXED :
+           mo == MemoryOrder_AcqRel ? __ATOMIC_ACQUIRE : (int)mo;
+}
+#endif /* defined(ROMANO_GCC) || defined(ROMANO_CLANG) */
+
 /*
  * Atomically compares *dest with compare and, if equal, stores exchange
  * This is the weak variant and may fail spuriously.
@@ -513,7 +525,7 @@ ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_32(Atomic32* volatile dest
     ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange((LONG*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    return __atomic_compare_exchange_n(dest, &compare, exchange, true, mo, mo);
+    return __atomic_compare_exchange_n(dest, &compare, exchange, true, mo, atomic__cas_failure_order(mo));
 #endif /* defined(ROMANO_MSVC) */
 }
 
@@ -535,7 +547,7 @@ ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_32(Atomic32* volatile de
     ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange((LONG*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
+    return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, atomic__cas_failure_order(mo));
 #endif /* defined(ROMANO_MSVC) */
 }
 
@@ -557,7 +569,7 @@ ROMANO_FORCE_INLINE bool atomic_compare_exchange_weak_64(Atomic64* volatile dest
     ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange64((LONG64*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
+    return __atomic_compare_exchange_n(dest, &compare, exchange, true, mo, atomic__cas_failure_order(mo));
 #endif /* defined(ROMANO_MSVC) */
 }
 
@@ -579,7 +591,7 @@ ROMANO_FORCE_INLINE bool atomic_compare_exchange_strong_64(Atomic64* volatile de
     ROMANO_UNUSED(mo);
     return (bool)(_InterlockedCompareExchange64((LONG64*)dest, exchange, compare) == compare);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-    return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, mo);
+    return __atomic_compare_exchange_n(dest, &compare, exchange, false, mo, atomic__cas_failure_order(mo));
 #endif /* defined(ROMANO_MSVC) */
 }
 

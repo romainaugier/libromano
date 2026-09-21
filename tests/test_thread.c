@@ -206,107 +206,6 @@ static void test_timed_wait(void)
     mutex_release(&mutex);
 }
 
-typedef struct PoolState {
-    ThreadPool* pool;
-    ThreadPoolWaiter* waiter;
-    Atomic64 counter;
-    Atomic64 nested_counter;
-} PoolState;
-
-static void* pool_increment(void* arg)
-{
-    PoolState* state = (PoolState*)arg;
-    volatile int spin;
-
-    for(spin = 0; spin < 100; spin++);
-
-    atomic_add_64(&state->counter, 1, MemoryOrder_Relax);
-
-    return NULL;
-}
-
-static void* pool_nested(void* arg)
-{
-    PoolState* state = (PoolState*)arg;
-    int i;
-
-    atomic_add_64(&state->nested_counter, 1, MemoryOrder_Relax);
-
-    for(i = 0; i < 4; i++)
-        threadpool_work_add(state->pool, pool_increment, state, state->waiter);
-
-    return NULL;
-}
-
-static void test_threadpool_waiter(void)
-{
-    ThreadPoolWaiter waiter = threadpool_waiter_new();
-    PoolState state;
-    int i;
-
-    state.pool = threadpool_init(0);
-    state.waiter = &waiter;
-    state.counter = 0;
-    state.nested_counter = 0;
-
-    TEST_ASSERT(state.pool != NULL);
-
-    for(i = 0; i < 1000; i++)
-        TEST_ASSERT(threadpool_work_add(state.pool, i % 10 == 0 ? pool_nested : pool_increment, &state, &waiter));
-
-    threadpool_waiter_wait(&waiter);
-
-    TEST_CHECK_EQ_INT(atomic_load_64(&state.nested_counter, MemoryOrder_Acquire), 100);
-    TEST_CHECK_EQ_INT(atomic_load_64(&state.counter, MemoryOrder_Acquire), 900 + 100 * 4);
-
-    threadpool_release(state.pool);
-}
-
-static void test_threadpool_wait(void)
-{
-    PoolState state;
-    int round;
-    int i;
-
-    state.pool = threadpool_init(2);
-    state.waiter = NULL;
-    state.counter = 0;
-
-    TEST_ASSERT(state.pool != NULL);
-
-    for(round = 1; round <= 200; round++)
-    {
-        for(i = 0; i < 16; i++)
-            threadpool_work_add(state.pool, pool_increment, &state, NULL);
-
-        threadpool_wait(state.pool);
-
-        TEST_ASSERT_EQ_INT(atomic_load_64(&state.counter, MemoryOrder_Acquire), round * 16);
-    }
-
-    threadpool_release(state.pool);
-}
-
-static void test_threadpool_release_with_pending_work(void)
-{
-    ThreadPool* pool = threadpool_init(1);
-    PoolState state;
-    int i;
-
-    state.pool = pool;
-    state.waiter = NULL;
-    state.counter = 0;
-
-    TEST_ASSERT(pool != NULL);
-
-    for(i = 0; i < 10000; i++)
-        threadpool_work_add(pool, pool_increment, &state, NULL);
-
-    threadpool_release(pool);
-
-    TEST_CHECK(atomic_load_64(&state.counter, MemoryOrder_Acquire) <= 10000);
-}
-
 TEST_MAIN(
     TEST(test_num_procs),
     TEST(test_threads_and_mutex),
@@ -314,7 +213,4 @@ TEST_MAIN(
     TEST(test_sleep),
     TEST(test_condition_variable),
     TEST(test_timed_wait),
-    TEST(test_threadpool_waiter),
-    TEST(test_threadpool_wait),
-    TEST(test_threadpool_release_with_pending_work),
 )

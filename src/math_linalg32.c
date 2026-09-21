@@ -7,6 +7,8 @@
 #include "libromano/simd.h"
 #include "libromano/logger.h"
 
+#include "math_linalg_internal.h"
+
 #if defined(ROMANO_AARCH64)
 #if defined(ROMANO_APPLE)
 #include <Accelerate/Accelerate.h>
@@ -17,11 +19,86 @@
 #include <assert.h>
 #include <stdio.h>
 
+/* PARALLEL FOR */
+
+typedef struct LinAlgChunk {
+    LinAlgRangeFunc func;
+    void* data;
+    size_t begin;
+    size_t end;
+} LinAlgChunk;
+
+/* 32 bytes, copied inline in the threadpool job: no allocation per chunk */
+ROMANO_COMPILE_TIME_ASSERT(sizeof(LinAlgChunk) <= THREADPOOL_WORK_INLINE_ARG_SIZE);
+
+static void* linalg_chunk_run(void* arg)
+{
+    const LinAlgChunk* chunk = (const LinAlgChunk*)arg;
+
+    chunk->func(chunk->data, chunk->begin, chunk->end);
+
+    return NULL;
+}
+
+/* Chunks per thread, gives the pool some slack to balance uneven chunks */
+#define LINALG_CHUNKS_PER_THREAD 4
+
+void linalg_parallel_for(LinAlgCtx* ctx,
+                         size_t count,
+                         size_t grain,
+                         LinAlgRangeFunc func,
+                         void* data)
+{
+    ThreadPool* pool = linalg_ctx_get_pool(ctx);
+    ThreadPoolWaiter waiter;
+    LinAlgChunk chunk;
+    size_t num_chunks;
+    size_t chunk_size;
+    size_t begin;
+
+    if(count == 0)
+        return;
+
+    grain = grain == 0 ? 1 : grain;
+
+    if(pool == NULL || count <= grain)
+    {
+        func(data, 0, count);
+        return;
+    }
+
+    num_chunks = (count + grain - 1) / grain;
+    num_chunks = LINALG_MIN(num_chunks, (size_t)linalg_ctx_get_threads_count(ctx) * LINALG_CHUNKS_PER_THREAD);
+    chunk_size = (count + num_chunks - 1) / num_chunks;
+
+    waiter = threadpool_waiter_new();
+
+    chunk.func = func;
+    chunk.data = data;
+
+    /* The first chunk is kept for the calling thread */
+    for(begin = chunk_size; begin < count; begin += chunk_size)
+    {
+        chunk.begin = begin;
+        chunk.end = LINALG_MIN(begin + chunk_size, count);
+
+        if(!threadpool_work_add_copy(pool, linalg_chunk_run, &chunk, sizeof(LinAlgChunk), &waiter))
+            func(data, chunk.begin, chunk.end);
+    }
+
+    func(data, 0, LINALG_MIN(chunk_size, count));
+
+    threadpool_waiter_wait_help(pool, &waiter);
+}
+
 /* MATRIX */
 
 #define SWAP_FLOAT(f1, f2) do { float tmp = f1; f1 = f2; f2 = tmp; } while (0)
 
 #define ALIGNMENT 32
+
+/* Elements per job for the memory bound element-wise functions */
+#define ELEMENTWISE_GRAIN (1 << 15)
 
 /*
     MatrixF stores data in a row major format
@@ -44,7 +121,7 @@ MatrixF matrixf_create(const int M, const int N)
 {
     MatrixF A;
 
-    A.data = (float*)mem_aligned_alloc((M * N) * sizeof(float), ALIGNMENT);
+    A.data = (float*)mem_aligned_alloc(((size_t)M * (size_t)N) * sizeof(float), ALIGNMENT);
     A.M = M;
     A.N = N;
 
@@ -55,7 +132,7 @@ MatrixF matrixf_copy(MatrixF* A)
 {
     MatrixF B;
 
-    const size_t size = (A->M * A->N) * sizeof(float);
+    const size_t size = ((size_t)A->M * (size_t)A->N) * sizeof(float);
 
     B.data = (float*)mem_aligned_alloc(size, ALIGNMENT);
     B.M = A->M;
@@ -78,9 +155,19 @@ void matrixf_size(MatrixF* A, int* M, int* N)
 void matrixf_resize(MatrixF* A, const int M, const int N)
 {
     if(A->data != NULL)
-        mem_aligned_free(A->data);
+    {
+        /* Same number of elements, the buffer can be reused as is */
+        if((size_t)A->M * (size_t)A->N == (size_t)M * (size_t)N)
+        {
+            A->M = M;
+            A->N = N;
+            return;
+        }
 
-    A->data = (float*)mem_aligned_alloc((M * N) * sizeof(float), ALIGNMENT);
+        mem_aligned_free(A->data);
+    }
+
+    A->data = (float*)mem_aligned_alloc(((size_t)M * (size_t)N) * sizeof(float), ALIGNMENT);
     A->M = M;
     A->N = N;
 }
@@ -103,12 +190,12 @@ int matrixf_column_size(MatrixF* A)
 
 void matrixf_set_at(MatrixF* A, const float value, const int i, const int j)
 {
-    A->data[i * A->N + j] = value;
+    A->data[(size_t)i * A->N + j] = value;
 }
 
 float matrixf_get_at(MatrixF* A, const int i, const int j)
 {
-    return A->data[i * A->N + j];
+    return A->data[(size_t)i * A->N + j];
 }
 
 float matrixf_trace(MatrixF* A)
@@ -122,31 +209,73 @@ float matrixf_trace(MatrixF* A)
     t = 0.0f;
 
     for(i = 0; i < A->M; i++)
-        t += A->data[i * A->M + i];
+        t += A->data[i * A->N + i];
 
     return t;
 }
 
 void matrixf_zero(MatrixF* A)
 {
-    memset(A->data, 0, A->M * A->N * sizeof(float));
+    memset(A->data, 0, (size_t)A->M * (size_t)A->N * sizeof(float));
 }
 
-void matrixf_transpose(MatrixF* A)
-{
-    uint32_t i;
-    uint32_t j;
+/* Transpose */
 
+typedef struct TransposeJob {
+    const float* src;
+    float* dst;
+    size_t M; /* rows of src */
+    size_t N; /* columns of src */
+} TransposeJob;
+
+/* dst (N x M) = src^T (M x N), rows of src in [begin, end) */
+static void transpose_out_of_place_range(void* data, size_t begin, size_t end)
+{
+    const TransposeJob* job = (const TransposeJob*)data;
+    size_t i;
+    size_t j;
+
+    for(i = begin; i < end; i++)
+        for(j = 0; j < job->N; j++)
+            job->dst[j * job->M + i] = job->src[i * job->N + j];
+}
+
+/* Square in place: row i swaps its upper part with column i, rows touch disjoint pairs */
+static void transpose_in_place_range(void* data, size_t begin, size_t end)
+{
+    const TransposeJob* job = (const TransposeJob*)data;
+    float* A = job->dst;
+    const size_t N = job->N;
+    size_t i;
+    size_t j;
+
+    for(i = begin; i < end; i++)
+        for(j = i + 1; j < N; j++)
+            SWAP_FLOAT(A[i * N + j], A[j * N + i]);
+}
+
+static size_t transpose_grain(size_t row_size)
+{
+    return LINALG_MAX((size_t)1, (size_t)ELEMENTWISE_GRAIN / LINALG_MAX((size_t)1, row_size));
+}
+
+void matrixf_transpose(LinAlgCtx* ctx, MatrixF* A)
+{
+    TransposeJob job;
     float* new_data;
 
-    const int M = A->M;
-    const int N = A->N;
+    const size_t M = A->M;
+    const size_t N = A->N;
+
+    job.M = M;
+    job.N = N;
 
     if(M == N)
     {
-        for(i = 0; i < M; i++)
-            for(j = i + 1; j < N; j++)
-                SWAP_FLOAT(A->data[i * M + j], A->data[j * M + i]);
+        job.src = A->data;
+        job.dst = A->data;
+
+        linalg_parallel_for(ctx, M, transpose_grain(N), transpose_in_place_range, &job);
     }
     else
     {
@@ -155,118 +284,149 @@ void matrixf_transpose(MatrixF* A)
         if(new_data == NULL)
             return;
 
-        for(i = 0; i < M; i++)
-            for(j = 0; j < N; j++)
-                new_data[j * M + i] = A->data[i * N + j];
+        job.src = A->data;
+        job.dst = new_data;
+
+        linalg_parallel_for(ctx, M, transpose_grain(N), transpose_out_of_place_range, &job);
 
         mem_aligned_free(A->data);
 
         A->data = new_data;
     }
 
-    A->M = N;
-    A->N = M;
+    A->M = (uint32_t)N;
+    A->N = (uint32_t)M;
 }
 
-MatrixF matrixf_transpose_from(MatrixF* A)
+MatrixF matrixf_transpose_from(LinAlgCtx* ctx, MatrixF* A)
 {
-    uint32_t i;
-    uint32_t j;
+    TransposeJob job;
+    MatrixF res = matrixf_create(A->N, A->M);
 
-    const int M = A->M;
-    const int N = A->N;
+    job.src = A->data;
+    job.dst = res.data;
+    job.M = A->M;
+    job.N = A->N;
 
-    MatrixF res = matrixf_create(N, M);
-
-    for(i = 0; i < M; i++)
-        for(j = 0; j < N; j++)
-            res.data[j * M + i] = A->data[i * N + j];
+    linalg_parallel_for(ctx, job.M, transpose_grain(job.N), transpose_out_of_place_range, &job);
 
     return res;
 }
 
-void _matrixf_mul_scalar(const float* ROMANO_RESTRICT A,
-                         const float* ROMANO_RESTRICT B,
-                         float* ROMANO_RESTRICT C,
-                         const uint32_t M,
-                         const uint32_t N,
-                         const uint32_t P)
+/* Matrix multiplication */
+
+/*
+ * All the kernels compute the row-major C (M x P) = A (M x N) * B (N x P)
+ * C is sized but not initialized
+ */
+typedef void (*matmul_func)(LinAlgCtx* ctx,
+                            const float* ROMANO_RESTRICT A,
+                            const float* ROMANO_RESTRICT B,
+                            float* ROMANO_RESTRICT C,
+                            const uint32_t M,
+                            const uint32_t N,
+                            const uint32_t P);
+
+typedef struct MatmulScalarJob {
+    const float* A;
+    const float* B;
+    float* C;
+    size_t N;
+    size_t P;
+} MatmulScalarJob;
+
+/*
+ * i-k-j order: the inner loop streams contiguous rows of B and C, which the compiler
+ * vectorizes (the i-j-k order walks B column-wise with a stride of P)
+ */
+static void matmul_scalar_rows(void* data, size_t begin, size_t end)
 {
-    float sum;
+    const MatmulScalarJob* job = (const MatmulScalarJob*)data;
+    const size_t N = job->N;
+    const size_t P = job->P;
+    size_t i;
+    size_t j;
+    size_t k;
 
-    uint32_t i;
-    uint32_t j;
-    uint32_t k;
-
-    for(i = 0; i < M; i++)
+    for(i = begin; i < end; i++)
     {
-        for(j = 0; j < P; j++)
+        float* ROMANO_RESTRICT c = job->C + i * P;
+        const float* ROMANO_RESTRICT a = job->A + i * N;
+
+        memset(c, 0, P * sizeof(float));
+
+        for(k = 0; k < N; k++)
         {
-            sum = 0.0f;
+            const float a_ik = a[k];
+            const float* ROMANO_RESTRICT b = job->B + k * P;
 
-            for(k = 0; k < N; k++)
-                sum += A[i * N + k] * B[k * P + j];
-
-            C[i * P + j] = sum;
+            for(j = 0; j < P; j++)
+                c[j] += a_ik * b[j];
         }
     }
+}
+
+static void _matrixf_mul_scalar(LinAlgCtx* ctx,
+                                const float* ROMANO_RESTRICT A,
+                                const float* ROMANO_RESTRICT B,
+                                float* ROMANO_RESTRICT C,
+                                const uint32_t M,
+                                const uint32_t N,
+                                const uint32_t P)
+{
+    MatmulScalarJob job;
+    const size_t row_flops = LINALG_MAX((size_t)1, (size_t)N * (size_t)P);
+
+    job.A = A;
+    job.B = B;
+    job.C = C;
+    job.N = N;
+    job.P = P;
+
+    linalg_parallel_for(ctx, M, LINALG_MAX((size_t)1, (size_t)(1 << 16) / row_flops), matmul_scalar_rows, &job);
 }
 
 #if defined(ROMANO_X86_64)
 
 #define NUM_MATRIXF_MUL_FUNCS 5
 
-void _matrixf_mul_sse(const float* ROMANO_RESTRICT A,
-                      const float* ROMANO_RESTRICT B,
-                      float* ROMANO_RESTRICT C,
-                      const uint32_t M,
-                      const uint32_t N,
-                      const uint32_t P)
+/*
+ * Row-major C = A * B is column-major C^T = B^T * A^T, and a row-major matrix is its own
+ * transpose in column-major: the column-major kernel runs on the same buffers with A and B
+ * swapped, no copy needed
+ */
+static void _matrixf_mul_avx2(LinAlgCtx* ctx,
+                              const float* ROMANO_RESTRICT A,
+                              const float* ROMANO_RESTRICT B,
+                              float* ROMANO_RESTRICT C,
+                              const uint32_t M,
+                              const uint32_t N,
+                              const uint32_t P)
 {
-    _matrixf_mul_scalar(A, B, C, M, N, P);
+    linalg32_sgemm_colmajor_avx2(ctx, B, A, C, P, N, M);
 }
 
-void _matrixf_mul_avx(const float* ROMANO_RESTRICT A,
-                      const float* ROMANO_RESTRICT B,
-                      float* ROMANO_RESTRICT C,
-                      const uint32_t M,
-                      const uint32_t N,
-                      const uint32_t P)
-{
-    _matrixf_mul_scalar(A, B, C, M, N, P);
-}
-
-void _matrixf_mul_avx256(const float* ROMANO_RESTRICT A,
-                         const float* ROMANO_RESTRICT B,
-                         float* ROMANO_RESTRICT C,
-                         const uint32_t M,
-                         const uint32_t N,
-                         const uint32_t P)
-{
-    _matrixf_mul_scalar(A, B, C, M, N, P);
-}
-
-void _matrixf_mul_avx512(const float* ROMANO_RESTRICT A,
-                         const float* ROMANO_RESTRICT B,
-                         float* ROMANO_RESTRICT C,
-                         const uint32_t M,
-                         const uint32_t N,
-                         const uint32_t P)
-{
-    _matrixf_mul_scalar(A, B, C, M, N, P);
-}
+/* TODO: dedicated SSE and AVX512 kernels */
+#define _matrixf_mul_sse _matrixf_mul_scalar
+#define _matrixf_mul_avx _matrixf_mul_scalar
+#define _matrixf_mul_avx256 _matrixf_mul_avx2
+#define _matrixf_mul_avx512 _matrixf_mul_avx2
 
 #elif defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
 
 #define NUM_MATRIXF_MUL_FUNCS 2
 
-void _matrixf_mul_accelerate(const float* ROMANO_RESTRICT A,
-                             const float* ROMANO_RESTRICT B,
-                             float* ROMANO_RESTRICT C,
-                             const uint32_t M,
-                             const uint32_t N,
-                             const uint32_t P)
+/* Accelerate manages its own threads (AMX), the context is not used */
+static void _matrixf_mul_accelerate(LinAlgCtx* ctx,
+                                    const float* ROMANO_RESTRICT A,
+                                    const float* ROMANO_RESTRICT B,
+                                    float* ROMANO_RESTRICT C,
+                                    const uint32_t M,
+                                    const uint32_t N,
+                                    const uint32_t P)
 {
+    ROMANO_UNUSED(ctx);
+
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 M, P, N,          /* m, n, k */
                 1.0f,
@@ -287,14 +447,7 @@ void _matrixf_mul_accelerate(const float* ROMANO_RESTRICT A,
 
 #endif /* defined(ROMANO_X86_64) */
 
-typedef void (*matmul_func)(const float* ROMANO_RESTRICT,
-                            const float* ROMANO_RESTRICT,
-                            float* ROMANO_RESTRICT,
-                            const uint32_t,
-                            const uint32_t,
-                            const uint32_t);
-
-matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
+static const matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
     _matrixf_mul_scalar,
 #if defined(ROMANO_X86_64)
     _matrixf_mul_sse,
@@ -306,181 +459,158 @@ matmul_func __matmul_funcs[NUM_MATRIXF_MUL_FUNCS] = {
 #endif /* defined(ROMANO_X86_64) */
 };
 
-void matrixf_mul(MatrixF* A, MatrixF* B, MatrixF* C)
+/* Below this many multiply-adds, packing costs more than it saves */
+#define MATMUL_SMALL_THRESHOLD 4096
+
+void matrixf_mul(LinAlgCtx* ctx, MatrixF* A, MatrixF* B, MatrixF* C)
 {
     uint32_t M;
     uint32_t N;
     uint32_t P;
 
-
-    ROMANO_ASSERT(A->N == B->M, "");
+    ROMANO_ASSERT(A->N == B->M, "matrixf_mul: A columns must match B rows");
+    ROMANO_ASSERT(C != A && C != B, "matrixf_mul: C cannot alias A or B");
 
     M = A->M;
     N = A->N;
     P = B->N;
 
     matrixf_resize(C, M, P);
-    matrixf_zero(C);
 
-    if(M >= 8)
+    if(N == 0)
     {
-        __matmul_funcs[simd_get_vectorization_mode()](A->data, B->data, C->data, M, N, P);
+        matrixf_zero(C);
+        return;
+    }
+
+    if((uint64_t)M * N * P < MATMUL_SMALL_THRESHOLD)
+        _matrixf_mul_scalar(NULL, A->data, B->data, C->data, M, N, P);
+    else
+        __matmul_funcs[simd_get_vectorization_mode()](ctx, A->data, B->data, C->data, M, N, P);
+}
+
+/* Element-wise operations with a scalar */
+
+typedef enum {
+    ElementwiseOp_Add,
+    ElementwiseOp_Sub,
+    ElementwiseOp_Mul,
+    ElementwiseOp_Div,
+} ElementwiseOp;
+
+typedef struct ElementwiseJob {
+    float* data;
+    float f;
+    ElementwiseOp op;
+} ElementwiseJob;
+
+/* The data is contiguous: one flat loop per op, vectorized by the compiler */
+static void elementwise_range(void* data, size_t begin, size_t end)
+{
+    const ElementwiseJob* job = (const ElementwiseJob*)data;
+    float* ROMANO_RESTRICT x = job->data;
+    const float f = job->f;
+    size_t i;
+
+    switch(job->op)
+    {
+        case ElementwiseOp_Add:
+            for(i = begin; i < end; i++) x[i] += f;
+            break;
+        case ElementwiseOp_Sub:
+            for(i = begin; i < end; i++) x[i] -= f;
+            break;
+        case ElementwiseOp_Mul:
+            for(i = begin; i < end; i++) x[i] *= f;
+            break;
+        case ElementwiseOp_Div:
+            for(i = begin; i < end; i++) x[i] /= f;
+            break;
+    }
+}
+
+static void matrixf_elementwise(LinAlgCtx* ctx, MatrixF* A, const float f, const ElementwiseOp op)
+{
+    ElementwiseJob job;
+
+    job.data = A->data;
+    job.f = f;
+    job.op = op;
+
+    linalg_parallel_for(ctx, (size_t)A->M * (size_t)A->N, ELEMENTWISE_GRAIN, elementwise_range, &job);
+}
+
+void matrixf_add_f(LinAlgCtx* ctx, MatrixF* A, const float f)
+{
+    matrixf_elementwise(ctx, A, f, ElementwiseOp_Add);
+}
+
+void matrixf_sub_f(LinAlgCtx* ctx, MatrixF* A, const float f)
+{
+    matrixf_elementwise(ctx, A, f, ElementwiseOp_Sub);
+}
+
+void matrixf_mul_by_f(LinAlgCtx* ctx, MatrixF* A, const float f)
+{
+    matrixf_elementwise(ctx, A, f, ElementwiseOp_Mul);
+}
+
+void matrixf_div_by_f(LinAlgCtx* ctx, MatrixF* A, const float f)
+{
+    matrixf_elementwise(ctx, A, f, ElementwiseOp_Div);
+}
+
+/* Debug */
+
+static void _matrixf_debug_row(MatrixF* A, const uint32_t i, const uint32_t half_columns)
+{
+    const uint32_t N = A->N;
+    uint32_t j;
+
+    if(half_columns == 0 || N <= 2 * half_columns)
+    {
+        for(j = 0; j < N; j++)
+            printf(j == (N - 1) ? "%.3f" : "%.3f ", matrixf_get_at(A, i, j));
     }
     else
     {
-        _matrixf_mul_scalar(A->data, B->data, C->data, M, N, P);
-    }
-}
+        for(j = 0; j < half_columns; j++)
+            printf("%.3f ", matrixf_get_at(A, i, j));
 
-void _matrixf_add_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
-{
-    uint32_t i;
-    uint32_t j;
+        printf("...");
 
-    for(i = 0; i < M; i++)
-        for(j = 0; j < N; j++)
-            A->data[i * M + j] += f;
-}
-
-void matrixf_add_f(MatrixF* A, float f)
-{
-    const uint32_t M = A->M;
-    const uint32_t N = A->N;
-
-    _matrixf_add_f_scalar(A, f, M, N);
-}
-
-void _matrixf_sub_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
-{
-    uint32_t i;
-    uint32_t j;
-
-    for(i = 0; i < M; i++)
-        for(j = 0; j < N; j++)
-            A->data[i * M + j] -= f;
-}
-
-void matrixf_sub_f(MatrixF* A, float f)
-{
-    const uint32_t M = A->M;
-    const uint32_t N = A->N;
-
-    _matrixf_sub_f_scalar(A, f, M, N);
-}
-
-void _matrixf_mul_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
-{
-    uint32_t i;
-    uint32_t j;
-
-    for(i = 0; i < M; i++)
-        for(j = 0; j < N; j++)
-            A->data[i * M + j] *= f;
-}
-
-void matrixf_mul_by_f(MatrixF* A, float f)
-{
-    const uint32_t M = A->M;
-    const uint32_t N = A->N;
-
-    _matrixf_mul_by_f_scalar(A, f, M, N);
-}
-
-void _matrixf_div_by_f_scalar(MatrixF* A, const float f, const uint32_t M, const uint32_t N)
-{
-    uint32_t i;
-    uint32_t j;
-
-    for(i = 0; i < M; i++)
-        for(j = 0; j < N; j++)
-            A->data[i * M + j] /= f;
-}
-
-void matrixf_div_by_f(MatrixF* A, float f)
-{
-    const uint32_t M = A->M;
-    const uint32_t N = A->N;
-
-    _matrixf_div_by_f_scalar(A, f, M, N);
-}
-
-void _matrixf_debug_full(MatrixF* A, const uint32_t M, const uint32_t N)
-{
-    uint32_t i;
-    uint32_t j;
-
-    for(i = 0; i < M; i++)
-    {
-        for(j = 0; j < N; j++)
-            printf(j == (N - 1) ? "%.3f" : "%.3f ", A->data[i * M + j]);
-
-        printf("\n");
-    }
-}
-
-void _matrixf_debug_limited(MatrixF* A, const uint32_t M, const uint32_t N, const uint32_t max_M, const uint32_t max_N)
-{
-    uint32_t i;
-    uint32_t j;
-
-    const uint32_t max_rows_to_print = (max_M - (max_M % 2)) / 2;
-    const uint32_t max_columns_to_print = (max_M - (max_M % 2)) / 2;
-
-    for(i = 0; i < M && i < max_rows_to_print; i++)
-    {
-        for(j = 0; j < N && j < max_columns_to_print; j++)
-        {
-            const float v = matrixf_get_at(A, i, j);
-            printf("%.3f ", v);
-        }
-
-        if(j < (N / 2))
-            printf("... ");
-
-        for(j = (N - max_columns_to_print); j < N; j++)
-        {
-            const float v = matrixf_get_at(A, i, j);
-            printf("%.3f ", v);
-        }
-
-        printf("\n");
+        for(j = N - half_columns; j < N; j++)
+            printf(" %.3f", matrixf_get_at(A, i, j));
     }
 
-    if(i < (M / 2))
-        printf("...\n");
-
-    for(i = (M - max_rows_to_print); i < M; i++)
-    {
-        for(j = 0; j < N && j < max_columns_to_print; j++)
-        {
-            const float v = matrixf_get_at(A, i, j);
-            printf("%.3f ", v);
-        }
-
-        if(j < (N / 2))
-            printf("... ");
-
-        for(j = (N - max_columns_to_print); j < N; j++)
-        {
-            const float v = matrixf_get_at(A, i, j);
-            printf("%.3f ", v);
-        }
-
-        printf("\n");
-    }
+    printf("\n");
 }
 
 void matrixf_debug(MatrixF* A, uint32_t max_rows, uint32_t max_columns)
 {
     const uint32_t M = A->M;
     const uint32_t N = A->N;
+    const uint32_t half_rows = max_rows / 2;
+    const uint32_t half_columns = (max_rows == 0 || max_columns == 0) ? 0 : max_columns / 2;
+    uint32_t i;
 
     printf("Matrix f32: %u x %u\n", M, N);
 
-    if(max_rows == 0 || max_columns == 0)
-        _matrixf_debug_full(A, M, N);
-    else
-        _matrixf_debug_limited(A, M, N, max_rows, max_columns);
+    if(max_rows == 0 || max_columns == 0 || M <= 2 * half_rows)
+    {
+        for(i = 0; i < M; i++)
+            _matrixf_debug_row(A, i, half_columns);
+
+        return;
+    }
+
+    for(i = 0; i < half_rows; i++)
+        _matrixf_debug_row(A, i, half_columns);
+
+    printf("...\n");
+
+    for(i = M - half_rows; i < M; i++)
+        _matrixf_debug_row(A, i, half_columns);
 }
 
 void matrixf_destroy(MatrixF* A)
@@ -492,6 +622,8 @@ void matrixf_destroy(MatrixF* A)
     }
 }
 
+/* Cholesky */
+
 bool _matrixf_cholesky_decomposition_scalar(MatrixF* A, MatrixF* L)
 {
     uint32_t i;
@@ -499,7 +631,6 @@ bool _matrixf_cholesky_decomposition_scalar(MatrixF* A, MatrixF* L)
     uint32_t k;
 
     float sum;
-    float value;
     float tmp;
 
     const uint32_t N = A->N;
@@ -533,22 +664,11 @@ bool _matrixf_cholesky_decomposition_scalar(MatrixF* A, MatrixF* L)
                     return false;
                 }
 
-                value = mathf_sqrt(tmp);
-
-                L->data[i * N + j] = value;
+                L->data[i * N + j] = mathf_sqrt(tmp);
             }
             else
             {
-                tmp = A->data[j * N + j];
-
-                // if(mathf_float_eq(tmp, 0.0f))
-                // {
-                //     return false;
-                // }
-
-                value = (A->data[i * N + j] - sum) / L->data[j * N + j];
-
-                L->data[i * N + j] = value;
+                L->data[i * N + j] = (A->data[i * N + j] - sum) / L->data[j * N + j];
             }
         }
     }
@@ -556,26 +676,60 @@ bool _matrixf_cholesky_decomposition_scalar(MatrixF* A, MatrixF* L)
     return true;
 }
 
-bool _matrixf_cholesky_solve_scalar(MatrixF* A, MatrixF* b, MatrixF* x)
+typedef struct CholeskySolveJob {
+    const float* L;
+    const float* b;
+    float* y;
+    float* x;
+    size_t N;
+    size_t nrhs;
+} CholeskySolveJob;
+
+/* Forward then back substitution for the right-hand sides [begin, end), columns are independent */
+static void cholesky_solve_columns(void* data, size_t begin, size_t end)
 {
-    uint32_t i;
-    uint32_t j;
-    uint32_t k;
-
-    int32_t i2;
-    int32_t j2;
-
-    uint32_t b_n;
-    uint32_t b_m;
-
+    const CholeskySolveJob* job = (const CholeskySolveJob*)data;
+    const float* L = job->L;
+    const size_t N = job->N;
+    const size_t nrhs = job->nrhs;
+    size_t j;
+    size_t i;
+    size_t k;
     float sum;
-    float value;
-    float tmp;
 
+    for(j = begin; j < end; j++)
+    {
+        /* L y = b (L lower triangular) */
+        for(i = 0; i < N; i++)
+        {
+            sum = 0.0f;
+
+            for(k = 0; k < i; k++)
+                sum += L[i * N + k] * job->y[k * nrhs + j];
+
+            job->y[i * nrhs + j] = (job->b[i * nrhs + j] - sum) / L[i * N + i];
+        }
+
+        /* L^T x = y (L^T upper triangular, L^T[i][k] = L[k][i]) */
+        for(i = N; i-- > 0;)
+        {
+            sum = 0.0f;
+
+            for(k = i + 1; k < N; k++)
+                sum += L[k * N + i] * job->x[k * nrhs + j];
+
+            job->x[i * nrhs + j] = (job->y[i * nrhs + j] - sum) / L[i * N + i];
+        }
+    }
+}
+
+bool _matrixf_cholesky_solve_scalar(LinAlgCtx* ctx, MatrixF* A, MatrixF* b, MatrixF* x)
+{
+    CholeskySolveJob job;
     MatrixF L = matrix_null();
     MatrixF y = matrix_null();
 
-    const uint32_t N = A->N;
+    const size_t N = A->N;
 
     if(A->M != A->N)
     {
@@ -590,42 +744,22 @@ bool _matrixf_cholesky_solve_scalar(MatrixF* A, MatrixF* b, MatrixF* x)
         return false;
     }
 
-    /* Ly = b */
+    y = matrixf_create(b->M, b->N);
+    matrixf_resize(x, b->M, b->N);
 
-    b_m = b->M;
-    b_n = b->N;
+    job.L = L.data;
+    job.b = b->data;
+    job.y = y.data;
+    job.x = x->data;
+    job.N = N;
+    job.nrhs = b->N;
 
-    /* Forward substitution: L y = b  (L is lower triangular) */
-    y = matrixf_create(b_m, b_n);
-
-    for (i = 0; i < N; i++)            /* row of the system */
-    {
-        for (j = 0; j < b_n; j++)      /* column of RHS */
-        {
-            sum = 0.0f;
-
-            for (k = 0; k < i; k++)
-                sum += L.data[i * N + k] * y.data[k * b_n + j];
-
-            y.data[i * b_n + j] = (b->data[i * b_n + j] - sum) / L.data[i * N + i];
-        }
-    }
-
-    /* Back substitution: L^T x = y (L^T is upper triangular) */
-    matrixf_resize(x, b_m, b_n);
-
-    for(i2 = (int32_t)N - 1; i2 >= 0; i2--)
-    {
-        for (j = 0; j < b_n; j++)
-        {
-            sum = 0.0f;
-
-            for (k = i2 + 1; k < N; k++)
-                sum += L.data[k * N + i2] * x->data[k * b_n + j];   /* L^T[i][k] = L[k][i] */
-
-            x->data[i2 * b_n + j] = (y.data[i2 * b_n + j] - sum) / L.data[i2 * N + i2];
-        }
-    }
+    /* Each right-hand side costs ~2 N^2 flops */
+    linalg_parallel_for(ctx,
+                        b->N,
+                        LINALG_MAX((size_t)1, (size_t)(1 << 16) / LINALG_MAX((size_t)1, 2 * N * N)),
+                        cholesky_solve_columns,
+                        &job);
 
     matrixf_destroy(&y);
     matrixf_destroy(&L);
@@ -633,34 +767,24 @@ bool _matrixf_cholesky_solve_scalar(MatrixF* A, MatrixF* b, MatrixF* x)
     return true;
 }
 
+typedef bool (*cholesky_solve_func)(LinAlgCtx*, MatrixF*, MatrixF*, MatrixF*);
+
 #if defined(ROMANO_X86_64)
 
 #define NUM_CHOL_SOLVE_FUNCS 5
 
-bool _matrixf_cholesky_solve_sse(MatrixF* A, MatrixF* b, MatrixF* x)
-{
-    return _matrixf_cholesky_solve_scalar(A, b, x);
-}
+/* TODO: vectorized kernels */
+#define _matrixf_cholesky_solve_sse _matrixf_cholesky_solve_scalar
+#define _matrixf_cholesky_solve_avx _matrixf_cholesky_solve_scalar
+#define _matrixf_cholesky_solve_avx256 _matrixf_cholesky_solve_scalar
+#define _matrixf_cholesky_solve_avx512 _matrixf_cholesky_solve_scalar
 
-bool _matrixf_cholesky_solve_avx(MatrixF* A, MatrixF* b, MatrixF* x)
-{
-    return _matrixf_cholesky_solve_scalar(A, b, x);
-}
-
-bool _matrixf_cholesky_solve_avx256(MatrixF* A, MatrixF* b, MatrixF* x)
-{
-    return _matrixf_cholesky_solve_scalar(A, b, x);
-}
-
-bool _matrixf_cholesky_solve_avx512(MatrixF* A, MatrixF* b, MatrixF* x)
-{
-    return _matrixf_cholesky_solve_scalar(A, b, x);
-}
 #elif defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
 
 #define NUM_CHOL_SOLVE_FUNCS 2
 
-bool _matrixf_cholesky_solve_accelerate(MatrixF* A, MatrixF* b, MatrixF* x)
+/* Accelerate manages its own threads, the context is not used */
+bool _matrixf_cholesky_solve_accelerate(LinAlgCtx* ctx, MatrixF* A, MatrixF* b, MatrixF* x)
 {
     __LAPACK_int n = (__LAPACK_int)A->N;
     __LAPACK_int nrhs = (__LAPACK_int)b->N;
@@ -668,11 +792,13 @@ bool _matrixf_cholesky_solve_accelerate(MatrixF* A, MatrixF* b, MatrixF* x)
     MatrixF Ac;
     MatrixF b_col_major;
 
+    ROMANO_UNUSED(ctx);
+
     /*
      * LAPACK is column-major. A is symmetric so its layout does not matter, but b (n x nrhs,
      * row-major) has to be transposed, the row-major transpose being the column-major b
      */
-    b_col_major = matrixf_transpose_from(b);
+    b_col_major = matrixf_transpose_from(NULL, b);
 
     /* sposv overwrites A with its factorization */
     Ac = matrixf_copy(A);
@@ -689,23 +815,24 @@ bool _matrixf_cholesky_solve_accelerate(MatrixF* A, MatrixF* b, MatrixF* x)
     }
 
     matrixf_destroy(x);
-    *x = matrixf_transpose_from(&b_col_major);
+    *x = matrixf_transpose_from(NULL, &b_col_major);
     matrixf_destroy(&b_col_major);
 
     return true;
 }
+
 #elif defined(ROMANO_AARCH64)
 
 #define NUM_CHOL_SOLVE_FUNCS 2
 #define _matrixf_cholesky_solve_accelerate _matrixf_cholesky_solve_scalar
 
 #else
+
 #define NUM_CHOL_SOLVE_FUNCS 1
+
 #endif /* defined(ROMANO_X86_64) */
 
-typedef bool (*cholesky_solve_func)(MatrixF*,MatrixF*,MatrixF*);
-
-cholesky_solve_func __cholesky_solver_funcs[NUM_CHOL_SOLVE_FUNCS] = {
+static const cholesky_solve_func __cholesky_solver_funcs[NUM_CHOL_SOLVE_FUNCS] = {
     _matrixf_cholesky_solve_scalar,
 #if defined(ROMANO_X86_64)
     _matrixf_cholesky_solve_sse,
@@ -717,7 +844,7 @@ cholesky_solve_func __cholesky_solver_funcs[NUM_CHOL_SOLVE_FUNCS] = {
 #endif /* defined(ROMANO_X86_64) */
 };
 
-bool matrixf_cholesky_solve(MatrixF* A, MatrixF* b, MatrixF* x)
+bool matrixf_cholesky_solve(LinAlgCtx* ctx, MatrixF* A, MatrixF* b, MatrixF* x)
 {
-    return __cholesky_solver_funcs[simd_get_vectorization_mode()](A, b, x);
+    return __cholesky_solver_funcs[simd_get_vectorization_mode()](ctx, A, b, x);
 }
