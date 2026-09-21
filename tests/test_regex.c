@@ -11,12 +11,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+#if defined(ROMANO_LINUX)
 #include <regex.h>
 #define HAS_POSIX_REGEX 1
 #else
 #define HAS_POSIX_REGEX 0
-#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
+#endif /* defined(ROMANO_LINUX) */
 
 #define MATCH(pattern, flags, string, expected)                                              \
     do {                                                                                     \
