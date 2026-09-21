@@ -21,15 +21,12 @@ if(WIN32)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_BUILD_SHARED)
-target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_OPENCL=${ROMANO_HAS_OPENCL})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ROMANO_HTTP=${ROMANO_HAS_HTTP})
 
 target_include_directories(${PROJECT_NAME}
                            PUBLIC
                            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/stb")
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${concurrentqueue_c_api_INCLUDE_DIR})
 
@@ -46,11 +43,6 @@ if(APPLE)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE concurrentqueue::concurrentqueue_c_api)
-
-if(ROMANO_HAS_OPENCL EQUAL 1)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCL_LIBRARIES})
-endif()
 
 install(
     TARGETS ${PROJECT_NAME}

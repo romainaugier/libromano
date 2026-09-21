@@ -20,10 +20,6 @@ set(SLOW_TESTS test_hashmap test_atomic test_numeric test_thread)
 foreach(test_file ${TEST_FILES})
     get_filename_component(TESTNAME ${test_file} NAME_WLE)
 
-    if(TESTNAME STREQUAL "test_opencl" AND NOT ROMANO_HAS_OPENCL EQUAL 1)
-        continue()
-    endif()
-
     if(TESTNAME STREQUAL "test_http" AND NOT ROMANO_HAS_HTTP EQUAL 1)
         continue()
     endif()

@@ -13,7 +13,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 option(RUN_TESTS "Run unit tests" OFF)
-option(WITH_OPENCL "Enable OpenCL support" OFF)
 option(WITH_HTTP "Enable HTTP/HTTPS support" OFF)
 option(COVERAGE "Enable code coverage instrumentation (GCC/Clang)" OFF)
 option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
@@ -26,29 +25,6 @@ endif()
 
 # Maths library
 find_library(MATH_LIBRARY m)
-
-if(WITH_OPENCL)
-    # OpenCL
-    # Usually OpenCL comes with CUDA on windows (this is how I install it) so we ask for Cuda toolkit and
-    # then use the OpenCL provided by Nvidia
-    if(WIN32)
-        find_package(CUDAToolkit)
-
-        set(OpenCL_ROOT "${CUDA_TOOLKIT_ROOT_DIR}")
-    endif()
-
-    find_package(OpenCL)
-
-    if(OpenCL_FOUND)
-        message(STATUS "Found OpenCL (version: ${OpenCL_VERSION_STRING}), enabling OpenCL support in libromano")
-        set(ROMANO_HAS_OPENCL 1)
-    else()
-        message(STATUS "Can't find OpenCL, disabling OpenCL support in libromano")
-        set(ROMANO_HAS_OPENCL 0)
-    endif()
-else()
-    set(ROMANO_HAS_OPENCL 0)
-endif()
 
 if(WITH_HTTP)
     set(ROMANO_HAS_HTTP 1)

@@ -83,19 +83,19 @@ do
     parse_args "$arg"
 done
 
-if [[ $UBSAN -eq 1 ]]; then
+if [[ $THREADSAN -eq 1 ]]; then
     if [[ $ADDRSAN -eq 1 ]]; then
-        log_error "Undefined Behavior Sanitizer and Address Sanitizer are not compatible"
+        log_error "Thread Sanitizer and Address Sanitizer are not compatible"
         exit 1
     fi
 
     if [[ $LEAKSAN -eq 1 ]]; then
-        log_error "Undefined Behavior Sanitizer and Leak Sanitizer are not compatible"
+        log_error "Thread Sanitizer and Leak Sanitizer are not compatible"
         exit 1
     fi
 
-    if [[ $THREADSAN -eq 1 ]]; then
-        log_error "Undefined Behavior Sanitizer and Thread Sanitizer are not compatible"
+    if [[ $UBSAN -eq 1 ]]; then
+        log_error "Thread Sanitizer and Undefined Behavior Sanitizer are not compatible"
         exit 1
     fi
 fi

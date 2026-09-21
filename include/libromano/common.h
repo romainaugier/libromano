@@ -153,19 +153,21 @@ typedef long long ssize_t;
 #if defined(ROMANO_MSVC)
 #define ROMANO_FORCE_INLINE static __forceinline
 #define ROMANO_NO_INLINE __declspec(noinline)
-#define ROMANO_LIB_ENTRY
-#define ROMANO_LIB_EXIT
 #elif defined(ROMANO_GCC)
 #define ROMANO_FORCE_INLINE static inline __attribute__((always_inline))
 #define ROMANO_NO_INLINE __attribute__((noinline))
-#define ROMANO_LIB_ENTRY __attribute__((constructor))
-#define ROMANO_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANO_CLANG)
 #define ROMANO_FORCE_INLINE static inline __attribute__((always_inline))
 #define ROMANO_NO_INLINE __attribute__((noinline))
+#endif /* defined(ROMANO_MSVC) */
+
+#if defined(ROMANO_WIN)
+#define ROMANO_LIB_ENTRY
+#define ROMANO_LIB_EXIT
+#else
 #define ROMANO_LIB_ENTRY __attribute__((constructor))
 #define ROMANO_LIB_EXIT __attribute__((destructor))
-#endif /* defined(ROMANO_MSVC) */
+#endif /*defined(ROMANO_WIN) */
 
 #if defined(ROMANO_GCC) || defined(ROMANO_CLANG)
 #define	ROMANO_LIKELY(x) __builtin_expect((x) != 0, 1)
@@ -204,7 +206,7 @@ typedef long long ssize_t;
 #if defined(ROMANO_WIN)
 #define ROMANO_FUNCTION __FUNCTION__
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
-#define ROMANO_FUNCTION __PRETTY_FUNCTION__
+#define ROMANO_FUNCTION __func__
 #endif /* ROMANO_WIN */
 
 #define ROMANO_STATIC_FUNCTION static
@@ -218,7 +220,7 @@ typedef long long ssize_t;
 #define COMPILE_TIME_ASSERT2(X,L) COMPILE_TIME_ASSERT3(X,L)
 #define ROMANO_COMPILE_TIME_ASSERT(X) COMPILE_TIME_ASSERT2(X,__LINE__)
 
-#define ROMANO_NOT_IMPLEMENTED do { fprintf(stderr, "Called function " ROMANO_FUNCTION " that is not implemented (%s:%d)", __FILE__, __LINE__); exit(1); } while(0)
+#define ROMANO_NOT_IMPLEMENTED do { fprintf(stderr, "Called function %s that is not implemented (%s:%d)", ROMANO_FUNCTION __FILE__, __LINE__); exit(1); } while(0)
 
 #if defined(ROMANO_MSVC)
 #define ROMANO_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
