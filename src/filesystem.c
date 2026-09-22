@@ -279,7 +279,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    char* buffer = (char*)calloc(sz, sizeof(char));
+    char* buffer = (char*)calloc(sz + 1, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -289,7 +289,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    DWORD total_sz = GetCurrentDirectoryA(sz, buffer);
+    DWORD total_sz = GetCurrentDirectoryA(sz + 1, buffer);
 
     if(total_sz == 0)
     {
