@@ -15,6 +15,8 @@ THREADSAN=0
 UBSAN=0
 ADDRSAN=0
 LEAKSAN=0
+BENCHMARK=0
+BENCHMARKARGS=""
 
 # Little function to parse command line arguments
 parse_args()
@@ -39,23 +41,35 @@ parse_args()
 
     [ "$1" == "--export-compile-commands" ] && EXPORTCOMPILECOMMANDS=1
 
-    [ "$1" == *"version"* ] && parse_version $1
+    [ "$1" == "--benchmark" ] && BENCHMARK=1
 
-    [ "$1" == *"installdir"* ] && parse_install_dir $1
+    [[ "$1" == "--benchmark-args:"* ]] && parse_benchmark_args "$1"
+
+    [[ "$1" == "--version:"* ]] && parse_version "$1"
+
+    [[ "$1" == "--installdir:"* ]] && parse_install_dir "$1"
 }
 
 # Little function to parse the version from a command line argument
 parse_version()
 {
-    VERSION="$( cut -d ':' -f 2- <<< "$s" )"
+    VERSION="$( cut -d ':' -f 2- <<< "$1" )"
     log_info "Version specified by user: $VERSION"
 }
 
 # Little function to parse the installation dir from a command line argument
 parse_install_dir()
 {
-    INSTALLDIR="$( cut -d ':' -f 2- <<< "$s" )"
+    INSTALLDIR="$( cut -d ':' -f 2- <<< "$1" )"
     log_info "Install directory specified by user: $INSTALLDIR"
+}
+
+# Little function to parse the arguments forwarded to the benchmark (ex: --benchmark-args:"--suite full")
+parse_benchmark_args()
+{
+    BENCHMARK=1
+    BENCHMARKARGS="$( cut -d ':' -f 2- <<< "$1" )"
+    log_info "Benchmark arguments specified by user: $BENCHMARKARGS"
 }
 
 # Little function to log an information message to the console
@@ -120,7 +134,8 @@ cmake -S . -B build -DRUN_TESTS=$RUNTESTS \
                     -DTHREADSAN=$THREADSAN \
                     -DUBSAN=$UBSAN \
                     -DADDRSAN=$ADDRSAN \
-                    -DLEAKSAN=$LEAKSAN
+                    -DLEAKSAN=$LEAKSAN \
+                    -DBUILD_BENCHMARKS=$BENCHMARK
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
@@ -148,13 +163,32 @@ if [[ $RUNTESTS -eq 1 ]]; then
 fi
 
 if [[ $INSTALL -eq 1 ]]; then
-    cmake --install . --config %BUILDTYPE% --prefix $INSTALLDIR
+    cmake --install . --config $BUILDTYPE --prefix $INSTALLDIR
 
     if [[ $? -ne 0 ]]; then
         log_error "Error during CMake installation"
         cd ..
         exit 1
     fi
+fi
+
+if [[ $BENCHMARK -eq 1 ]]; then
+    log_info "Running the matrix multiplication benchmark"
+
+    if [[ "$BUILDTYPE" != "Release" ]]; then
+        log_warning "Benchmarking a $BUILDTYPE build, numbers will not be representative"
+    fi
+
+    # Word splitting of BENCHMARKARGS is intended (several options in one string)
+    ./benchmarks/bench_matmul --check --csv benchmarks/bench_matmul.csv $BENCHMARKARGS
+
+    if [[ $? -ne 0 ]]; then
+        log_error "Error during the benchmark (wrong results or invalid arguments)"
+        cd ..
+        exit 1
+    fi
+
+    log_info "Benchmark results written to build/benchmarks/bench_matmul.csv"
 fi
 
 cd ..

@@ -30,6 +30,14 @@ foreach(test_file ${TEST_FILES})
     set_target_options(${TESTNAME})
     target_link_libraries(${TESTNAME} romano_test)
 
+    # The sgemm driver and kernels are internal (not exported from the shared library), the
+    # test compiles them directly to drive the kernels with custom block sizes
+    if(TESTNAME STREQUAL "test_math_sgemm")
+        file(GLOB SGEMM_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/math_linalg32_sgemm*.c)
+        target_sources(${TESTNAME} PRIVATE ${SGEMM_SOURCES} ${PROJECT_SOURCE_DIR}/src/math_linalg_parallel.c)
+        target_include_directories(${TESTNAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    endif()
+
     add_test(NAME ${TESTNAME}
              COMMAND ${TESTNAME}
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

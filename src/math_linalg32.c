@@ -19,78 +19,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-/* PARALLEL FOR */
-
-typedef struct LinAlgChunk {
-    LinAlgRangeFunc func;
-    void* data;
-    size_t begin;
-    size_t end;
-} LinAlgChunk;
-
-/* 32 bytes, copied inline in the threadpool job: no allocation per chunk */
-ROMANO_COMPILE_TIME_ASSERT(sizeof(LinAlgChunk) <= THREADPOOL_WORK_INLINE_ARG_SIZE);
-
-static void* linalg_chunk_run(void* arg)
-{
-    const LinAlgChunk* chunk = (const LinAlgChunk*)arg;
-
-    chunk->func(chunk->data, chunk->begin, chunk->end);
-
-    return NULL;
-}
-
-/* Chunks per thread, gives the pool some slack to balance uneven chunks */
-#define LINALG_CHUNKS_PER_THREAD 4
-
-void linalg_parallel_for(LinAlgCtx* ctx,
-                         size_t count,
-                         size_t grain,
-                         LinAlgRangeFunc func,
-                         void* data)
-{
-    ThreadPool* pool = linalg_ctx_get_pool(ctx);
-    ThreadPoolWaiter waiter;
-    LinAlgChunk chunk;
-    size_t num_chunks;
-    size_t chunk_size;
-    size_t begin;
-
-    if(count == 0)
-        return;
-
-    grain = grain == 0 ? 1 : grain;
-
-    if(pool == NULL || count <= grain)
-    {
-        func(data, 0, count);
-        return;
-    }
-
-    num_chunks = (count + grain - 1) / grain;
-    num_chunks = LINALG_MIN(num_chunks, (size_t)linalg_ctx_get_threads_count(ctx) * LINALG_CHUNKS_PER_THREAD);
-    chunk_size = (count + num_chunks - 1) / num_chunks;
-
-    waiter = threadpool_waiter_new();
-
-    chunk.func = func;
-    chunk.data = data;
-
-    /* The first chunk is kept for the calling thread */
-    for(begin = chunk_size; begin < count; begin += chunk_size)
-    {
-        chunk.begin = begin;
-        chunk.end = LINALG_MIN(begin + chunk_size, count);
-
-        if(!threadpool_work_add_copy(pool, linalg_chunk_run, &chunk, sizeof(LinAlgChunk), &waiter))
-            func(data, chunk.begin, chunk.end);
-    }
-
-    func(data, 0, LINALG_MIN(chunk_size, count));
-
-    threadpool_waiter_wait_help(pool, &waiter);
-}
-
 /* MATRIX */
 
 #define SWAP_FLOAT(f1, f2) do { float tmp = f1; f1 = f2; f2 = tmp; } while (0)
@@ -392,25 +320,27 @@ static void _matrixf_mul_scalar(LinAlgCtx* ctx,
 
 /*
  * Row-major C = A * B is column-major C^T = B^T * A^T, and a row-major matrix is its own
- * transpose in column-major: the column-major kernel runs on the same buffers with A and B
+ * transpose in column-major: the column-major gemm runs on the same buffers with A and B
  * swapped, no copy needed
  */
-static void _matrixf_mul_avx2(LinAlgCtx* ctx,
-                              const float* ROMANO_RESTRICT A,
-                              const float* ROMANO_RESTRICT B,
-                              float* ROMANO_RESTRICT C,
-                              const uint32_t M,
-                              const uint32_t N,
-                              const uint32_t P)
-{
-    linalg32_sgemm_colmajor_avx2(ctx, B, A, C, P, N, M);
-}
+#define DEFINE_MATRIXF_MUL_SGEMM(name, kernel)                                  \
+    static void name(LinAlgCtx* ctx,                                            \
+                     const float* ROMANO_RESTRICT A,                            \
+                     const float* ROMANO_RESTRICT B,                            \
+                     float* ROMANO_RESTRICT C,                                  \
+                     const uint32_t M,                                          \
+                     const uint32_t N,                                          \
+                     const uint32_t P)                                          \
+    {                                                                           \
+        linalg32_sgemm_colmajor(ctx, &(kernel), NULL, B, A, C, P, N, M);        \
+    }
 
-/* TODO: dedicated SSE and AVX512 kernels */
-#define _matrixf_mul_sse _matrixf_mul_scalar
-#define _matrixf_mul_avx _matrixf_mul_scalar
-#define _matrixf_mul_avx256 _matrixf_mul_avx2
-#define _matrixf_mul_avx512 _matrixf_mul_avx2
+DEFINE_MATRIXF_MUL_SGEMM(_matrixf_mul_sse, linalg32_sgemm_kernel_sse)
+DEFINE_MATRIXF_MUL_SGEMM(_matrixf_mul_avx256, linalg32_sgemm_kernel_avx2)
+DEFINE_MATRIXF_MUL_SGEMM(_matrixf_mul_avx512, linalg32_sgemm_kernel_avx512)
+
+/* AVX without AVX2/FMA: the SSE kernel (a 256 bits mul + add kernel is a possible addition) */
+#define _matrixf_mul_avx _matrixf_mul_sse
 
 #elif defined(ROMANO_AARCH64) && defined(ROMANO_APPLE)
 

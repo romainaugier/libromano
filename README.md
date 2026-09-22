@@ -112,4 +112,15 @@ Every test uses the harness in `tests/test.h` and the fuzzing module `libromano/
 | `ROMANO_FUZZ_SECONDS=<n>` | time budget per run |
 | `ROMANO_FUZZ_REPLAY=<seed>` | replays the failing iteration printed on failure |
 
-Benchmarks are built with `-DBUILD_BENCHMARKS=ON`.
+## Benchmarks
+
+Benchmarks are built with `-DBUILD_BENCHMARKS=ON`, or with `--benchmark` in the build scripts, which also runs the matrix multiplication benchmark (with result verification) and writes `build/benchmarks/bench_matmul.csv`:
+
+```bash
+./build.sh --benchmark                                            # default suite, all kernels, 1 thread and all threads
+./build.sh "--benchmark-args:--suite full --threads 1,2,4,8,max"  # forwards options to bench_matmul
+build.bat --benchmark "--benchmark-args:--case square --modes avx2,avx512"
+build/benchmarks/bench_matmul --help                              # all the options (suite, case filter, kernels, threads, csv...)
+```
+
+`bench_matmul` runs `matrixf_mul` over squares, odd sizes, shallow and deep products, rectangular and matrix-vector shapes, for every vectorization mode the cpu supports and each requested thread count, then prints the thread scaling of the fastest kernel. Build in Release for meaningful numbers.
