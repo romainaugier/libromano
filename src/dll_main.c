@@ -23,24 +23,13 @@
 
 void ROMANO_LIB_ENTRY lib_entry(void)
 {
-#if ROMANO_DEBUG
-    printf("libromano entry\n");
-#endif /* ROMANO_DEBUG */
     cpu_check();
     simd_check_vectorization();
     mem_check_endianness();
-#if ROMANO_DEBUG
-    printf("libromano vectorization mode: %s\n", simd_get_vectorization_mode_as_string(simd_get_vectorization_mode()));
-    printf("libromano detected endianness: %s\n", ENDIANNESS_STR(mem_get_endianness()));
-    printf("libromano detected cpu frequency: %u MHz\n", cpu_get_frequency());
-#endif /* ROMANO_DEBUG */
 }
 
 void ROMANO_LIB_EXIT lib_exit(void)
 {
-#if ROMANO_DEBUG
-    printf("libromano exit\n");
-#endif /* ROMANO_DEBUG */
 }
 
 #if defined(ROMANO_WIN)
