@@ -753,3 +753,505 @@ bool fs_walk(const char* path,
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
 }
+
+#define FS_IS_SEP(c) ((c) == '/' || (c) == '\\')
+
+bool fs_stat(const char* path, FsStat* stat_out)
+{
+    ROMANO_ASSERT(path != NULL && stat_out != NULL, "path or stat is NULL");
+
+    memset(stat_out, 0, sizeof(FsStat));
+
+#if defined(ROMANO_WIN)
+    {
+        WIN32_FILE_ATTRIBUTE_DATA data;
+        ULARGE_INTEGER time;
+
+        if(!GetFileAttributesExA(path, GetFileExInfoStandard, &data))
+            return false;
+
+        time.LowPart = data.ftLastWriteTime.dwLowDateTime;
+        time.HighPart = data.ftLastWriteTime.dwHighDateTime;
+
+        stat_out->size = ((uint64_t)data.nFileSizeHigh << 32) | (uint64_t)data.nFileSizeLow;
+        stat_out->mtime_ns = ((int64_t)time.QuadPart - 116444736000000000LL) * 100;
+        stat_out->is_dir = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        stat_out->is_file = !stat_out->is_dir;
+    }
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+    {
+        struct stat st;
+
+        if(stat(path, &st) != 0)
+            return false;
+
+        stat_out->size = (uint64_t)st.st_size;
+#if defined(ROMANO_APPLE)
+        stat_out->mtime_ns = (int64_t)st.st_mtimespec.tv_sec * 1000000000LL + st.st_mtimespec.tv_nsec;
+#else
+        stat_out->mtime_ns = (int64_t)st.st_mtim.tv_sec * 1000000000LL + st.st_mtim.tv_nsec;
+#endif /* defined(ROMANO_APPLE) */
+        stat_out->is_dir = S_ISDIR(st.st_mode);
+        stat_out->is_file = S_ISREG(st.st_mode);
+    }
+#else
+#error "Unsupported platform"
+#endif /* defined(ROMANO_WIN) */
+
+    return true;
+}
+
+bool fs_write_file(const char* path, const void* data, size_t size, bool append)
+{
+    FILE* file;
+    bool ok;
+
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+    file = fopen(path, append ? "ab" : "wb");
+
+    if(file == NULL)
+    {
+        g_current_error = (ErrorCode)error_get_last_from_system();
+        return false;
+    }
+
+    ok = size == 0 || fwrite(data, 1, size, file) == size;
+    ok = (fclose(file) == 0) && ok;
+
+    return ok;
+}
+
+bool fs_copy_file(const char* src, const char* dst)
+{
+    ROMANO_ASSERT(src != NULL && dst != NULL, "src or dst is NULL");
+
+#if defined(ROMANO_WIN)
+    return CopyFileA(src, dst, FALSE) != 0;
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+    {
+        char buffer[65536];
+        struct stat st;
+        FILE* in;
+        FILE* out;
+        size_t n;
+        bool ok = true;
+
+        if(stat(src, &st) != 0)
+            return false;
+
+        in = fopen(src, "rb");
+
+        if(in == NULL)
+            return false;
+
+        out = fopen(dst, "wb");
+
+        if(out == NULL)
+        {
+            fclose(in);
+            return false;
+        }
+
+        while((n = fread(buffer, 1, sizeof(buffer), in)) > 0)
+        {
+            if(fwrite(buffer, 1, n, out) != n)
+            {
+                ok = false;
+                break;
+            }
+        }
+
+        ok = !ferror(in) && ok;
+        fclose(in);
+        ok = (fclose(out) == 0) && ok;
+
+        return ok && chmod(dst, st.st_mode & 07777) == 0;
+    }
+#else
+#error "Unsupported platform"
+#endif /* defined(ROMANO_WIN) */
+}
+
+static bool fs_glob_class(const char** pattern, char c)
+{
+    const char* p = *pattern + 1;
+    bool negate = false;
+    bool matched = false;
+
+    if(*p == '!' || *p == '^')
+    {
+        negate = true;
+        p++;
+    }
+
+    if(*p == ']')
+    {
+        matched = c == ']';
+        p++;
+    }
+
+    while(*p != '\0' && *p != ']')
+    {
+        if(p[1] == '-' && p[2] != '\0' && p[2] != ']')
+        {
+            if(c >= p[0] && c <= p[2])
+                matched = true;
+
+            p += 3;
+        }
+        else
+        {
+            if(c == *p)
+                matched = true;
+
+            p++;
+        }
+    }
+
+    *pattern = *p == ']' ? p + 1 : p;
+
+    return matched != negate;
+}
+
+static bool fs_glob_match_impl(const char* p, const char* s)
+{
+    while(*p != '\0')
+    {
+        if(p[0] == '*' && p[1] == '*')
+        {
+            p += 2;
+
+            if(FS_IS_SEP(*p))
+            {
+                p++;
+
+                while(true)
+                {
+                    if(fs_glob_match_impl(p, s))
+                        return true;
+
+                    while(*s != '\0' && !FS_IS_SEP(*s))
+                        s++;
+
+                    if(*s == '\0')
+                        return false;
+
+                    s++;
+                }
+            }
+
+            while(true)
+            {
+                if(fs_glob_match_impl(p, s))
+                    return true;
+
+                if(*s == '\0')
+                    return false;
+
+                s++;
+            }
+        }
+        else if(*p == '*')
+        {
+            p++;
+
+            while(true)
+            {
+                if(fs_glob_match_impl(p, s))
+                    return true;
+
+                if(*s == '\0' || FS_IS_SEP(*s))
+                    return false;
+
+                s++;
+            }
+        }
+        else if(*p == '?')
+        {
+            if(*s == '\0' || FS_IS_SEP(*s))
+                return false;
+
+            p++;
+            s++;
+        }
+        else if(*p == '[')
+        {
+            if(*s == '\0' || FS_IS_SEP(*s) || !fs_glob_class(&p, *s))
+                return false;
+
+            s++;
+        }
+        else
+        {
+            if(FS_IS_SEP(*p) ? !FS_IS_SEP(*s) : *p != *s)
+                return false;
+
+            p++;
+            s++;
+        }
+    }
+
+    return *s == '\0';
+}
+
+bool fs_glob_match(const char* pattern, const char* path)
+{
+    ROMANO_ASSERT(pattern != NULL && path != NULL, "pattern or path is NULL");
+
+    return fs_glob_match_impl(pattern, path);
+}
+
+static bool fs_is_executable(const char* path)
+{
+#if defined(ROMANO_WIN)
+    return fs_is_file(path);
+#else
+    return fs_is_file(path) && access(path, X_OK) == 0;
+#endif /* defined(ROMANO_WIN) */
+}
+
+static bool fs_which_candidate(const char* dir,
+                               size_t dir_sz,
+                               const char* name,
+                               const char* ext,
+                               char* buffer,
+                               size_t buffer_sz)
+{
+    int written;
+
+    if(dir_sz == 0)
+        written = snprintf(buffer, buffer_sz, "%s%s", name, ext);
+    else
+        written = snprintf(buffer, buffer_sz, "%.*s/%s%s", (int)dir_sz, dir, name, ext);
+
+    return written > 0 && (size_t)written < buffer_sz && fs_is_executable(buffer);
+}
+
+bool fs_which(const char* name, char* buffer, size_t buffer_sz)
+{
+#if defined(ROMANO_WIN)
+    const char* exts = getenv("PATHEXT");
+    const char sep = ';';
+#else
+    const char* exts = "";
+    const char sep = ':';
+#endif /* defined(ROMANO_WIN) */
+    const char* path_env = getenv("PATH");
+    const char* dir;
+    const char* ext;
+    const char* end;
+    char ext_buffer[32];
+
+    ROMANO_ASSERT(name != NULL && buffer != NULL, "name or buffer is NULL");
+
+    if(exts == NULL)
+        exts = ".COM;.EXE;.BAT;.CMD";
+
+    if(strchr(name, '/') != NULL || strchr(name, '\\') != NULL)
+    {
+        if(!fs_is_executable(name) || strlen(name) + 1 > buffer_sz)
+            return false;
+
+        memcpy(buffer, name, strlen(name) + 1);
+
+        return true;
+    }
+
+    if(path_env == NULL)
+        return false;
+
+    dir = path_env;
+
+    while(true)
+    {
+        end = strchr(dir, sep);
+
+        if(end == NULL)
+            end = dir + strlen(dir);
+
+        if(fs_which_candidate(dir, (size_t)(end - dir), name, "", buffer, buffer_sz))
+            return true;
+
+        ext = exts;
+
+        while(*ext != '\0')
+        {
+            const char* ext_end = strchr(ext, ';');
+            size_t ext_sz;
+
+            if(ext_end == NULL)
+                ext_end = ext + strlen(ext);
+
+            ext_sz = (size_t)(ext_end - ext);
+
+            if(ext_sz > 0 && ext_sz < sizeof(ext_buffer))
+            {
+                memcpy(ext_buffer, ext, ext_sz);
+                ext_buffer[ext_sz] = '\0';
+
+                if(fs_which_candidate(dir, (size_t)(end - dir), name, ext_buffer, buffer, buffer_sz))
+                    return true;
+            }
+
+            ext = *ext_end == ';' ? ext_end + 1 : ext_end;
+        }
+
+        if(*end == '\0')
+            break;
+
+        dir = end + 1;
+    }
+
+    return false;
+}
+
+bool fs_set_cwd(const char* path)
+{
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+#if defined(ROMANO_WIN)
+    return SetCurrentDirectoryA(path) != 0;
+#else
+    return chdir(path) == 0;
+#endif /* defined(ROMANO_WIN) */
+}
+
+bool fs_path_is_abs(const char* path)
+{
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+    if(FS_IS_SEP(path[0]))
+        return true;
+
+    return ((path[0] >= 'a' && path[0] <= 'z') || (path[0] >= 'A' && path[0] <= 'Z')) &&
+           path[1] == ':' &&
+           FS_IS_SEP(path[2]);
+}
+
+size_t fs_path_normalize(char* path)
+{
+    size_t root_sz = 0;
+    size_t out;
+    size_t in;
+    size_t len;
+    size_t keep_dotdot;
+
+    ROMANO_ASSERT(path != NULL, "path is NULL");
+
+    len = strlen(path);
+
+    for(in = 0; in < len; in++)
+        if(path[in] == '\\')
+            path[in] = '/';
+
+    if(len >= 3 && path[1] == ':' && path[2] == '/')
+        root_sz = 3;
+    else if(len >= 2 && path[0] == '/' && path[1] == '/')
+        root_sz = 2;
+    else if(len >= 1 && path[0] == '/')
+        root_sz = 1;
+
+    out = root_sz;
+    in = root_sz;
+    keep_dotdot = root_sz;
+
+    while(in < len)
+    {
+        size_t start;
+        size_t seg_sz;
+
+        while(in < len && path[in] == '/')
+            in++;
+
+        start = in;
+
+        while(in < len && path[in] != '/')
+            in++;
+
+        seg_sz = in - start;
+
+        if(seg_sz == 0 || (seg_sz == 1 && path[start] == '.'))
+            continue;
+
+        if(seg_sz == 2 && path[start] == '.' && path[start + 1] == '.')
+        {
+            if(out > keep_dotdot)
+            {
+                while(out > keep_dotdot && path[out - 1] != '/')
+                    out--;
+
+                if(out > keep_dotdot)
+                    out--;
+
+                continue;
+            }
+
+            if(root_sz > 0)
+                continue;
+
+            if(out > 0)
+                path[out++] = '/';
+
+            path[out++] = '.';
+            path[out++] = '.';
+            keep_dotdot = out;
+
+            continue;
+        }
+
+        if(out > root_sz)
+            path[out++] = '/';
+
+        memmove(path + out, path + start, seg_sz);
+        out += seg_sz;
+    }
+
+    if(out == 0)
+        path[out++] = '.';
+
+    path[out] = '\0';
+
+    return out;
+}
+
+bool fs_path_abs(const char* path, char* buffer, size_t buffer_sz)
+{
+    ROMANO_ASSERT(path != NULL && buffer != NULL, "path or buffer is NULL");
+
+#if defined(ROMANO_WIN)
+    {
+        DWORD sz = GetFullPathNameA(path, (DWORD)buffer_sz, buffer, NULL);
+
+        if(sz == 0 || sz >= buffer_sz)
+            return false;
+    }
+#else
+    if(fs_path_is_abs(path))
+    {
+        if(strlen(path) + 1 > buffer_sz)
+            return false;
+
+        memcpy(buffer, path, strlen(path) + 1);
+    }
+    else
+    {
+        size_t cwd_sz;
+
+        if(getcwd(buffer, buffer_sz) == NULL)
+            return false;
+
+        cwd_sz = strlen(buffer);
+
+        if(cwd_sz + strlen(path) + 2 > buffer_sz)
+            return false;
+
+        buffer[cwd_sz] = '/';
+        memcpy(buffer + cwd_sz + 1, path, strlen(path) + 1);
+    }
+#endif /* defined(ROMANO_WIN) */
+
+    fs_path_normalize(buffer);
+
+    return true;
+}

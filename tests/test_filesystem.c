@@ -241,10 +241,82 @@ static void test_walk(void)
     fs_remove(g_root);
 }
 
+static void test_glob_match(void)
+{
+    TEST_CHECK(fs_glob_match("*.c", "main.c"));
+    TEST_CHECK(!fs_glob_match("*.c", "src/main.c"));
+    TEST_CHECK(fs_glob_match("src/*.c", "src/main.c"));
+    TEST_CHECK(fs_glob_match("src/**/*.c", "src/main.c"));
+    TEST_CHECK(fs_glob_match("src/**/*.c", "src/a/b/main.c"));
+    TEST_CHECK(fs_glob_match("src\\**\\*.c", "src/a/main.c"));
+    TEST_CHECK(!fs_glob_match("src/**/*.c", "src/a/b/main.h"));
+    TEST_CHECK(fs_glob_match("**", "a/b/c"));
+    TEST_CHECK(fs_glob_match("test_?.c", "test_1.c"));
+    TEST_CHECK(fs_glob_match("[a-c]x[!0-9]", "bxz"));
+    TEST_CHECK(!fs_glob_match("[a-c]x[!0-9]", "bx5"));
+}
+
+static void test_path_utils(void)
+{
+    char path[MAX_PATH];
+    char buffer[MAX_PATH];
+    FsStat st;
+
+    snprintf(path, sizeof(path), "%s", "a/./b//c/../d");
+    fs_path_normalize(path);
+    TEST_CHECK_EQ_STR(path, "a/b/d");
+
+    snprintf(path, sizeof(path), "%s", "../a/../../b");
+    fs_path_normalize(path);
+    TEST_CHECK_EQ_STR(path, "../../b");
+
+    snprintf(path, sizeof(path), "%s", "/a/../..");
+    fs_path_normalize(path);
+    TEST_CHECK_EQ_STR(path, "/");
+
+    snprintf(path, sizeof(path), "%s", "C:\\a\\..\\b");
+    fs_path_normalize(path);
+    TEST_CHECK_EQ_STR(path, "C:/b");
+
+    snprintf(path, sizeof(path), "%s", "./");
+    fs_path_normalize(path);
+    TEST_CHECK_EQ_STR(path, ".");
+
+    TEST_CHECK(fs_path_is_abs("/usr"));
+    TEST_CHECK(fs_path_is_abs("C:/usr"));
+    TEST_CHECK(!fs_path_is_abs("usr"));
+
+    TEST_CHECK(fs_path_abs("a/../b", buffer, sizeof(buffer)));
+    TEST_CHECK(fs_path_is_abs(buffer));
+
+    snprintf(g_root, sizeof(g_root), "%s", test_tmp_path("filesystem_utils"));
+    TEST_ASSERT(fs_makedirs(g_root));
+    TEST_CHECK(fs_write_file(path_in_root("w.txt"), "abc", 3, false));
+    TEST_CHECK(fs_write_file(path_in_root("w.txt"), "de", 2, true));
+    TEST_CHECK(fs_stat(path_in_root("w.txt"), &st));
+    TEST_CHECK_EQ_UINT(st.size, 5);
+    TEST_CHECK(st.is_file && !st.is_dir && st.mtime_ns > 0);
+    TEST_CHECK(fs_copy_file(path_in_root("w.txt"), path_in_root("w2.txt")));
+    TEST_CHECK(fs_stat(path_in_root("w2.txt"), &st));
+    TEST_CHECK_EQ_UINT(st.size, 5);
+    TEST_CHECK(!fs_stat(path_in_root("nope.txt"), &st));
+
+#if defined(ROMANO_WIN)
+    TEST_CHECK(fs_which("cmd", buffer, sizeof(buffer)));
+#else
+    TEST_CHECK(fs_which("sh", buffer, sizeof(buffer)));
+#endif /* defined(ROMANO_WIN) */
+    TEST_CHECK(!fs_which("romano_this_command_does_not_exist", buffer, sizeof(buffer)));
+
+    fs_remove(g_root);
+}
+
 TEST_MAIN(
     TEST(test_file_content),
     TEST(test_queries),
     TEST(test_parent_dir),
     TEST(test_move_chmod_remove),
     TEST(test_walk),
+    TEST(test_glob_match),
+    TEST(test_path_utils),
 )

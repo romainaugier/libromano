@@ -46,6 +46,11 @@ typedef struct timeval timeval_t;
 
 #endif /* defined(ROMANO_WIN) */
 
+/*
+ * Returns a monotonic timestamp in nanoseconds, only meaningful as a difference between two calls
+ */
+ROMANO_API uint64_t time_monotonic_ns(void);
+
 ROMANO_CPP_END
 
 #endif /* !defined(__LIBROMANO_TIME) */

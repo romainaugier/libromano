@@ -183,6 +183,67 @@ ROMANO_API bool fs_walk(const char* path,
                         FSWalkIterator* walk_iterator,
                         FSWalkMode mode);
 
+typedef struct FsStat {
+    uint64_t size;
+    int64_t mtime_ns;
+    bool is_dir;
+    bool is_file;
+} FsStat;
+
+/*
+ * Fills stat with the size, last modification time (nanoseconds since the unix epoch) and type
+ * of the item at the given path. Returns false if it does not exist
+ */
+ROMANO_API bool fs_stat(const char* path, FsStat* stat);
+
+/*
+ * Writes (or appends) size bytes of data to the file at the given path, creating it if needed.
+ * Returns true on success
+ */
+ROMANO_API bool fs_write_file(const char* path, const void* data, size_t size, bool append);
+
+/*
+ * Copies the file at src to dst, overwriting dst. Permissions are preserved on POSIX systems.
+ * Returns true on success
+ */
+ROMANO_API bool fs_copy_file(const char* src, const char* dst);
+
+/*
+ * Matches a path against a glob pattern. '/' and backslash are equivalent separators.
+ * Supports '*' (any characters but a separator), '?' (one character but a separator),
+ * '**' (any characters, including separators, a '**' component also matches no directory) and
+ * character classes "[abc]", "[a-z]", "[!abc]"
+ */
+ROMANO_API bool fs_glob_match(const char* pattern, const char* path);
+
+/*
+ * Finds an executable in the PATH (trying PATHEXT extensions on Windows) and writes its path to
+ * buffer. Names containing a separator are checked as is. Returns false if not found
+ */
+ROMANO_API bool fs_which(const char* name, char* buffer, size_t buffer_sz);
+
+/*
+ * Changes the current working directory. Returns true on success
+ */
+ROMANO_API bool fs_set_cwd(const char* path);
+
+/*
+ * Normalizes a path in place: separators become '/', repeated separators, "." components and
+ * resolvable ".." components are removed. Returns the new length
+ */
+ROMANO_API size_t fs_path_normalize(char* path);
+
+/*
+ * Writes the absolute, normalized path of path to buffer. Returns false on failure or if buffer
+ * is too small
+ */
+ROMANO_API bool fs_path_abs(const char* path, char* buffer, size_t buffer_sz);
+
+/*
+ * Returns true if the path is absolute ("/a", "C:/a" or an UNC path)
+ */
+ROMANO_API bool fs_path_is_abs(const char* path);
+
 ROMANO_CPP_END
 
 #endif /* __LIBROMANO_FILESYSTEM */

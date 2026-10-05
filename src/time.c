@@ -4,6 +4,10 @@
 
 #include "libromano/time.h"
 
+#if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+#include <time.h>
+#endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
+
 #if defined(ROMANO_WIN)
 
 void gettimeofday(timeval_t* tv, timezone_t* tz)
@@ -40,3 +44,25 @@ void gettimeofday(timeval_t* tv, timezone_t* tz)
 
 #endif /* defined(ROMANO_WIN) */
 
+
+uint64_t time_monotonic_ns(void)
+{
+#if defined(ROMANO_WIN)
+    static LARGE_INTEGER frequency;
+    LARGE_INTEGER counter;
+
+    if(frequency.QuadPart == 0)
+        QueryPerformanceFrequency(&frequency);
+
+    QueryPerformanceCounter(&counter);
+
+    return (uint64_t)(counter.QuadPart / frequency.QuadPart) * 1000000000ULL +
+           (uint64_t)(counter.QuadPart % frequency.QuadPart) * 1000000000ULL / (uint64_t)frequency.QuadPart;
+#else
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+#endif /* defined(ROMANO_WIN) */
+}
