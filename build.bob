@@ -1,0 +1,127 @@
+#!/usr/bin/env bob
+
+# libromano, usable standalone (bob build, bob test) or from another project:
+#   let romano = subproject("ext/libromano")?;
+#   let lib = romano.targets(cc, common)?;
+
+project("libromano", version="0.1.0");
+
+const QUEUE = "ext/concurrentqueue/c_api";
+
+# libromano includes "concurrentqueue/concurrentqueue.h", which only exists after an install
+def stage_queue_header(cc) {
+    let src = path_from_here(QUEUE) / "concurrentqueue.h";
+    let dst = cc.dir / "include" / "concurrentqueue" / "concurrentqueue.h";
+
+    if !dst.exists() || fs.mtime(src) > fs.mtime(dst) {
+        fs.makedirs(dst.parent)?;
+        fs.copy(src, dst)?;
+    }
+
+    return ok(cc.dir / "include");
+}
+
+# Declares the libromano static library with the settings of the common profile
+def targets(cc, common) {
+    let queue = cc.static_lib("concurrentqueue_c_api")
+        .use(common)
+        .sources(glob(f"{QUEUE}/*.cpp"))
+        .include(QUEUE)
+        .define("MOODYCAMEL_STATIC", None, Vis.Public);
+
+    let lib = cc.static_lib("romano")
+        .use(common)
+        .include("include", Vis.Public)
+        .include(stage_queue_header(cc)?)
+        .define({"ROMANO_BUILD_SHARED": None, "ROMANO_HTTP": 0}, Vis.Public)
+        .link(queue)
+        .link(Lib.Threads, Lib.Math, Vis.Public);
+
+    for src in glob("src/*.c") {
+        if src.name != "math_linalg32_sgemm_avx512.c" {
+            lib.sources(src);
+        }
+    }
+
+    # x86_64 builds use AVX2/FMA, the AVX-512 kernel gets its own flags
+    if sys.arch == Arch.X86_64 {
+        lib.simd(Cpu.Avx2, Cpu.Fma);
+        lib.link(cc.objects("sgemm_avx512")
+            .use(common)
+            .sources("src/math_linalg32_sgemm_avx512.c")
+            .include("include")
+            .simd(Cpu.Avx512f, Cpu.Avx2, Cpu.Fma));
+    }
+
+    if sys.os == Os.Windows {
+        lib.link("wsock32", "ws2_32", "Shlwapi", "Pathcch", "PowrProf", "dbghelp", Vis.Public);
+    } else if sys.os == Os.Macos {
+        lib.define("ACCELERATE_NEW_LAPACK").link_flags("-framework", "Accelerate", Vis.Public);
+    }
+
+    return ok(lib);
+}
+
+def profile(cc, config) {
+    return cc.profile().std(Std.C99, Std.Cpp17).config(config);
+}
+
+# Builds the static library
+@task(default=true)
+def build(config=Config.Release) {
+    let cc = toolchain.detect()?.out_dir(f"build/{config.name.lower()}");
+    let lib = targets(cc, profile(cc, config))?;
+    compile([lib])?;
+    return ok(lib);
+}
+
+# Builds and runs the C tests (filter on the test name, network tests are opt-in)
+@task
+def test(config=Config.Debug, filter="", network=false) {
+    let cc = toolchain.detect()?.out_dir(f"build/{config.name.lower()}");
+    let common = profile(cc, config)
+        .when(sys.arch == Arch.X86_64, def(t) { t.simd(Cpu.Avx2, Cpu.Fma); });
+    let lib = targets(cc, common)?;
+    let tmp = (cc.dir / "tests_tmp").abs();
+
+    let support = cc.static_lib("romano_test")
+        .use(common)
+        .sources("tests/test.c")
+        .include("tests", Vis.Public)
+        .define("TESTS_TMP_DIR", f"\"{tmp}\"", Vis.Public)
+        .link_whole(lib, Vis.Public);
+
+    let network_tests = ["test_socket", "test_socket_server", "test_http"];
+    let tests = [];
+
+    for src in glob("tests/test_*.c") {
+        if (filter == "" || filter in src.stem) && (network || !(src.stem in network_tests)) {
+            tests.push(cc.executable(src.stem).use(common).sources(src).include("src").link(support));
+        }
+    }
+
+    compile(tests)?;
+    fs.makedirs(tmp)?;
+    let failed = [];
+
+    for t in tests {
+        let out = t.capture(check=false)?;
+        if out.code != 0 {
+            failed.push(t.name);
+            eprint(out.stdout, out.stderr);
+        }
+    }
+
+    if !failed.is_empty() {
+        return err(f"{len(failed)}/{len(tests)} tests failed: {failed}");
+    }
+
+    log.success(f"{len(tests)} tests passed");
+}
+
+# Installs the library, its headers and a bob package description to prefix
+@task
+def install(prefix="install", config=Config.Release) {
+    let lib = build(config)?;
+    install_targets(lib, prefix=prefix, headers="include")?;
+}
