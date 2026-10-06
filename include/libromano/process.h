@@ -29,6 +29,12 @@ typedef struct ProcessOptions {
     const char* const* env;
 
     uint32_t flags;
+
+    /*
+     * Kills the process (and on POSIX its process group) after this many milliseconds, 0 to wait
+     * forever. A process with a timeout runs in its own process group on POSIX
+     */
+    uint32_t timeout_ms;
 } ProcessOptions;
 
 typedef struct ProcessResult {
@@ -42,6 +48,9 @@ typedef struct ProcessResult {
     size_t out_sz;
     char* err;
     size_t err_sz;
+
+    /* The process was killed because it exceeded timeout_ms */
+    bool timed_out;
 } ProcessResult;
 
 /*

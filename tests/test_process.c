@@ -108,6 +108,36 @@ static void test_process_env_cwd(void)
     process_result_release(&result);
 }
 
+static void test_process_timeout(void)
+{
+#if defined(ROMANO_WIN)
+    const char* argv[] = { "powershell", "-NoProfile", "-Command", "Start-Sleep -Seconds 5", NULL };
+#else
+    const char* argv[] = { SHELL, "echo started; sleep 5; echo never", NULL };
+#endif /* defined(ROMANO_WIN) */
+    ProcessOptions options;
+    ProcessResult result;
+    uint64_t start;
+
+    memset(&options, 0, sizeof(ProcessOptions));
+    options.argv = argv;
+    options.flags = ProcessFlag_CaptureStdout;
+    options.timeout_ms = 200;
+
+    start = time_monotonic_ns();
+    TEST_CHECK(process_run(&options, &result));
+    TEST_CHECK(result.timed_out);
+    TEST_CHECK(time_monotonic_ns() - start < 3000000000ULL);
+    process_result_release(&result);
+
+    options.timeout_ms = 5000;
+    options.argv = (const char* const[]){ SHELL, "exit 0", NULL };
+    TEST_CHECK(process_run(&options, &result));
+    TEST_CHECK(!result.timed_out);
+    TEST_CHECK_EQ_INT(result.exit_code, 0);
+    process_result_release(&result);
+}
+
 static void test_env(void)
 {
     char** list;
@@ -153,6 +183,7 @@ TEST_MAIN(
     TEST(test_process_not_found),
     TEST(test_process_large_output),
     TEST(test_process_env_cwd),
+    TEST(test_process_timeout),
     TEST(test_env),
     TEST(test_os),
 )

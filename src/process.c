@@ -18,6 +18,8 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <time.h>
+#include <pthread.h>
 #if defined(ROMANO_APPLE)
 #include <crt_externs.h>
 #else
@@ -84,6 +86,45 @@ static void process_close_fd(int* fd)
     }
 }
 
+static int64_t process_now_ms(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+static int process_remaining_ms(int64_t deadline)
+{
+    int64_t remaining;
+
+    if(deadline < 0)
+        return -1;
+
+    remaining = deadline - process_now_ms();
+
+    return remaining > 0 ? (int)remaining : 0;
+}
+
+/*
+ * Pipes are created close-on-exec, and creating them and forking happen under a lock: otherwise a
+ * process started by another thread at the same time inherits the write end of our pipes, and our
+ * reads only see the end of file when that other process exits
+ */
+static pthread_mutex_t g_spawn_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static int process_pipe(int fds[2])
+{
+    if(pipe(fds) != 0)
+        return -1;
+
+    fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+    fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+
+    return 0;
+}
+
 static void process_child_fail(int fd)
 {
     int err = errno;
@@ -110,6 +151,7 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     int status;
     ssize_t n;
     pid_t pid;
+    int64_t deadline;
 
     ROMANO_ASSERT(options != NULL && options->argv != NULL && options->argv[0] != NULL, "invalid argv");
     ROMANO_ASSERT(result != NULL, "result is NULL");
@@ -122,27 +164,32 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     capture_out = (options->flags & ProcessFlag_CaptureStdout) != 0 || merge;
     capture_err = (options->flags & ProcessFlag_CaptureStderr) != 0 && !merge;
 
-    if((capture_out && pipe(out_pipe) != 0) ||
-       (capture_err && pipe(err_pipe) != 0) ||
-       pipe(exec_pipe) != 0)
+    pthread_mutex_lock(&g_spawn_mutex);
+
+    if((capture_out && process_pipe(out_pipe) != 0) ||
+       (capture_err && process_pipe(err_pipe) != 0) ||
+       process_pipe(exec_pipe) != 0)
     {
         g_current_error = (ErrorCode)errno;
+        pthread_mutex_unlock(&g_spawn_mutex);
         goto fail;
     }
-
-    fcntl(exec_pipe[1], F_SETFD, FD_CLOEXEC);
 
     pid = fork();
 
     if(pid < 0)
     {
         g_current_error = (ErrorCode)errno;
+        pthread_mutex_unlock(&g_spawn_mutex);
         goto fail;
     }
 
     if(pid == 0)
     {
         close(exec_pipe[0]);
+
+        if(options->timeout_ms > 0)
+            setpgid(0, 0);
 
         if(options->cwd != NULL && chdir(options->cwd) != 0)
             process_child_fail(exec_pipe[1]);
@@ -181,6 +228,7 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     process_close_fd(&exec_pipe[1]);
     process_close_fd(&out_pipe[1]);
     process_close_fd(&err_pipe[1]);
+    pthread_mutex_unlock(&g_spawn_mutex);
 
     if(read(exec_pipe[0], &child_errno, sizeof(int)) == (ssize_t)sizeof(int))
     {
@@ -191,8 +239,12 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
 
     process_close_fd(&exec_pipe[0]);
 
+    deadline = options->timeout_ms > 0 ? process_now_ms() + (int64_t)options->timeout_ms : -1;
+
     while(out_pipe[0] >= 0 || err_pipe[0] >= 0)
     {
+        int poll_result;
+
         nfds_t count = 0;
         nfds_t i;
 
@@ -210,12 +262,25 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
             count++;
         }
 
-        if(poll(fds, count, -1) < 0)
+        poll_result = poll(fds, count, result->timed_out ? 100 : process_remaining_ms(deadline));
+
+        if(poll_result < 0)
         {
             if(errno == EINTR)
                 continue;
 
             break;
+        }
+
+        if(poll_result == 0)
+        {
+            if(result->timed_out)
+                break;
+
+            result->timed_out = true;
+            kill(-pid, SIGKILL);
+            kill(pid, SIGKILL);
+            continue;
         }
 
         for(i = 0; i < count; i++)
@@ -238,12 +303,33 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
         }
     }
 
-    while(waitpid(pid, &status, 0) < 0)
+    while(true)
     {
-        if(errno != EINTR)
+        pid_t waited = waitpid(pid, &status, deadline >= 0 && !result->timed_out ? WNOHANG : 0);
+
+        if(waited == pid)
+            break;
+
+        if(waited < 0)
         {
+            if(errno == EINTR)
+                continue;
+
             g_current_error = (ErrorCode)errno;
             goto fail;
+        }
+
+        if(process_remaining_ms(deadline) == 0)
+        {
+            result->timed_out = true;
+            kill(-pid, SIGKILL);
+            kill(pid, SIGKILL);
+            continue;
+        }
+
+        {
+            struct timespec pause = { 0, 1000000 };
+            nanosleep(&pause, NULL);
         }
     }
 
@@ -348,6 +434,9 @@ static void process_quote_arg(ProcessBuffer* cmd, const char* arg)
     process_buffer_append(cmd, "\"", 1);
 }
 
+/* Inheritable pipe ends must not leak into a process created by another thread, see the POSIX version */
+static SRWLOCK g_spawn_lock = SRWLOCK_INIT;
+
 static bool process_create_pipe(HANDLE* read_end, HANDLE* write_end)
 {
     SECURITY_ATTRIBUTES sa;
@@ -420,10 +509,15 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
+    AcquireSRWLockExclusive(&g_spawn_lock);
+
     if(capture_out)
     {
         if(!process_create_pipe(&out_reader.pipe, &out_write))
+        {
+            ReleaseSRWLockExclusive(&g_spawn_lock);
             goto fail;
+        }
 
         si.hStdOutput = out_write;
 
@@ -434,7 +528,10 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     if(capture_err)
     {
         if(!process_create_pipe(&err_reader.pipe, &err_write))
+        {
+            ReleaseSRWLockExclusive(&g_spawn_lock);
             goto fail;
+        }
 
         si.hStdError = err_write;
     }
@@ -458,6 +555,7 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
 
     out_write = NULL;
     err_write = NULL;
+    ReleaseSRWLockExclusive(&g_spawn_lock);
 
     if(!ok)
         goto fail;
@@ -468,7 +566,12 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     if(capture_err)
         threads[thread_count++] = CreateThread(NULL, 0, process_reader_thread, &err_reader, 0, NULL);
 
-    WaitForSingleObject(pi.hProcess, INFINITE);
+    if(WaitForSingleObject(pi.hProcess, options->timeout_ms > 0 ? (DWORD)options->timeout_ms : INFINITE) == WAIT_TIMEOUT)
+    {
+        TerminateProcess(pi.hProcess, 1);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        result->timed_out = true;
+    }
 
     if(thread_count > 0)
         WaitForMultipleObjects(thread_count, threads, TRUE, INFINITE);
