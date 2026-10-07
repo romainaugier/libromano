@@ -279,7 +279,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    char* buffer = (char*)calloc(sz + 1, sizeof(char));
+    char* buffer = (char*)calloc(sz, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -289,7 +289,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    DWORD total_sz = GetCurrentDirectoryA(sz + 1, buffer);
+    DWORD total_sz = GetCurrentDirectoryA(sz, buffer);
 
     if(total_sz == 0)
     {
@@ -300,7 +300,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
     }
 
     *out_path = buffer;
-    *out_sz = (size_t)sz;
+    *out_sz = (size_t)total_sz;
 #elif defined(ROMANO_LINUX)
     *out_path = get_current_dir_name();
 
