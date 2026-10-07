@@ -11,6 +11,7 @@
 
 #if defined(ROMANO_WIN)
 #include "Windows.h"
+#include <intrin.h>
 #endif /* defined(ROMANO_WIN) */
 
 ROMANO_CPP_ENTER
@@ -195,7 +196,7 @@ ROMANO_FORCE_INLINE void atomic_sub_32(Atomic32* volatile dest,
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
-    _InlineInterlockedAdd((LONG*)dest, -value);
+    InterlockedAdd((LONG*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_sub_fetch(dest, value, mo);
 #endif /* defined(ROMANO_MSVC) */
@@ -213,7 +214,7 @@ ROMANO_FORCE_INLINE void atomic_sub_64(Atomic64* volatile dest,
 {
 #if defined(ROMANO_MSVC)
     ROMANO_UNUSED(mo);
-    _InlineInterlockedAdd64((LONG64*)dest, -value);
+    InterlockedAdd64((LONG64*)dest, -value);
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
     __atomic_sub_fetch(dest, value, mo);
 #endif /* defined(ROMANO_MSVC) */

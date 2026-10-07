@@ -279,7 +279,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    char* buffer = (char*)calloc(sz + 1, sizeof(char));
+    char* buffer = (char*)calloc(sz, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -289,7 +289,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    DWORD total_sz = GetCurrentDirectoryA(sz + 1, buffer);
+    DWORD total_sz = GetCurrentDirectoryA(sz, buffer);
 
     if(total_sz == 0)
     {
@@ -300,7 +300,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
     }
 
     *out_path = buffer;
-    *out_sz = (size_t)sz;
+    *out_sz = (size_t)total_sz;
 #elif defined(ROMANO_LINUX)
     *out_path = get_current_dir_name();
 
@@ -357,8 +357,13 @@ bool fs_remove(const char* path)
     if(fs_is_dir(path))
     {
         size_t path_sz = strlen(path);
-        char* path_buffer = (char*)mem_alloca(path_sz + 2);
-        memset(path_buffer, 0, path_sz + 2);
+
+        /* TODO: maybe use malloc for path longer than 4094 ? */
+        if(path_sz > 4094)
+            return false;
+
+        char path_buffer[4096];
+        memset(path_buffer, 0, sizeof(path_buffer));
         memcpy(path_buffer, path, path_sz);
 
         SHFILEOPSTRUCTA file_op;

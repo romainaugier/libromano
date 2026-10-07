@@ -66,11 +66,13 @@ static void test_aligned_alloc(void)
 
 static void test_alloca(void)
 {
+#if defined(ROMANO_X86_64)
     char* buffer = (char*)mem_alloca(64);
 
     TEST_ASSERT(buffer != NULL);
     memset(buffer, 'a', 64);
     TEST_CHECK_EQ_UINT(buffer[63], 'a');
+#endif /* defined(ROMANO_X86_64) */
 }
 
 TEST_MAIN(

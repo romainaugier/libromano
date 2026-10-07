@@ -58,8 +58,8 @@ if( ( src[i] + src[i] ) != dst[i] ){
 # Set Flags
 if(MSVC)
     if(HAVE_AVX2_EXTENSIONS AND NOT MSVC_VERSION LESS 1800)
-        set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX2")
+        set(AVX_FLAGS "/arch:AVX2")
     elseif(HAVE_AVX_EXTENSIONS  AND NOT MSVC_VERSION LESS 1600)
-        set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX")
+        set(AVX_FLAGS "/arch:AVX")
     endif()
 endif()

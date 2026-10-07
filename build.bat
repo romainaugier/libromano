@@ -12,6 +12,7 @@ set BUILDTYPE=Release
 set RUNTESTS=0
 set REMOVEOLDDIR=0
 set ARCH=x64
+set TOOLSET=
 set VERSION="0.0.0"
 set INSTALLDIR=%CD%\install
 set INSTALL=0
@@ -45,7 +46,7 @@ if %REMOVEOLDDIR% equ 1 (
 call :LogInfo "Build type: %BUILDTYPE%"
 call :LogInfo "Build version: %VERSION%"
 
-cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A "%ARCH%" -DVERSION=%VERSION% -DADDRSAN=%ADDRSAN% -DBUILD_BENCHMARKS=%BENCHMARK%
+cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A "%ARCH%" %TOOLSET% -DVERSION=%VERSION% -DADDRSAN=%ADDRSAN% -DBUILD_BENCHMARKS=%BENCHMARK%
 
 if %errorlevel% neq 0 (
     call :LogError "Error caught during CMake configuration"
@@ -123,6 +124,8 @@ if "%~1" equ "--clean" set REMOVEOLDDIR=1
 if "%~1" equ "--addrsan" set ADDRSAN=1
 
 if "%~1" equ "--arm64" set ARCH=ARM64
+
+if "%~1" equ "--clang-cl" set TOOLSET=-T ClangCL
 
 if "%~1" equ "--benchmark" set BENCHMARK=1
 

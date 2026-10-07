@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 - Present Romain Augier
+# All rights reserved.
+
+# Builds and tests libromano on every supported platform and compiler, with sanitizers where they are
+# available, plus a coverage report
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x86_64-gcc, os: ubuntu-24.04, cc: gcc, cxx: g++, asan: --addrsan --leaksan, ubsan: true, tsan: true }
+          - { name: linux-x86_64-clang, os: ubuntu-24.04, cc: clang, cxx: clang++, asan: --addrsan --leaksan, ubsan: true, tsan: true }
+          - { name: linux-aarch64-gcc, os: ubuntu-24.04-arm, cc: gcc, cxx: g++ }
+          - { name: linux-aarch64-clang, os: ubuntu-24.04-arm, cc: clang, cxx: clang++ }
+          - { name: macos-aarch64-clang, os: macos-15, cc: clang, cxx: clang++, asan: --addrsan, ubsan: true, tsan: true }
+          - { name: macos-x86_64-clang, os: macos-15-intel, cc: clang, cxx: clang++ }
+          - { name: windows-x86_64-msvc, os: windows-2025, asan: --addrsan }
+          - { name: windows-x86_64-clang-cl, os: windows-2025, args: --clang-cl }
+          - { name: windows-aarch64-msvc, os: windows-11-arm, args: --arm64 }
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Compiler
+        if: matrix.cc
+        run: echo -e "CC=${{ matrix.cc }}\nCXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
+
+      - name: Sanitizer runtimes
+        if: runner.os == 'Linux' && matrix.cc == 'clang' && (matrix.asan || matrix.ubsan || matrix.tsan)
+        run: sudo apt-get install -y libclang-rt-dev || sudo apt-get install -y "libclang-rt-$(clang -dumpversion | cut -d. -f1)-dev"
+
+      - name: Build concurrentqueue
+        if: runner.os != 'Windows'
+        working-directory: ext/concurrentqueue
+        run: ./build_c_api.sh
+
+      - name: Build concurrentqueue
+        if: runner.os == 'Windows'
+        working-directory: ext/concurrentqueue
+        shell: cmd
+        run: build_c_api.bat
+
+      - name: Test with ASan
+        if: matrix.asan && runner.os != 'Windows'
+        run: ./build.sh --tests --clean --reldebug ${{ matrix.asan }}
+
+      - name: Test with ASan
+        if: matrix.asan && runner.os == 'Windows'
+        shell: cmd
+        run: build.bat --tests --clean --reldebug ${{ matrix.asan }} ${{ matrix.args }}
+
+      - name: Test with UBSan
+        if: matrix.ubsan
+        run: ./build.sh --tests --clean --reldebug --ubsan
+
+      - name: Test with TSan
+        if: matrix.tsan
+        run: ./build.sh --tests --clean --reldebug --threadsan
+
+      - name: Test
+        if: runner.os != 'Windows'
+        run: ./build.sh --tests --clean
+
+      - name: Test
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: build.bat --tests --clean ${{ matrix.args }}
+
+  coverage:
+    name: coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Install gcovr
+        run: pip install gcovr
+
+      - name: Build concurrentqueue
+        working-directory: ext/concurrentqueue
+        run: ./build_c_api.sh
+
+      - name: Build with coverage
+        run: |
+          cmake -S . -B build -DRUN_TESTS=1 -DCOVERAGE=ON -DCMAKE_BUILD_TYPE=Debug -DVERSION=0.0.0
+          cmake --build build -j $(nproc)
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Coverage report
+        run: |
+          mkdir -p build/coverage
+          gcovr --root . \
+                --filter 'src/' --filter 'include/' \
+                --print-summary \
+                --xml build/coverage.xml \
+                --html-details build/coverage/index.html \
+                build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: build/coverage/
+
+      - uses: codecov/codecov-action@v5
+        with:
+          files: build/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true

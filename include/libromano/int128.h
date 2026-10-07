@@ -25,13 +25,14 @@
 
 /* On aarch64 with clang/gcc, __SIZEOF_INT128__ is defined, so we use the */
 /* native 128-bit integer type via the compiler GNU extension. */
+/* clang-cl defines it too, but its 128-bit division needs compiler-rt builtins the MSVC runtime lacks */
 /* Define ROMANO_INT128_NO_NATIVE to use the fallback implementation (mostly for testing) */
-#if defined(__SIZEOF_INT128__) && !defined(ROMANO_INT128_NO_NATIVE)
+#if defined(__SIZEOF_INT128__) && !defined(_MSC_VER) && !defined(ROMANO_INT128_NO_NATIVE)
 #define ROMANO_USE_NATIVE_INT128
 #endif
 
-/* MSVC on x86_64 does not have __int128, so we use MSVC intrinsics. */
-#if defined(_MSC_VER) && defined(ROMANO_X86_64) && !defined(ROMANO_USE_NATIVE_INT128)
+/* MSVC does not have __int128, so we use MSVC intrinsics. */
+#if defined(_MSC_VER) && (defined(ROMANO_X86_64) || defined(ROMANO_AARCH64)) && !defined(ROMANO_USE_NATIVE_INT128)
 #define ROMANO_USE_MSVC_INT128
 #endif
 
@@ -199,8 +200,13 @@ ROMANO_FORCE_INLINE uint64_t uint128_high(uint128_t x) { return x.high; }
 ROMANO_FORCE_INLINE uint128_t uint128_add(uint128_t a, uint128_t b)
 {
     uint128_t r;
+#if defined(ROMANO_X86_64)
     unsigned char carry = _addcarry_u64(0, a.low, b.low, &r.low);
     _addcarry_u64(carry, a.high, b.high, &r.high);
+#else
+    r.low = a.low + b.low;
+    r.high = a.high + b.high + (r.low < a.low);
+#endif
     return r;
 }
 
@@ -216,8 +222,13 @@ ROMANO_FORCE_INLINE int128_t int128_add(int128_t a, int128_t b)
 ROMANO_FORCE_INLINE uint128_t uint128_sub(uint128_t a, uint128_t b)
 {
     uint128_t r;
+#if defined(ROMANO_X86_64)
     unsigned char borrow = _subborrow_u64(0, a.low, b.low, &r.low);
     _subborrow_u64(borrow, a.high, b.high, &r.high);
+#else
+    r.low = a.low - b.low;
+    r.high = a.high - b.high - (a.low < b.low);
+#endif
     return r;
 }
 
@@ -232,8 +243,13 @@ ROMANO_FORCE_INLINE int128_t int128_sub(int128_t a, int128_t b)
 
 ROMANO_FORCE_INLINE uint128_t uint128_mul(uint128_t a, uint128_t b)
 {
+#if defined(ROMANO_X86_64)
     uint64_t high;
     uint64_t low = _umul128(a.low, b.low, &high);
+#else
+    uint64_t low = a.low * b.low;
+    uint64_t high = __umulh(a.low, b.low);
+#endif
     high += a.high * b.low + a.low * b.high;
     uint128_t r = { low, high };
     return r;

@@ -15,12 +15,12 @@
 #elif defined(__i386__)
 #define ROMANO_X86
 #define ROMANO_SIZEOF_PTR 4
-#elif defined(__arm__) || _M_ARM
-#define ROMANO_AARCH32
-#define ROMANO_SIZEOF_PTR 4
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM64)
 #define ROMANO_AARCH64
 #define ROMANO_SIZEOF_PTR 8
+#elif defined(__arm__) || defined(_M_ARM)
+#define ROMANO_AARCH32
+#define ROMANO_SIZEOF_PTR 4
 #endif /* INTPTR_MAX == INT64_MAX || defined(__x86_64__) || defined(_M_AMD64) */
 
 /* https://sourceforge.net/p/predef/wiki/OperatingSystems */

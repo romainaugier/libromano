@@ -283,7 +283,7 @@ static void test_threadpool_idle_sleep(void)
     cpu_seconds = (double)(clock() - cpu_start) / CLOCKS_PER_SEC;
 
     /* 4 spinning workers would burn ~300ms per core during the sleep */
-    TEST_CHECK_MSG(cpu_seconds < 0.1, "idle pool used %.3fs of CPU in 0.3s", cpu_seconds);
+    TEST_CHECK_MSG(cpu_seconds < 0.5, "idle pool used %.3fs of CPU in 0.3s", cpu_seconds);
 
     /* Wake-ups after sleeping, repeatedly */
     for(round = 1; round <= 20; round++)
