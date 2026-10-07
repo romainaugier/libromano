@@ -78,5 +78,8 @@ TEST_MAIN(
     TEST(test_byte_swap),
     TEST(test_fuzz_swap),
     TEST(test_aligned_alloc),
+
+#if defined(ROMANO_X86_64)
     TEST(test_alloca),
+#endif /* defined(ROMANO_X86_64) */
 )

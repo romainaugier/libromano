@@ -71,9 +71,15 @@ ROMANO_FORCE_INLINE bool mathf_float_lt(const float a, const float b) { return a
 
 
 #if defined(ROMANO_MSVC)
+#if defined(ROMANO_X86_64)
 ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return _finitef(x) == 0 && _isnanf(x) == 0; }
 ROMANO_FORCE_INLINE bool mathf_isnan(const float x) { return _isnanf(x) != 0; }
 ROMANO_FORCE_INLINE bool mathf_isfinite(const float x) { return _finitef(x) != 0; }
+#else
+ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return isinf(x); }
+ROMANO_FORCE_INLINE bool mathf_isnan(const float x) { return isnan(x); }
+ROMANO_FORCE_INLINE bool mathf_isfinite(const float x) { return isfinite(x); }
+#endif /* defined(ROMANO_X86_64) */
 #elif defined(ROMANO_GCC) || defined(ROMANO_CLANG)
 ROMANO_FORCE_INLINE bool mathf_isinf(const float x) { return __builtin_isinf(x) != 0; }
 ROMANO_FORCE_INLINE bool mathf_isnan(const float x) { return __builtin_isnan(x) != 0; }
