@@ -36,16 +36,16 @@ if %REMOVEOLDDIR% equ 1 (
         call :LogInfo "Removing old lib directory"
         rmdir /s /q lib
     )
-    if exist %INSTALLDIR% (
+    if exist "%INSTALLDIR%" (
         call :LogInfo "Removing old install directory"
-        rmdir /s /q %INSTALLDIR%
+        rmdir /s /q "%INSTALLDIR%"
     )
 )
 
 call :LogInfo "Build type: %BUILDTYPE%"
 call :LogInfo "Build version: %VERSION%"
 
-cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" -DVERSION=%VERSION% -DADDRSAN=%ADDRSAN% -DBUILD_BENCHMARKS=%BENCHMARK%
+cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A "%ARCH%" -DVERSION=%VERSION% -DADDRSAN=%ADDRSAN% -DBUILD_BENCHMARKS=%BENCHMARK%
 
 if %errorlevel% neq 0 (
     call :LogError "Error caught during CMake configuration"
@@ -75,7 +75,7 @@ if %RUNTESTS% equ 1 (
 )
 
 if %INSTALL% equ 1 (
-    cmake --install . --config %BUILDTYPE% --prefix %INSTALLDIR%
+    cmake --install . --config %BUILDTYPE% --prefix "%INSTALLDIR%"
 
     if errorlevel 1 (
         call :LogError "Error caught during CMake installation"
@@ -121,6 +121,8 @@ if "%~1" equ "--install" set INSTALL=1
 if "%~1" equ "--clean" set REMOVEOLDDIR=1
 
 if "%~1" equ "--addrsan" set ADDRSAN=1
+
+if "%~1" equ "--arm64" set ARCH=ARM64
 
 if "%~1" equ "--benchmark" set BENCHMARK=1
 
