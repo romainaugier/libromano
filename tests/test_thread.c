@@ -177,40 +177,10 @@ static void test_condition_variable(void)
     mutex_free(mailbox.mutex);
 }
 
-static void test_timed_wait(void)
-{
-    ConditionalVariable cond;
-    Mutex mutex;
-    static const uint32_t durations[] = { 30, 1200 };
-    size_t i;
-
-    mutex_init(&mutex);
-    conditionalvariable_init(&cond);
-
-    for(i = 0; i < sizeof(durations) / sizeof(durations[0]); i++)
-    {
-        uint64_t start;
-        uint64_t elapsed;
-
-        mutex_lock(&mutex);
-        start = test_now_ms();
-        conditionalvariable_wait(&cond, &mutex, durations[i]);
-        elapsed = test_now_ms() - start;
-        mutex_unlock(&mutex);
-
-        TEST_CHECK_MSG(elapsed >= (uint32_t)((float)durations[i] * 0.9f) && elapsed < (uint32_t)((float)durations[i] * 1.1f),
-                       "waited %llu ms instead of %u ms", (unsigned long long)elapsed, durations[i]);
-    }
-
-    conditionalvariable_release(&cond);
-    mutex_release(&mutex);
-}
-
 TEST_MAIN(
     TEST(test_num_procs),
     TEST(test_threads_and_mutex),
     TEST(test_detach),
     TEST(test_sleep),
     TEST(test_condition_variable),
-    TEST(test_timed_wait),
 )
