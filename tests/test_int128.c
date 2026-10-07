@@ -507,7 +507,7 @@ static void test_print(void)
     TEST_CHECK(1);
 }
 
-#if defined(__SIZEOF_INT128__)
+#if defined(__SIZEOF_INT128__) && !defined(_MSC_VER)
 
 __extension__ typedef unsigned __int128 native_u128;
 __extension__ typedef __int128 native_i128;
@@ -647,7 +647,7 @@ static void test_fuzz_matches_native(void)
 #define NATIVE_TESTS TEST(test_fuzz_matches_native),
 #else
 #define NATIVE_TESTS
-#endif /* defined(__SIZEOF_INT128__) */
+#endif /* defined(__SIZEOF_INT128__) && !defined(_MSC_VER) */
 
 TEST_MAIN(
     TEST(test_make_and_accessors),
