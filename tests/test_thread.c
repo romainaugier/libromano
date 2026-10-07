@@ -198,7 +198,7 @@ static void test_timed_wait(void)
         elapsed = test_now_ms() - start;
         mutex_unlock(&mutex);
 
-        TEST_CHECK_MSG(elapsed + 5 >= durations[i] && elapsed < durations[i] + 2000,
+        TEST_CHECK_MSG(elapsed >= (uint32_t)((float)durations[i] * 0.9f) && elapsed < (uint32_t)((float)durations[i] * 1.1f),
                        "waited %llu ms instead of %u ms", (unsigned long long)elapsed, durations[i]);
     }
 
