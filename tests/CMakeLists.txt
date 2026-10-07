@@ -60,8 +60,10 @@ foreach(test_file ${TEST_FILES})
         set(PDB_COPY_COMMAND
             ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${PROJECT_NAME}>.pdb $<TARGET_FILE_DIR:${TESTNAME}>)
 
+        # Sleep 1 sec because sometimes the compiler is not fully done and the file is still locked
         add_custom_command(
             TARGET ${TESTNAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E sleep 1
             COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${PDB_COPY_COMMAND}>"
             COMMAND_EXPAND_LISTS
         )
@@ -86,9 +88,11 @@ foreach(test_file ${TEST_FILES})
         endif()
     endif()
 
+    # Same here
     if(WIN32)
         add_custom_command(
             TARGET ${TESTNAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E sleep 1
             COMMAND ${CMAKE_COMMAND} -E copy
                 $<TARGET_RUNTIME_DLLS:${TESTNAME}>
                 $<TARGET_FILE_DIR:${TESTNAME}>

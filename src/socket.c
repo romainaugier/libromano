@@ -167,30 +167,7 @@ int socket_inet_pton(int af, const char* src, void* dst)
 const char* socket_inet_ntop(int af, const void* src, char* dst, SockLen len)
 {
 #if defined(ROMANO_WIN)
-    struct sockaddr_in sin4;
-    struct sockaddr_in6 sin6;
-    DWORD sz = (DWORD)len;
-
-    if(af == AF_INET)
-    {
-        memset(&sin4, 0, sizeof(sin4));
-        sin4.sin_family = AF_INET;
-        memcpy(&sin4.sin_addr, src, sizeof(struct in_addr));
-
-        if(WSAAddressToStringA((LPSOCKADDR)&sin4, sizeof(sin4), NULL, dst, &sz) == 0)
-            return dst;
-    }
-    else if(af == AF_INET6)
-    {
-        memset(&sin6, 0, sizeof(sin6));
-        sin6.sin6_family = AF_INET6;
-        memcpy(&sin6.sin6_addr, src, sizeof(struct in_addr));
-
-        if(WSAAddressToStringA((LPSOCKADDR)&sin6, sizeof(sin6), NULL, dst, &sz) == 0)
-            return dst;
-    }
-
-    return NULL;
+    return InetNtopA(af, (void*)src, dst, (size_t)len);
 #else
     return inet_ntop(af, src, dst, len);
 #endif /* defined(ROMANO_WIN) */

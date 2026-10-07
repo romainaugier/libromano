@@ -261,13 +261,14 @@ static void test_dns(void)
         socket_context_release();                   \
     }
 
+WITH_SOCKET_CONTEXT(test_address_conversions)
 WITH_SOCKET_CONTEXT(test_tcp_echo)
 WITH_SOCKET_CONTEXT(test_udp)
 WITH_SOCKET_CONTEXT(test_connection_refused)
 WITH_SOCKET_CONTEXT(test_dns)
 
 TEST_MAIN(
-    TEST(test_address_conversions),
+    TEST(test_address_conversions_with_context),
     TEST(test_tcp_echo_with_context),
     TEST(test_udp_with_context),
     TEST(test_connection_refused_with_context),
