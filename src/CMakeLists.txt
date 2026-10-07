@@ -35,6 +35,11 @@ if(UNIX)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${MATH_LIBRARY})
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32 Shlwapi Pathcch PowrProf dbghelp)
+
+    # For _InlineInterlockedAdd
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+        target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32)
+    endif()
 endif()
 
 if(APPLE)

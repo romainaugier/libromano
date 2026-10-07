@@ -90,7 +90,12 @@ function(set_target_options target_name)
         set(ROMANO_INTEL 1)
     elseif(ROMANO_COMPILER_STYLE STREQUAL "MSVC")
         set(ROMANO_MSVC 1)
-        include(find_avx)
+
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+            include(find_avx)
+        else()
+            set(AVX_FLAGS "")
+        endif()
 
         if(${ADDRSAN})
             target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:/fsanitize=address>)
