@@ -57,20 +57,33 @@ foreach(test_file ${TEST_FILES})
     set_tests_properties(${TESTNAME} PROPERTIES LABELS "${TEST_LABELS}" TIMEOUT ${TEST_TIMEOUT})
 
     if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-        get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
-
-        set(ASAN_COPY_COMMAND
-            ${CMAKE_COMMAND} -E copy_if_different ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${TESTNAME}>)
-
         set(PDB_COPY_COMMAND
             ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${PROJECT_NAME}>.pdb $<TARGET_FILE_DIR:${TESTNAME}>)
 
         add_custom_command(
             TARGET ${TESTNAME} POST_BUILD
-            COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${ASAN_COPY_COMMAND}>"
             COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${PDB_COPY_COMMAND}>"
             COMMAND_EXPAND_LISTS
         )
+
+        if(${ADDRSAN})
+            get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+
+            if(CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64")
+                set(ASAN_DLL clang_rt.asan_dynamic-aarch64.dll)
+            else()
+                set(ASAN_DLL clang_rt.asan_dynamic-x86_64.dll)
+            endif()
+
+            set(ASAN_COPY_COMMAND
+                ${CMAKE_COMMAND} -E copy_if_different ${CL_DIR}/${ASAN_DLL} $<TARGET_FILE_DIR:${TESTNAME}>)
+
+            add_custom_command(
+                TARGET ${TESTNAME} POST_BUILD
+                COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${ASAN_COPY_COMMAND}>"
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
     endif()
 
     if(WIN32)

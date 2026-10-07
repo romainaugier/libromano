@@ -3,7 +3,14 @@
 # All rights reserved.
 
 function(set_target_options target_name)
-    if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+    # clang-cl takes MSVC-style flags, so it goes through the MSVC branch
+    if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        set(ROMANO_COMPILER_STYLE "MSVC")
+    else()
+        set(ROMANO_COMPILER_STYLE "${CMAKE_C_COMPILER_ID}")
+    endif()
+
+    if(ROMANO_COMPILER_STYLE STREQUAL "Clang" OR ROMANO_COMPILER_STYLE STREQUAL "AppleClang")
         set(ROMANO_CLANG 1)
 
         if(${ADDRSAN})
@@ -36,13 +43,13 @@ function(set_target_options target_name)
             $<$<CONFIG:Release,RelWithDebInfo>:-Rpass=loop-vectorize>)
 
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
-            list(APPEND COMPILE_OPTIONS -mavx2 -mfma -mveclibabi=svml)
+            list(APPEND COMPILE_OPTIONS -mavx2 -mfma)
         elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
             # list(APPEND COMPILE_OPTIONS -march=armv8.2-a+fp16)
         endif()
 
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
-    elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    elseif(ROMANO_COMPILER_STYLE STREQUAL "GNU")
         set(ROMANO_GCC 1)
 
         if(${ADDRSAN})
@@ -79,9 +86,9 @@ function(set_target_options target_name)
         endif()
 
         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
+    elseif(ROMANO_COMPILER_STYLE STREQUAL "Intel")
         set(ROMANO_INTEL 1)
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    elseif(ROMANO_COMPILER_STYLE STREQUAL "MSVC")
         set(ROMANO_MSVC 1)
         include(find_avx)
 
