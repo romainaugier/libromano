@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/buffer.h"
+#include "libromano/memory.h"
 #include "libromano/error.h"
 
 #include <string.h>
@@ -13,7 +14,7 @@ bool buffer_init(Buffer* buffer, size_t initial_capacity)
 {
     ROMANO_ASSERT(buffer != NULL, "buffer is NULL");
 
-    buffer->data = calloc(initial_capacity > 0 ? initial_capacity : 1, sizeof(char));
+    buffer->data = romano_calloc(initial_capacity > 0 ? initial_capacity : 1, sizeof(char));
 
     if(buffer->data == NULL)
     {
@@ -43,7 +44,7 @@ bool buffer_resize(Buffer* buffer, size_t to_add_sz)
           new_capacity < INT64_MAX)
         new_capacity <<= 1;
 
-    new_data = realloc(buffer->data, new_capacity);
+    new_data = romano_realloc(buffer->data, new_capacity);
 
     if(new_data == NULL)
     {
@@ -126,7 +127,7 @@ void buffer_release(Buffer* buffer)
     ROMANO_ASSERT(buffer != NULL, "buffer is NULL");
 
     if(buffer->data != NULL)
-        free(buffer->data);
+        romano_free(buffer->data);
 
     buffer->data = NULL;
     buffer->capacity = 0;

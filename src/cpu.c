@@ -7,6 +7,7 @@
 #endif /* defined(__linux__) && !defined(_GNU_SOURCE) */
 
 #include "libromano/cpu.h"
+#include "libromano/memory.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1152,14 +1153,14 @@ static void cpu_detect_caches_windows(CPUCacheInfo* caches)
     if(GetLogicalProcessorInformation(NULL, &length) || GetLastError() != ERROR_INSUFFICIENT_BUFFER || length == 0)
         return;
 
-    buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)malloc(length);
+    buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)romano_malloc(length);
 
     if(buffer == NULL)
         return;
 
     if(!GetLogicalProcessorInformation(buffer, &length))
     {
-        free(buffer);
+        romano_free(buffer);
         return;
     }
 
@@ -1193,7 +1194,7 @@ static void cpu_detect_caches_windows(CPUCacheInfo* caches)
         }
     }
 
-    free(buffer);
+    romano_free(buffer);
 }
 
 #endif /* defined(ROMANO_LINUX) */

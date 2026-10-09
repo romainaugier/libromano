@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/string.h"
+#include "libromano/memory.h"
 #include "libromano/error.h"
 
 #include <string.h>
@@ -44,7 +45,7 @@ String string_new(const char* data)
 
     sz = (size_t)((double)length * LIBROMANO_STRING_GROWTH_RATE);
 
-    str_ptr = (char*)calloc(STRING_SIZE(sz) + HEADER_SIZE, sizeof(char));
+    str_ptr = (char*)romano_calloc(STRING_SIZE(sz) + HEADER_SIZE, sizeof(char));
 
     if(str_ptr == NULL) 
     {
@@ -67,7 +68,7 @@ String string_newz(const size_t length)
 
     sz = (size_t)((double)length * LIBROMANO_STRING_GROWTH_RATE);
 
-    str_ptr = (char*)calloc(STRING_SIZE(sz) + HEADER_SIZE, sizeof(char));
+    str_ptr = (char*)romano_calloc(STRING_SIZE(sz) + HEADER_SIZE, sizeof(char));
 
     if(str_ptr == NULL)
     {
@@ -122,7 +123,7 @@ bool string_resize(String* string, size_t new_size)
     if(new_size < existing_capacity)
         return true;
 
-    new_str_ptr = (char*)malloc(STRING_SIZE(new_size) + HEADER_SIZE);
+    new_str_ptr = (char*)romano_malloc(STRING_SIZE(new_size) + HEADER_SIZE);
 
     if(new_str_ptr == NULL)
     {
@@ -134,7 +135,7 @@ bool string_resize(String* string, size_t new_size)
 
     memcpy(new_str_ptr, GET_RAW_PTR(*string), copy_sz);
 
-    free(GET_RAW_PTR(*string));
+    romano_free(GET_RAW_PTR(*string));
 
     *string = GET_STR_PTR(new_str_ptr);
 
@@ -156,7 +157,7 @@ String string_copy(const String other)
     other_sz = GET_SIZE_FROM_STR(other);
     other_capacity = GET_CAPACITY_FROM_STR(other);
 
-    new_ptr = (char*)malloc(STRING_SIZE(other_capacity) + HEADER_SIZE);
+    new_ptr = (char*)romano_malloc(STRING_SIZE(other_capacity) + HEADER_SIZE);
 
     if(new_ptr == NULL)
     {
@@ -491,7 +492,7 @@ String* string_splitc(char* data, const char* separator, uint32_t* count)
 
     (*count)++;
 
-    result = malloc(*count * sizeof(String));
+    result = romano_malloc(*count * sizeof(String));
 
     if(result == NULL)
     {
@@ -528,7 +529,7 @@ void string_free(String data)
 {
     if(data != NULL)
     {
-        free(GET_RAW_PTR(data));
+        romano_free(GET_RAW_PTR(data));
         data = NULL;
     }
 }

@@ -52,7 +52,7 @@ bool fs_file_content_init(FileContent* content,
     fseek(file_handle, 0, SEEK_END);
     content->content_sz = ftell(file_handle);
     rewind(file_handle);
-    content->content = (char*)calloc(content->content_sz + 1, sizeof(char));
+    content->content = (char*)romano_calloc(content->content_sz + 1, sizeof(char));
 
     if(content->content == NULL)
     {
@@ -83,7 +83,7 @@ bool fs_file_content_init(FileContent* content,
 FileContent* fs_file_content_new(const char* path,
                                  bool read_binary)
 {
-    FileContent* content = (FileContent*)calloc(1, sizeof(FileContent));
+    FileContent* content = (FileContent*)romano_calloc(1, sizeof(FileContent));
 
     if(content == NULL)
     {
@@ -93,7 +93,7 @@ FileContent* fs_file_content_new(const char* path,
 
     if(!fs_file_content_init(content, path, read_binary))
     {
-        free(content);
+        romano_free(content);
         return NULL;
     }
 
@@ -106,7 +106,7 @@ void fs_file_content_release(FileContent* content)
 
     if(content->content != NULL)
     {
-        free(content->content);
+        romano_free(content->content);
         content->content = NULL;
         content->content_sz = 0;
     }
@@ -117,7 +117,7 @@ void fs_file_content_free(FileContent* content)
     ROMANO_ASSERT(content != NULL, "content is NULL");
 
     fs_file_content_release(content);
-    free(content);
+    romano_free(content);
 }
 
 bool fs_path_exists(const char *path)
@@ -203,7 +203,7 @@ char* fs_parent_dir_new(const char* path)
 
     size_t parent_path_sz = fs_parent_dir(path);
 
-    char* parent_path = (char*)malloc((parent_path_sz + 1) * sizeof(char));
+    char* parent_path = (char*)romano_malloc((parent_path_sz + 1) * sizeof(char));
 
     if(parent_path == NULL)
     {
@@ -279,7 +279,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
         return false;
     }
 
-    char* buffer = (char*)calloc(sz, sizeof(char));
+    char* buffer = (char*)romano_calloc(sz, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -293,7 +293,7 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
 
     if(total_sz == 0)
     {
-        free(buffer);
+        romano_free(buffer);
         *out_path = NULL;
         *out_sz = 0;
         return false;
@@ -301,26 +301,28 @@ bool fs_get_cwd(char** out_path, size_t* out_sz)
 
     *out_path = buffer;
     *out_sz = (size_t)total_sz;
-#elif defined(ROMANO_LINUX)
-    *out_path = get_current_dir_name();
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+    char* cwd = getcwd(NULL, 0);
 
-    if(*out_path == NULL)
+    if(cwd == NULL)
     {
         g_current_error = error_get_last_from_system();
-        return false;
-    }
-
-    *out_sz = strlen(*out_path);
-#elif defined(ROMANO_APPLE)
-    *out_path = getcwd(NULL, MAX_PATH);
-
-    if(*out_path == NULL)
-    {
+        *out_path = NULL;
         *out_sz = 0;
         return false;
     }
 
-    *out_sz = strlen(*out_path);
+    /* getcwd allocates with the C runtime, callers release with romano_free */
+    *out_sz = strlen(cwd);
+    *out_path = romano_strndup(cwd, *out_sz);
+    free(cwd);
+
+    if(*out_path == NULL)
+    {
+        g_current_error = ErrorCode_MemAllocError;
+        *out_sz = 0;
+        return false;
+    }
 #else
 #error "Unsupported platform"
 #endif /* defined(ROMANO_WIN) */
@@ -485,7 +487,7 @@ bool fs_walk_iterator_init(FSWalkIterator* walk_iterator)
 #endif /* defined(ROMANO_WIN) */
 
     walk_iterator->current_path_capacity = 256;
-    walk_iterator->current_path = (char*)calloc(256, sizeof(char));
+    walk_iterator->current_path = (char*)romano_calloc(256, sizeof(char));
 
     if(walk_iterator->current_path == NULL)
     {
@@ -502,7 +504,7 @@ bool fs_walk_iterator_init(FSWalkIterator* walk_iterator)
 
 FSWalkIterator* fs_walk_iterator_new(void)
 {
-    FSWalkIterator* item = (FSWalkIterator*)malloc(sizeof(FSWalkIterator));
+    FSWalkIterator* item = (FSWalkIterator*)romano_malloc(sizeof(FSWalkIterator));
 
     if(item == NULL)
     {
@@ -513,7 +515,7 @@ FSWalkIterator* fs_walk_iterator_new(void)
     if(!fs_walk_iterator_init(item))
     {
         g_current_error = ErrorCode_MemAllocError;
-        free(item);
+        romano_free(item);
         return NULL;
     }
 
@@ -524,7 +526,7 @@ void fs_walk_iterator_queue_release_cb(void* data)
 {
     ROMANO_ASSERT(data != NULL, "data is NULL");
 
-    free(*(char**)data);
+    romano_free(*(char**)data);
 }
 
 void fs_walk_iterator_release(FSWalkIterator* walk_iterator)
@@ -532,10 +534,10 @@ void fs_walk_iterator_release(FSWalkIterator* walk_iterator)
     ROMANO_ASSERT(walk_iterator != NULL, "walk_iterator is NULL");
 
     if(walk_iterator->current_path != NULL)
-        free(walk_iterator->current_path);
+        romano_free(walk_iterator->current_path);
 
     if(walk_iterator->_current_dir != NULL)
-        free(walk_iterator->_current_dir);
+        romano_free(walk_iterator->_current_dir);
 
 #if defined(ROMANO_WIN)
     if(walk_iterator->_h_find != INVALID_HANDLE_VALUE)
@@ -562,7 +564,7 @@ void fs_walk_iterator_free(FSWalkIterator* walk_iterator)
     ROMANO_ASSERT(walk_iterator != NULL, "walk_iterator is NULL");
 
     fs_walk_iterator_release(walk_iterator);
-    free(walk_iterator);
+    romano_free(walk_iterator);
 }
 
 static bool walk_set_current_path(FSWalkIterator* walk_iterator, const char* name, char separator)
@@ -580,7 +582,7 @@ static bool walk_set_current_path(FSWalkIterator* walk_iterator, const char* nam
             return false;
         }
 
-        new_path = (char*)realloc(walk_iterator->current_path, walk_iterator->current_path_capacity * 2);
+        new_path = (char*)romano_realloc(walk_iterator->current_path, walk_iterator->current_path_capacity * 2);
 
         if(new_path == NULL)
         {
@@ -602,7 +604,7 @@ static bool walk_set_current_path(FSWalkIterator* walk_iterator, const char* nam
 
 static bool walk_queue_current_path(FSWalkIterator* walk_iterator)
 {
-    char* dir_path = (char*)malloc(walk_iterator->current_path_sz + 1);
+    char* dir_path = (char*)romano_malloc(walk_iterator->current_path_sz + 1);
 
     if(dir_path == NULL)
     {
@@ -621,7 +623,7 @@ static bool walk_next_directory(FSWalkIterator* walk_iterator)
     if(vector_size(&walk_iterator->_dir_queue) == 0)
         return false;
 
-    free(walk_iterator->_current_dir);
+    romano_free(walk_iterator->_current_dir);
 
     walk_iterator->_current_dir = *(char**)vector_at(&walk_iterator->_dir_queue, 0);
     walk_iterator->_current_dir_sz = strlen(walk_iterator->_current_dir);
@@ -644,7 +646,7 @@ bool fs_walk(const char* path,
     if(walk_iterator->_first_entry)
     {
         size_t path_sz = strlen(path);
-        char* path_copy = calloc(path_sz + 1, sizeof(char));
+        char* path_copy = romano_calloc(path_sz + 1, sizeof(char));
 
         if(path_copy == NULL)
         {
@@ -672,7 +674,7 @@ bool fs_walk(const char* path,
             if(!walk_next_directory(walk_iterator))
                 return false;
 
-            pattern = (char*)malloc(walk_iterator->_current_dir_sz + 3);
+            pattern = (char*)romano_malloc(walk_iterator->_current_dir_sz + 3);
 
             if(pattern == NULL)
             {
@@ -685,7 +687,7 @@ bool fs_walk(const char* path,
 
             walk_iterator->_h_find = FindFirstFileA(pattern, &find_data);
 
-            free(pattern);
+            romano_free(pattern);
 
             if(walk_iterator->_h_find == INVALID_HANDLE_VALUE)
                 continue;

@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include "libromano/string.h"
+#include "libromano/memory.h"
 
 static void test_constructors(void)
 {
@@ -97,7 +98,7 @@ static void test_split(void)
     for(i = 0; i < count; i++)
         string_free(parts[i]);
 
-    free(parts);
+    romano_free(parts);
 
     TEST_CHECK(string_splitc(empty, ",", &count) == NULL);
     TEST_CHECK_EQ_UINT(count, 0);

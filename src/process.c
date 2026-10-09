@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/process.h"
+#include "libromano/memory.h"
 #include "libromano/error.h"
 
 #include <string.h>
@@ -45,7 +46,7 @@ static bool process_buffer_append(ProcessBuffer* buffer, const char* data, size_
         while(buffer->size + size + 1 > new_capacity)
             new_capacity *= 2;
 
-        new_data = (char*)realloc(buffer->data, new_capacity);
+        new_data = (char*)romano_realloc(buffer->data, new_capacity);
 
         if(new_data == NULL)
         {
@@ -68,7 +69,7 @@ static void process_buffer_finish(ProcessBuffer* buffer, char** out, size_t* out
 {
     if(buffer->data == NULL)
     {
-        buffer->data = (char*)calloc(1, 1);
+        buffer->data = (char*)romano_calloc(1, 1);
     }
 
     *out = buffer->data;
@@ -358,8 +359,8 @@ fail:
     process_close_fd(&err_pipe[1]);
     process_close_fd(&exec_pipe[0]);
     process_close_fd(&exec_pipe[1]);
-    free(out_buffer.data);
-    free(err_buffer.data);
+    romano_free(out_buffer.data);
+    romano_free(err_buffer.data);
 
     return false;
 }
@@ -597,8 +598,8 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
         process_buffer_finish(&err_reader.buffer, &result->err, &result->err_sz);
     }
 
-    free(cmd.data);
-    free(env_block.data);
+    romano_free(cmd.data);
+    romano_free(env_block.data);
 
     return true;
 
@@ -617,8 +618,8 @@ fail:
     if(err_write != NULL)
         CloseHandle(err_write);
 
-    free(cmd.data);
-    free(env_block.data);
+    romano_free(cmd.data);
+    romano_free(env_block.data);
 
     return false;
 }
@@ -632,8 +633,8 @@ void process_result_release(ProcessResult* result)
     if(result == NULL)
         return;
 
-    free(result->out);
-    free(result->err);
+    romano_free(result->out);
+    romano_free(result->err);
     memset(result, 0, sizeof(ProcessResult));
 }
 

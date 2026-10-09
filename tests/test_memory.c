@@ -64,6 +64,37 @@ static void test_aligned_alloc(void)
     }
 }
 
+static void test_allocator(void)
+{
+    uint8_t* bytes = (uint8_t*)romano_malloc(100);
+    uint64_t* zeros = (uint64_t*)romano_calloc(1000, sizeof(uint64_t));
+    char* copy = romano_strndup("libromano", 6);
+    size_t i;
+
+    TEST_ASSERT(bytes != NULL && zeros != NULL && copy != NULL);
+
+    for(i = 0; i < 100; i++)
+        bytes[i] = (uint8_t)i;
+
+    bytes = (uint8_t*)romano_realloc(bytes, 100000);
+    TEST_ASSERT(bytes != NULL);
+
+    for(i = 0; i < 100; i++)
+        TEST_CHECK_EQ_UINT(bytes[i], i);
+
+    for(i = 0; i < 1000; i++)
+        TEST_CHECK_EQ_UINT(zeros[i], 0);
+
+    TEST_CHECK_EQ_STR(copy, "librom");
+
+    romano_free(bytes);
+    romano_free(zeros);
+    romano_free(copy);
+    romano_free(NULL);
+
+    TEST_CHECK(strcmp(romano_allocator_name(), "mimalloc") == 0 || strcmp(romano_allocator_name(), "crt") == 0);
+}
+
 static void test_alloca(void)
 {
 #if defined(ROMANO_X86_64)
@@ -80,5 +111,6 @@ TEST_MAIN(
     TEST(test_byte_swap),
     TEST(test_fuzz_swap),
     TEST(test_aligned_alloc),
+    TEST(test_allocator),
     TEST(test_alloca),
 )

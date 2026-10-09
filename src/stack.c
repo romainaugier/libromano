@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/stack.h"
+#include "libromano/memory.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -21,11 +22,11 @@ Stack* stack_init(const size_t initial_capacity, const size_t element_size)
     Stack* new_stack;
     size_t capacity;
 
-    new_stack = (Stack*)malloc(sizeof(Stack));
+    new_stack = (Stack*)romano_malloc(sizeof(Stack));
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
 
-    new_stack->data = calloc(HEADER_SIZE * sizeof(size_t) + capacity * element_size, sizeof(char));
+    new_stack->data = romano_calloc(HEADER_SIZE * sizeof(size_t) + capacity * element_size, sizeof(char));
 
     ((size_t*)new_stack->data)[0] = 0;
     ((size_t*)new_stack->data)[1] = capacity;
@@ -91,7 +92,7 @@ void stack_grow(Stack* stack)
     if(new_capacity <= stack_get_capacity(stack))
         new_capacity = stack_get_capacity(stack) + 1;
 
-    new_data_ptr = realloc(stack->data, 
+    new_data_ptr = romano_realloc(stack->data, 
                            new_capacity * stack_get_element_size(stack) + HEADER_SIZE * sizeof(size_t));
 
     stack->data = new_data_ptr;
@@ -142,10 +143,10 @@ void stack_free(Stack* stack)
     {
         if(stack->data != NULL)
         {
-            free(stack->data);
+            romano_free(stack->data);
         }
 
-        free(stack);
+        romano_free(stack);
         stack = NULL;
     }
 }

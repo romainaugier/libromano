@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/json.h"
+#include "libromano/memory.h"
 #include "libromano/arena.h"
 #include "libromano/common.h"
 #include "libromano/logger.h"
@@ -895,7 +896,7 @@ JsonValue* json_parse_number(JsonParser* p)
     }
     else
     {
-        char* heap_buffer = (char*)malloc(number_sz + 1);
+        char* heap_buffer = (char*)romano_malloc(number_sz + 1);
         double value;
 
         if(heap_buffer == NULL)
@@ -904,7 +905,7 @@ JsonValue* json_parse_number(JsonParser* p)
         memcpy(heap_buffer, p->str + start, number_sz);
         heap_buffer[number_sz] = '\0';
         value = strtod(heap_buffer, NULL);
-        free(heap_buffer);
+        romano_free(heap_buffer);
 
         return json_f64_new(p->json, value);
     }
@@ -1154,7 +1155,7 @@ bool json_write_realloc(JsonWriter* writer, size_t needed_size)
     while(total_needed_size >= new_capacity)
         new_capacity <<= 1;
 
-    new_str = realloc(writer->str, new_capacity * sizeof(char));
+    new_str = romano_realloc(writer->str, new_capacity * sizeof(char));
 
     if(new_str == NULL)
     {
@@ -1494,7 +1495,7 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
     writer.indent_size = indent_size;
     writer.str_capacity = 4096;
     writer.str_sz = 0;
-    writer.str = (char*)calloc(writer.str_capacity, sizeof(char));
+    writer.str = (char*)romano_calloc(writer.str_capacity, sizeof(char));
 
     if(writer.str == NULL)
     {
@@ -1504,7 +1505,7 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
 
     if(!json_write_value(&writer, json->root) || !json_write_realloc(&writer, 1))
     {
-        free(writer.str);
+        romano_free(writer.str);
         return NULL;
     }
 
@@ -1522,7 +1523,7 @@ char* json_write(Json* json, size_t indent_size, size_t* written_size)
 
 Json* json_new(void)
 {
-    Json* json = malloc(sizeof(Json));
+    Json* json = romano_malloc(sizeof(Json));
 
     if(json == NULL)
     {
@@ -1567,7 +1568,7 @@ Json* json_loadf(const char* file_path)
     size_t file_size = ftell(file);
     rewind(file);
 
-    char* file_buffer = calloc(file_size + 1, sizeof(char));
+    char* file_buffer = romano_calloc(file_size + 1, sizeof(char));
 
     if(file_buffer == NULL)
     {
@@ -1586,14 +1587,14 @@ Json* json_loadf(const char* file_path)
         g_current_error = error_get_last_from_system();
         logger_log_error("Error while trying to read json file: %s (%d)", file_path, g_current_error);
 
-        free(file_buffer);
+        romano_free(file_buffer);
 
         return NULL;
     }
 
     Json* json = json_loads(file_buffer, file_size);
 
-    free(file_buffer);
+    romano_free(file_buffer);
 
     return json;
 }
@@ -1619,7 +1620,7 @@ bool json_dumpf(Json* json, size_t indent_size, const char* file_path)
 
     if(file == NULL)
     {
-        free(written);
+        romano_free(written);
 
         g_current_error = error_get_last_from_system();
 
@@ -1632,7 +1633,7 @@ bool json_dumpf(Json* json, size_t indent_size, const char* file_path)
 
     fwritten_sz = fwrite(written, sizeof(char), written_sz, file);
 
-    free(written);
+    romano_free(written);
 
     if(fclose(file) != 0 || fwritten_sz < written_sz)
     {
@@ -1653,5 +1654,5 @@ void json_free(Json* json)
     arena_release(&json->string_arena);
     arena_release(&json->value_arena);
 
-    free(json);
+    romano_free(json);
 }

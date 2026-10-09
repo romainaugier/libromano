@@ -21,8 +21,9 @@ def stage_queue_header(cc) {
     return ok(cc.dir / "include");
 }
 
-# Declares the libromano static library with the settings of the common profile
-def targets(cc, common) {
+# Declares the libromano static library with the settings of the common profile, mimalloc=false allocates
+# with the C runtime (needed by sanitizers and valgrind)
+def targets(cc, common, mimalloc=true) {
     let queue = cc.static_lib("concurrentqueue_c_api")
         .use(common)
         .sources(glob(f"{QUEUE}/*.cpp"))
@@ -53,6 +54,24 @@ def targets(cc, common) {
             .simd(Cpu.Avx512f, Cpu.Avx2, Cpu.Fma));
     }
 
+    if mimalloc {
+        lib.define("ROMANO_MIMALLOC")
+            .include("ext/mimalloc/include")
+            .link(cc.objects("mimalloc")
+                .use(common)
+                .std(Std.C11, Std.Cpp17)
+                .warnings(Warn.Off)
+                # Short-lived processes: no transparent huge pages (the first 2 MiB page fault costs ~1 ms
+                # at startup) and 64 MiB arenas, MIMALLOC_ALLOW_THP=1 / MIMALLOC_ARENA_RESERVE override them
+                .define({"MI_DEFAULT_ALLOW_THP": 0, "MI_DEFAULT_ARENA_RESERVE": "65536L"})
+                .sources("ext/mimalloc/src/static.c")
+                .include("ext/mimalloc/include"));
+
+        if sys.os == Os.Windows {
+            lib.link("psapi", "shell32", "user32", "advapi32", "bcrypt", Vis.Public);
+        }
+    }
+
     if sys.os == Os.Windows {
         lib.link("wsock32", "ws2_32", "Shlwapi", "Pathcch", "PowrProf", "dbghelp", Vis.Public);
     } else if sys.os == Os.Macos {
@@ -68,20 +87,20 @@ def profile(cc, config) {
 
 # Builds the static library
 @task(default=true)
-def build(config=Config.Release) {
+def build(config=Config.Release, mimalloc=true) {
     let cc = toolchain.detect()?.out_dir(f"build/{config.name.lower()}");
-    let lib = targets(cc, profile(cc, config))?;
+    let lib = targets(cc, profile(cc, config), mimalloc=mimalloc)?;
     compile([lib])?;
     return ok(lib);
 }
 
 # Builds and runs the C tests (filter on the test name, network tests are opt-in)
 @task
-def test(config=Config.Debug, filter="", network=false) {
+def test(config=Config.Debug, filter="", network=false, mimalloc=true) {
     let cc = toolchain.detect()?.out_dir(f"build/{config.name.lower()}");
     let common = profile(cc, config)
         .when(sys.arch == Arch.X86_64, def(t) { t.simd(Cpu.Avx2, Cpu.Fma); });
-    let lib = targets(cc, common)?;
+    let lib = targets(cc, common, mimalloc=mimalloc)?;
     let tmp = (cc.dir / "tests_tmp").abs();
 
     let support = cc.static_lib("romano_test")

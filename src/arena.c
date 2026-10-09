@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/arena.h"
+#include "libromano/memory.h"
 #include "libromano/error.h"
 
 #include <stdlib.h>
@@ -14,7 +15,7 @@ ArenaBlock* arena_block_init(const size_t block_size)
 {
     const size_t total_size = block_size + sizeof(ArenaBlock);
 
-    void* addr = malloc(total_size);
+    void* addr = romano_malloc(total_size);
 
     if(addr == NULL)
     {
@@ -49,11 +50,11 @@ bool arena_init(Arena* arena, const size_t block_size)
 
 Arena* arena_new(const size_t block_size)
 {
-    Arena* arena = (Arena*)calloc(1, sizeof(Arena));
+    Arena* arena = (Arena*)romano_calloc(1, sizeof(Arena));
 
     if(!arena_init(arena, block_size))
     {
-        free(arena);
+        romano_free(arena);
         return NULL;
     }
 
@@ -140,7 +141,7 @@ void arena_release(Arena* arena)
         {
             ArenaBlock* prev_prev_block = prev_block->previous;
 
-            free(prev_block);
+            romano_free(prev_block);
 
             prev_block = prev_prev_block;
         }
@@ -151,12 +152,12 @@ void arena_release(Arena* arena)
         {
             ArenaBlock* next_next_block = next_block->next;
 
-            free(next_block);
+            romano_free(next_block);
 
             next_block = next_next_block;
         }
 
-        free(arena->current_block);
+        romano_free(arena->current_block);
 
         arena->current_block = NULL;
     }
@@ -167,5 +168,5 @@ void arena_release(Arena* arena)
 void arena_free(Arena* arena)
 {
     arena_release(arena);
-    free(arena);
+    romano_free(arena);
 }

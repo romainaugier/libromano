@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/threadpool.h"
+#include "libromano/memory.h"
 #include "libromano/thread.h"
 #include "libromano/atomic.h"
 #include "libromano/cpu.h"
@@ -191,7 +192,7 @@ static Work* work_alloc(ThreadPool* pool, size_t arg_size)
         alloc_size = alloc_size < sizeof(Work) ? sizeof(Work) : alloc_size;
     }
 
-    work = (Work*)malloc(alloc_size);
+    work = (Work*)romano_malloc(alloc_size);
 
     if(work == NULL)
     {
@@ -209,7 +210,7 @@ static void work_recycle(ThreadPool* pool, Work* work)
     if(work->origin == WORK_ORIGIN_SLAB)
         work_slab_push(pool, work);
     else
-        free(work);
+        romano_free(work);
 }
 
 /* Signals the waiter and gives the node back, without running it */
@@ -383,7 +384,7 @@ ThreadPool* threadpool_init(uint32_t workers_count)
 
     workers_count = workers_count == 0 ? (uint32_t)get_num_procs() : workers_count;
 
-    threadpool = (ThreadPool*)calloc(1, sizeof(ThreadPool));
+    threadpool = (ThreadPool*)romano_calloc(1, sizeof(ThreadPool));
 
     if(threadpool == NULL)
     {
@@ -391,15 +392,15 @@ ThreadPool* threadpool_init(uint32_t workers_count)
         return NULL;
     }
 
-    threadpool->workers = (Worker*)calloc(workers_count, sizeof(Worker));
-    threadpool->slab = (Work*)malloc(THREADPOOL_WORK_SLAB_SIZE * sizeof(Work));
+    threadpool->workers = (Worker*)romano_calloc(workers_count, sizeof(Worker));
+    threadpool->slab = (Work*)romano_malloc(THREADPOOL_WORK_SLAB_SIZE * sizeof(Work));
 
     if(threadpool->workers == NULL || threadpool->slab == NULL)
     {
         g_current_error = ErrorCode_MemAllocError;
-        free(threadpool->workers);
-        free(threadpool->slab);
-        free(threadpool);
+        romano_free(threadpool->workers);
+        romano_free(threadpool->slab);
+        romano_free(threadpool);
         return NULL;
     }
 
@@ -433,9 +434,9 @@ ThreadPool* threadpool_init(uint32_t workers_count)
 
             conditionalvariable_release(&threadpool->sleep_cv);
             mutex_release(&threadpool->sleep_mutex);
-            free(threadpool->workers);
-            free(threadpool->slab);
-            free(threadpool);
+            romano_free(threadpool->workers);
+            romano_free(threadpool->slab);
+            romano_free(threadpool);
 
             return NULL;
         }
@@ -638,7 +639,7 @@ void threadpool_release(ThreadPool* threadpool)
     conditionalvariable_release(&threadpool->sleep_cv);
     mutex_release(&threadpool->sleep_mutex);
 
-    free(threadpool->slab);
-    free(threadpool->workers);
-    free(threadpool);
+    romano_free(threadpool->slab);
+    romano_free(threadpool->workers);
+    romano_free(threadpool);
 }

@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include "libromano/base64.h"
+#include "libromano/memory.h"
 
 static void test_known_vectors(void)
 {
@@ -29,8 +30,8 @@ static void test_known_vectors(void)
         TEST_CHECK_EQ_UINT(decoded_size, strlen(plain[i]));
         TEST_CHECK_EQ_MEM(d, plain[i], decoded_size);
 
-        free(e);
-        free(d);
+        romano_free(e);
+        romano_free(d);
     }
 }
 
@@ -40,10 +41,10 @@ static void test_empty(void)
     char* e = base64_encode("", 0, &size);
 
     TEST_CHECK_EQ_UINT(size, 0);
-    free(e);
+    romano_free(e);
 
     size = 1;
-    free(base64_decode("", 0, &size));
+    romano_free(base64_decode("", 0, &size));
     TEST_CHECK_EQ_UINT(size, 0);
 }
 
@@ -58,7 +59,7 @@ static void test_invalid_input(void)
         void* d = base64_decode(invalid[i], strlen(invalid[i]), &size);
 
         TEST_CHECK_MSG(d == NULL, "\"%s\" should not decode", invalid[i]);
-        free(d);
+        romano_free(d);
     }
 }
 
@@ -91,8 +92,8 @@ static bool property_roundtrip(FuzzSource* source, void* user_data)
     decoded = (uint8_t*)base64_decode(encoded, encoded_size, &decoded_size);
     ok = decoded != NULL && decoded_size == size && memcmp(decoded, data, size) == 0;
 
-    free(encoded);
-    free(decoded);
+    romano_free(encoded);
+    romano_free(decoded);
 
     TEST_FUZZ_CHECK_MSG(ok, "roundtrip failed for %zu bytes", size);
 
@@ -117,8 +118,8 @@ static bool target_decode(const uint8_t* data, size_t size, void* user_data)
         char* encoded = base64_encode(decoded, decoded_size, &encoded_size);
         bool same = encoded != NULL && encoded_size == size && memcmp(encoded, data, size) == 0;
 
-        free(encoded);
-        free(decoded);
+        romano_free(encoded);
+        romano_free(decoded);
 
         TEST_FUZZ_CHECK_MSG(same, "decoded input does not re-encode to itself");
     }

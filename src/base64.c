@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/base64.h"
+#include "libromano/memory.h"
 
 #include <string.h>
 
@@ -86,7 +87,7 @@ char* base64_encode(const void* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
     buffer_sz = base64_get_encode_size(data_sz);
     *out_sz = 0;
 
-    buffer = (char*)calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(char));
+    buffer = (char*)romano_calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(char));
 
     if(buffer == NULL)
     {
@@ -95,7 +96,7 @@ char* base64_encode(const void* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
 
     if(!base64_encode_scalar(data, data_sz, buffer, out_sz))
     {
-        free(buffer);
+        romano_free(buffer);
         return NULL;
     }
 
@@ -186,14 +187,14 @@ void* base64_decode(const char* ROMANO_RESTRICT data, size_t data_sz, size_t* ou
 
     buffer_sz = (data_sz / 4) * 3 - base64_get_padding(data, data_sz);
 
-    buffer = (uint8_t*)calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(uint8_t));
+    buffer = (uint8_t*)romano_calloc(buffer_sz > 0 ? buffer_sz : 1, sizeof(uint8_t));
 
     if(buffer == NULL)
         return NULL;
 
     if(!base64_decode_scalar(data, data_sz, buffer, out_sz))
     {
-        free(buffer);
+        romano_free(buffer);
         *out_sz = 0;
         return NULL;
     }

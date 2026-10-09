@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/socket.h"
+#include "libromano/memory.h"
 #include "libromano/common.h"
 #include "libromano/logger.h"
 #include "libromano/error.h"
@@ -202,7 +203,7 @@ void socket_dns_result_release(DNSResolveResult* res)
 
     if(res->addrs != NULL)
     {
-        free(res->addrs);
+        romano_free(res->addrs);
         res->addrs = NULL;
     }
 
@@ -242,7 +243,7 @@ bool copy_addrinfo(struct addrinfo* list, DNSResolveResult* res)
     for(ai = list; ai != NULL; ai = ai->ai_next)
         count++;
 
-    addrs = (SockAddrStorage*)calloc(count, sizeof(SockAddrStorage));
+    addrs = (SockAddrStorage*)romano_calloc(count, sizeof(SockAddrStorage));
 
     if(addrs == NULL)
     {

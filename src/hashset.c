@@ -65,7 +65,7 @@ void hashset_bucket_new(Bucket* bucket,
     }
     else
     {
-        bucket->key = malloc((key_size) * sizeof(char));
+        bucket->key = romano_malloc((key_size) * sizeof(char));
         memcpy(bucket->key, key, key_size * sizeof(char));
 
 #if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
@@ -153,7 +153,7 @@ void hashset_bucket_free(Bucket* bucket)
         return;
 
     if(!bucket_has_flag(bucket, BucketFlag_KeyInterned))
-        free(bucket_get_key(bucket));
+        romano_free(bucket_get_key(bucket));
 
     memset(bucket, 0, sizeof(Bucket));
 }
@@ -210,7 +210,7 @@ void hashset_grow(Hashset* hashset,
     old_buckets = hashset->buckets;
     old_capacity = hashset->capacity;
 
-    hashset->buckets = (Bucket*)calloc(capacity, sizeof(Bucket));
+    hashset->buckets = (Bucket*)romano_calloc(capacity, sizeof(Bucket));
     hashset->capacity = capacity;
     hashset->size = 0;
 
@@ -231,13 +231,13 @@ void hashset_grow(Hashset* hashset,
             hashset_move_entry(hashset, bucket, rehash);
         }
 
-        free(old_buckets);
+        romano_free(old_buckets);
     }
 }
 
 Hashset* hashset_new(size_t initial_capacity)
 {
-    Hashset* hashset = (Hashset*)malloc(sizeof(Hashset));
+    Hashset* hashset = (Hashset*)romano_malloc(sizeof(Hashset));
 
     if(hashset == NULL)
     {
@@ -568,8 +568,8 @@ void hashset_free(Hashset* hashset)
         for(i = 0; i < hashset->capacity; i++)
             hashset_bucket_free(&hashset->buckets[i]);
 
-        free(hashset->buckets);
+        romano_free(hashset->buckets);
     }
 
-    free(hashset);
+    romano_free(hashset);
 }

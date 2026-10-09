@@ -8,6 +8,7 @@
 /* https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap09.html */
 
 #include "libromano/regex.h"
+#include "libromano/memory.h"
 #include "libromano/common.h"
 #include "libromano/logger.h"
 #include "libromano/error.h"
@@ -1720,7 +1721,7 @@ Regex* regex_compile(const char* pattern, RegexFlags flags)
     uint16_t root;
 
 #if defined(REGEX_COMPILE_USE_HEAP)
-    compiler = (RegexCompiler*)malloc(sizeof(RegexCompiler));
+    compiler = (RegexCompiler*)romano_malloc(sizeof(RegexCompiler));
 
     if(compiler == NULL)
     {
@@ -1797,7 +1798,7 @@ Regex* regex_compile(const char* pattern, RegexFlags flags)
     row_sz = compiler->classes.num_classes + 1;
 
     /* Single allocation holding the struct and both tables */
-    regex = (Regex*)malloc(sizeof(Regex) + compiler->table_sz * sizeof(uint32_t));
+    regex = (Regex*)romano_malloc(sizeof(Regex) + compiler->table_sz * sizeof(uint32_t));
 
     if(regex == NULL)
     {
@@ -1833,7 +1834,7 @@ end:
         logger_log_error("Failed to compile regex: %s", pattern);
 
 #if defined(REGEX_COMPILE_USE_HEAP)
-    free(compiler);
+    romano_free(compiler);
 #endif /* defined(REGEX_COMPILE_USE_HEAP) */
 
     return regex;
@@ -2008,7 +2009,7 @@ size_t regex_iterate(const Regex* regex,
     }
     else
     {
-        bitset = (uint64_t*)malloc(num_words * sizeof(uint64_t));
+        bitset = (uint64_t*)romano_malloc(num_words * sizeof(uint64_t));
 
         if(bitset == NULL)
         {
@@ -2073,7 +2074,7 @@ size_t regex_iterate(const Regex* regex,
 
 end:
     if(bitset != stack_bitset)
-        free(bitset);
+        romano_free(bitset);
 
     return num_matches;
 }
@@ -2085,5 +2086,5 @@ end:
 void regex_free(Regex* regex)
 {
     if(regex != NULL)
-        free(regex);
+        romano_free(regex);
 }

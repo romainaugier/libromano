@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/socket_server.h"
+#include "libromano/memory.h"
 #include "libromano/socket.h"
 #include "libromano/thread.h"
 #include "libromano/error.h"
@@ -54,7 +55,7 @@ SocketServer* socket_server_new(uint16_t port,
                                 uint16_t max_connections,
                                 SocketServerFlags ip_mode)
 {
-    SocketServer* socket_server = malloc(sizeof(SocketServer));
+    SocketServer* socket_server = romano_malloc(sizeof(SocketServer));
 
     if(socket_server == NULL)
     {
@@ -238,7 +239,7 @@ void* socket_server_main_loop(void* _socket_server)
 
         socket_set_timeout(new_connection, 1000);
 
-        data_buffer = (char*)malloc(RECV_SIZE * sizeof(char));
+        data_buffer = (char*)romano_malloc(RECV_SIZE * sizeof(char));
         result = 0;
         rec_data_size = 0;
 
@@ -259,10 +260,10 @@ void* socket_server_main_loop(void* _socket_server)
 
             if(result == RECV_SIZE)
             {
-                char* grown_buffer = (char*)realloc(data_buffer, rec_data_size + RECV_SIZE);
+                char* grown_buffer = (char*)romano_realloc(data_buffer, rec_data_size + RECV_SIZE);
 
                 if(grown_buffer == NULL)
-                    free(data_buffer);
+                    romano_free(data_buffer);
 
                 data_buffer = grown_buffer;
 
@@ -301,7 +302,7 @@ void* socket_server_main_loop(void* _socket_server)
 
             thread_sleep(1);
 
-            free(data_buffer);
+            romano_free(data_buffer);
         }
 
         socket_server_log(socket_server, 0, "Finished executing callbacks, removing connection");
@@ -350,7 +351,7 @@ bool socket_server_push_callback(SocketServer* socket_server,
     {
         callbacks_count = 0;
         alloc_size = sizeof(size_t) + 1 * sizeof(socket_server_callback_func);
-        socket_server->callbacks = (socket_server_callback_func*)malloc(alloc_size);
+        socket_server->callbacks = (socket_server_callback_func*)romano_malloc(alloc_size);
 
         if(socket_server->callbacks == NULL)
         {
@@ -365,7 +366,7 @@ bool socket_server_push_callback(SocketServer* socket_server,
         callbacks_count = GET_CALLBACKS_COUNT(socket_server->callbacks);
         alloc_size = sizeof(size_t) + (callbacks_count + 1) * sizeof(socket_server_callback_func);
 
-        socket_server->callbacks = (socket_server_callback_func*)realloc(socket_server->callbacks,
+        socket_server->callbacks = (socket_server_callback_func*)romano_realloc(socket_server->callbacks,
                                                                            alloc_size);
 
         if(socket_server->callbacks == NULL)
@@ -442,8 +443,8 @@ void socket_server_free(SocketServer* socket_server)
 
     if(socket_server->callbacks != NULL)
     {
-        free(socket_server->callbacks);
+        romano_free(socket_server->callbacks);
     }
 
-    free(socket_server);
+    romano_free(socket_server);
 }

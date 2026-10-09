@@ -21,11 +21,11 @@ Vector* vector_new(const size_t initial_capacity, const size_t element_size)
     Vector* new_vector;
     size_t capacity;
 
-    new_vector = (Vector*)malloc(sizeof(Vector));
+    new_vector = (Vector*)romano_malloc(sizeof(Vector));
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
 
-    new_vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
+    new_vector->data = romano_malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)new_vector->data)[0] = 0;
     ((size_t*)new_vector->data)[1] = capacity;
@@ -40,7 +40,7 @@ void vector_init(Vector* vector, const size_t initial_capacity, const size_t ele
 
     capacity = initial_capacity == 0 ? 128 : initial_capacity;
 
-    vector->data = malloc(3 * sizeof(size_t) + capacity * element_size);
+    vector->data = romano_malloc(3 * sizeof(size_t) + capacity * element_size);
 
     ((size_t*)vector->data)[0] = 0;
     ((size_t*)vector->data)[1] = capacity;
@@ -66,7 +66,7 @@ void vector_resize(Vector* vector, const size_t new_capacity)
 
     new_size = 3 * sizeof(size_t) + new_capacity * element_size;
 
-    new_address = realloc(vector->data, new_size);
+    new_address = romano_realloc(vector->data, new_size);
 
     vector->data = new_address;
 
@@ -241,7 +241,7 @@ void vector_shrink_to_fit(Vector* vector)
     vec_size = vector_size(vector);
     elem_size = vector_element_size(vector);
 
-    new_address = realloc(vector->data, 3 * sizeof(size_t) + vec_size * elem_size);
+    new_address = romano_realloc(vector->data, 3 * sizeof(size_t) + vec_size * elem_size);
 
     if(new_address == NULL)
         return;
@@ -299,7 +299,7 @@ void vector_release(Vector* vector)
     {
         if(vector->data != NULL)
         {
-            free(vector->data);
+            romano_free(vector->data);
         }
     }
 }
@@ -310,7 +310,7 @@ void vector_free(Vector *vector)
     {
         vector_release(vector);
 
-        free(vector);
+        romano_free(vector);
     }
 }
 
@@ -331,5 +331,5 @@ void vector_free_with_dtor(Vector* vector, vector_free_func dtor)
 {
     vector_release_with_dtor(vector, dtor);
 
-    free(vector);
+    romano_free(vector);
 }

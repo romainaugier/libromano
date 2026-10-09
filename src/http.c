@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/http.h"
+#include "libromano/memory.h"
 #include "libromano/arena.h"
 #include "libromano/common.h"
 #include "libromano/error.h"
@@ -550,7 +551,7 @@ bool http_response_parse(HTTPResponse* response, const char* body, size_t body_s
         return true;
 
     response->content_sz = parser.sz - parser.current;
-    response->content = calloc(response->content_sz + 1, sizeof(char));
+    response->content = romano_calloc(response->content_sz + 1, sizeof(char));
 
     if(response->content == NULL)
     {
@@ -574,7 +575,7 @@ void http_response_release(HTTPResponse* response)
     http_header_release(&response->headers);
 
     if(response->content != NULL)
-        free(response->content);
+        romano_free(response->content);
 
     response->content = NULL;
     response->content_sz = 0;

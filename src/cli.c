@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/cli.h"
+#include "libromano/memory.h"
 #define __ROMANO_DEFINE_ERROR_EXTERNS
 #include "libromano/error.h"
 
@@ -104,7 +105,7 @@ bool cli_parser_add_arg(CLIParser* parser,
         return false;
     }
 
-    arg = (CLIArg*)calloc(1, sizeof(CLIArg));
+    arg = (CLIArg*)romano_calloc(1, sizeof(CLIArg));
 
     if(arg == NULL)
     {
@@ -122,11 +123,11 @@ bool cli_parser_add_arg(CLIParser* parser,
     if(name_sz == 0)
         name_sz = strlen(name);
 
-    arg->name = (char*)calloc(name_sz + 1, sizeof(char));
+    arg->name = (char*)romano_calloc(name_sz + 1, sizeof(char));
 
     if(arg->name == NULL)
     {
-        free(arg);
+        romano_free(arg);
         g_current_error = ErrorCode_MemAllocError;
         return false;
     }
@@ -147,7 +148,7 @@ bool cli_parser_add_arg(CLIParser* parser,
     if(help_text != NULL)
     {
         size_t help_sz = strlen(help_text);
-        arg->help_text = (char*)calloc(help_sz + 1, sizeof(char));
+        arg->help_text = (char*)romano_calloc(help_sz + 1, sizeof(char));
 
         if(arg->help_text != NULL)
             memcpy(arg->help_text, help_text, help_sz);
@@ -242,7 +243,7 @@ void cli_parser_set_program_info(CLIParser* parser,
     if(program_name != NULL)
     {
         size_t name_sz = strlen(program_name);
-        parser->program_name = (char*)calloc(name_sz + 1, sizeof(char));
+        parser->program_name = (char*)romano_calloc(name_sz + 1, sizeof(char));
 
         if(parser->program_name != NULL)
             memcpy(parser->program_name, program_name, name_sz);
@@ -251,7 +252,7 @@ void cli_parser_set_program_info(CLIParser* parser,
     if(description != NULL)
     {
         size_t desc_sz = strlen(description);
-        parser->description = (char*)calloc(desc_sz + 1, sizeof(char));
+        parser->description = (char*)romano_calloc(desc_sz + 1, sizeof(char));
 
         if(parser->description != NULL)
             memcpy(parser->description, description, desc_sz);
@@ -464,9 +465,9 @@ bool cli_parser_parse_named_argument(CLIParser* parser, char* arg_str, int* next
                 value_str++;
             }
 
-            free(arg->data.str);
+            romano_free(arg->data.str);
 
-            arg->data.str = (char*)calloc(str_sz + 1, sizeof(char));
+            arg->data.str = (char*)romano_calloc(str_sz + 1, sizeof(char));
 
             if(arg->data.str == NULL)
             {
@@ -552,7 +553,7 @@ bool cli_parser_parse_positional_argument(CLIParser* parser, char* arg_str, size
                 arg_str++;
             }
 
-            arg->data.str = (char*)calloc(str_sz + 1, sizeof(char));
+            arg->data.str = (char*)romano_calloc(str_sz + 1, sizeof(char));
 
             if(arg->data.str == NULL)
             {
@@ -821,15 +822,15 @@ void cli_parser_release(CLIParser* parser)
         memcpy(&arg, value, sizeof(CLIArg*));
 
         if(CLI_PARG_GET_TYPE(arg) == CLIArgType_Str && arg->data.str != NULL)
-            free(arg->data.str);
+            romano_free(arg->data.str);
 
         if(arg->help_text != NULL)
-            free(arg->help_text);
+            romano_free(arg->help_text);
 
         if(arg->name != NULL)
-            free(arg->name);
+            romano_free(arg->name);
 
-        free(arg);
+        romano_free(arg);
     }
 
     hashmap_free(parser->args_map);
@@ -838,8 +839,8 @@ void cli_parser_release(CLIParser* parser)
     vector_release(&parser->positional_args);
 
     if(parser->program_name != NULL)
-        free(parser->program_name);
+        romano_free(parser->program_name);
 
     if(parser->description != NULL)
-        free(parser->description);
+        romano_free(parser->description);
 }

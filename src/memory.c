@@ -5,6 +5,62 @@
 #include "libromano/memory.h"
 #include "libromano/logger.h"
 
+#include <string.h>
+
+#if defined(ROMANO_DEBUG_MEMORY)
+#undef malloc
+#undef calloc
+#undef free
+#endif /* defined(ROMANO_DEBUG_MEMORY) */
+
+#if defined(ROMANO_MIMALLOC)
+#include "mimalloc.h"
+
+void* romano_malloc(size_t size) { return mi_malloc(size); }
+void* romano_calloc(size_t count, size_t size) { return mi_calloc(count, size); }
+void* romano_realloc(void* ptr, size_t size) { return mi_realloc(ptr, size); }
+void romano_free(void* ptr) { mi_free(ptr); }
+void* romano_aligned_alloc(size_t size, size_t alignment) { return mi_malloc_aligned(size, alignment); }
+void romano_aligned_free(void* ptr) { mi_free(ptr); }
+const char* romano_allocator_name(void) { return "mimalloc"; }
+#else
+void* romano_malloc(size_t size) { return malloc(size); }
+void* romano_calloc(size_t count, size_t size) { return calloc(count, size); }
+void* romano_realloc(void* ptr, size_t size) { return realloc(ptr, size); }
+void romano_free(void* ptr) { free(ptr); }
+const char* romano_allocator_name(void) { return "crt"; }
+
+#if defined(ROMANO_WIN)
+void* romano_aligned_alloc(size_t size, size_t alignment) { return _aligned_malloc(size, alignment); }
+void romano_aligned_free(void* ptr) { _aligned_free(ptr); }
+#else
+void* romano_aligned_alloc(size_t size, size_t alignment)
+{
+    void* ptr = NULL;
+
+    if(posix_memalign(&ptr, alignment < sizeof(void*) ? sizeof(void*) : alignment, size) != 0)
+        return NULL;
+
+    return ptr;
+}
+
+void romano_aligned_free(void* ptr) { free(ptr); }
+#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_MIMALLOC) */
+
+char* romano_strndup(const char* str, size_t len)
+{
+    char* copy = (char*)romano_malloc(len + 1);
+
+    if(copy == NULL)
+        return NULL;
+
+    memcpy(copy, str, len);
+    copy[len] = '\0';
+
+    return copy;
+}
+
 #if defined(ROMANO_DEBUG_MEMORY)
 
 void* debug_malloc_override(size_t size,
@@ -15,7 +71,7 @@ void* debug_malloc_override(size_t size,
     
     logger_log(LogLevel_Debug, "Allocating %lu bytes of memory (%s:%s)", size, file, line);
 
-    ptr = malloc(size);
+    ptr = romano_malloc(size);
 
     if(ptr == NULL)
     {
@@ -35,7 +91,7 @@ void* debug_calloc_override(size_t size,
     
     logger_log(LogLevel_Debug, "Allocating %lu bytes of memory (%s:%s)", size, file, line);
 
-    ptr = calloc(size, element_size);
+    ptr = romano_calloc(size, element_size);
 
     if(ptr == NULL)
     {
@@ -51,7 +107,7 @@ void debug_free_override(void* ptr,
                          const char* file)
 {
     logger_log(LogLevel_Debug, "Freeing memory (%s:%s)", file, line);
-    free(ptr);
+    romano_free(ptr);
 }
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */

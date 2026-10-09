@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/env.h"
+#include "libromano/memory.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -59,7 +60,7 @@ char** env_list_new(void)
     while(env != NULL && env[count] != NULL)
         count++;
 
-    list = (char**)calloc(count + 1, sizeof(char*));
+    list = (char**)romano_calloc(count + 1, sizeof(char*));
 
     if(list == NULL)
         return NULL;
@@ -68,7 +69,7 @@ char** env_list_new(void)
     {
         size_t sz = strlen(env[i]);
 
-        list[i] = (char*)malloc(sz + 1);
+        list[i] = (char*)romano_malloc(sz + 1);
 
         if(list[i] == NULL)
         {
@@ -90,9 +91,9 @@ void env_list_free(char** list)
         return;
 
     for(i = 0; list[i] != NULL; i++)
-        free(list[i]);
+        romano_free(list[i]);
 
-    free(list);
+    romano_free(list);
 }
 
 char env_path_separator(void)

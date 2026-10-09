@@ -265,6 +265,7 @@ ROMANO_API Json* json_loads(const char* str, size_t len);
 ROMANO_API Json* json_loadf(const char* file_path);
 
 /*
+ * Returns the document as text, released with romano_free
  */
 ROMANO_API char* json_dumps(Json* json, size_t indent_size, size_t* dumps_size);
 

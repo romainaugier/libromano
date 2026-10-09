@@ -19,6 +19,30 @@
 
 ROMANO_CPP_ENTER
 
+/*
+ * Allocator of libromano: mimalloc, or the C runtime when built with ROMANO_MIMALLOC off (sanitizers).
+ * Memory returned by libromano is released with romano_free (or its own release function), and memory
+ * from these functions must never reach the C runtime free.
+ */
+
+ROMANO_API void* romano_malloc(size_t size);
+
+ROMANO_API void* romano_calloc(size_t count, size_t size);
+
+ROMANO_API void* romano_realloc(void* ptr, size_t size);
+
+ROMANO_API void romano_free(void* ptr);
+
+ROMANO_API char* romano_strndup(const char* str, size_t len);
+
+/* alignment is a power of two, released with romano_aligned_free */
+ROMANO_API void* romano_aligned_alloc(size_t size, size_t alignment);
+
+ROMANO_API void romano_aligned_free(void* ptr);
+
+/* "mimalloc" or "crt" */
+ROMANO_API const char* romano_allocator_name(void);
+
 #if defined(ROMANO_DEBUG_MEMORY)
 
 /* Memory debug utility function, just malloc with a log of where it happens */
@@ -43,16 +67,8 @@ ROMANOAPI void debug_free_override(void* ptr,
 
 #endif /* defined(ROMANO_DEBUG_MEMORY) */
 
-#if defined(ROMANO_X86_64)
-ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _mm_malloc(size, alignment); }
-ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _mm_free(ptr); }
-#elif defined(ROMANO_WIN)
-ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return _aligned_malloc(size, alignment); }
-ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { _aligned_free(ptr); }
-#elif defined(ROMANO_AARCH64)
-ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { void* ptr = NULL; if(posix_memalign(&ptr, alignment, size) != 0) return NULL; return ptr; }
-ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { free(ptr); }
-#endif /* defined(ROMANO_X86_64) */
+ROMANO_FORCE_INLINE void* mem_aligned_alloc(const size_t size, const size_t alignment) { return romano_aligned_alloc(size, alignment); }
+ROMANO_FORCE_INLINE void mem_aligned_free(void* ptr) { romano_aligned_free(ptr); }
 
 #if defined(ROMANO_MSVC)
 #define mem_alloca(size) _malloca((size))

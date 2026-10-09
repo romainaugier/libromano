@@ -44,6 +44,31 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE concurrentqueue::concurrentqueue_c_api)
 
+if(ROMANO_MIMALLOC)
+    set(MIMALLOC_DIR ${PROJECT_SOURCE_DIR}/ext/mimalloc)
+
+    if(NOT EXISTS ${MIMALLOC_DIR}/src/static.c)
+        message(FATAL_ERROR "ext/mimalloc is missing, run git submodule update --init (or configure with -DROMANO_MIMALLOC=OFF)")
+    endif()
+
+    add_library(romano_mimalloc OBJECT ${MIMALLOC_DIR}/src/static.c)
+    set_target_properties(romano_mimalloc PROPERTIES C_STANDARD 11 POSITION_INDEPENDENT_CODE ON)
+    target_include_directories(romano_mimalloc PRIVATE ${MIMALLOC_DIR}/include)
+    target_compile_options(romano_mimalloc PRIVATE $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-w>)
+
+    # Short-lived processes: no transparent huge pages (the first 2 MiB page fault costs ~1 ms at startup)
+    # and 64 MiB arenas, MIMALLOC_ALLOW_THP=1 / MIMALLOC_ARENA_RESERVE override them at runtime
+    target_compile_definitions(romano_mimalloc PRIVATE MI_DEFAULT_ALLOW_THP=0 MI_DEFAULT_ARENA_RESERVE=65536L)
+
+    target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:romano_mimalloc>)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${MIMALLOC_DIR}/include)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ROMANO_MIMALLOC)
+
+    if(WIN32)
+        target_link_libraries(${PROJECT_NAME} PRIVATE psapi shell32 user32 advapi32 bcrypt)
+    endif()
+endif()
+
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT "${PROJECT_NAME}Targets"

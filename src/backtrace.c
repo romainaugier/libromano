@@ -82,13 +82,13 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
     for(i = 0; i < num; i++)
     {
-        sym_name = calloc(strlen(symbols[i]) + 1, sizeof(char));
+        sym_name = romano_calloc(strlen(symbols[i]) + 1, sizeof(char));
 
         if(sym_name == NULL)
         {
             for(j = 0; j < i; j++)
             {
-                free(out_symbols[j]);
+                romano_free(out_symbols[j]);
             }
 
             g_current_error = ErrorCode_MemAllocError;
@@ -100,6 +100,7 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
         out_symbols[i] = sym_name;
     }
 
+    /* Allocated by the C runtime */
     free(symbols);
 
 #elif defined(ROMANO_WIN)
@@ -144,13 +145,13 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
     {
         if(SymFromAddr(process, (DWORD64)out_addresses[i], 0, p_symbol))
         {
-            sym_name = calloc(p_symbol->NameLen + 1, sizeof(char));
+            sym_name = romano_calloc(p_symbol->NameLen + 1, sizeof(char));
 
             if(sym_name == NULL)
             {
                 for(j = 0; j < i; j++)
                 {
-                    free(out_symbols[j]);
+                    romano_free(out_symbols[j]);
                 }
 
                 g_current_error = ErrorCode_MemAllocError;
@@ -171,13 +172,13 @@ uint32_t backtrace_call_stack_symbols(uint32_t skip,
 
             logger_log_error("Error when calling SymFromAddr (%d)", g_current_error);
 
-            sym_name = calloc(8, sizeof(char));
+            sym_name = romano_calloc(8, sizeof(char));
 
             if(sym_name == NULL)
             {
                 for(j = 0; j < i; j++)
                 {
-                    free(out_symbols[j]);
+                    romano_free(out_symbols[j]);
                 }
 
                 g_current_error = ErrorCode_MemAllocError;
@@ -249,7 +250,7 @@ LONG backtrace_signal_handler(EXCEPTION_POINTERS* exception_info)
                 ((uintptr_t**)addresses)[i],
                 symbols[i]);
 
-        free(symbols[i]);
+        romano_free(symbols[i]);
     }
 
     return EXCEPTION_EXECUTE_HANDLER;

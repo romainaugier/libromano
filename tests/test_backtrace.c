@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include "libromano/backtrace.h"
+#include "libromano/memory.h"
 
 #if defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
 #include <signal.h>
@@ -53,7 +54,7 @@ static void test_call_stack_symbols(void)
     {
         TEST_CHECK(symbols[i] != NULL);
         logger_log_debug("#%u %p : %s", i, addresses[i], symbols[i]);
-        free(symbols[i]);
+        romano_free(symbols[i]);
     }
 }
 

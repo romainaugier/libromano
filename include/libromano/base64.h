@@ -11,6 +11,8 @@
 
 ROMANO_CPP_ENTER
 
+/* Both results are released with romano_free */
+
 ROMANO_API char* base64_encode(const void* ROMANO_RESTRICT data,
                                size_t data_sz,
                                size_t* out_sz);

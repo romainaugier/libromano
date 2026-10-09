@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/hashmap.h"
+#include "libromano/memory.h"
 #include "libromano/bit.h"
 #include "libromano/random.h"
 #include "libromano/error.h"
@@ -67,7 +68,7 @@ void bucket_new(Bucket* bucket,
     }
     else
     {
-        bucket->key = malloc((key_size) * sizeof(char));
+        bucket->key = romano_malloc((key_size) * sizeof(char));
         memcpy(bucket->key, key, key_size * sizeof(char));
 
 #if ROMANO_BYTE_ORDER == ROMANO_BYTE_ORDER_LITTLE_ENDIAN
@@ -91,7 +92,7 @@ void bucket_new(Bucket* bucket,
         }
         else
         {
-            bucket->value = malloc(value_size);
+            bucket->value = romano_malloc(value_size);
             memcpy(bucket->value, value, value_size);
         }
     }
@@ -124,7 +125,7 @@ ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
 
     if(value_size > 8)
     {
-        new_heap_value = malloc(value_size);
+        new_heap_value = romano_malloc(value_size);
         memcpy(new_heap_value, value, value_size);
     }
     else if(value_size > 0)
@@ -133,7 +134,7 @@ ROMANO_FORCE_INLINE void bucket_update_value(Bucket* bucket,
     }
 
     if(old_heap_value != NULL)
-        free(old_heap_value);
+        romano_free(old_heap_value);
 
     memset(&bucket->value, 0, sizeof(void*));
 
@@ -219,10 +220,10 @@ void bucket_free(Bucket* bucket)
         return;
 
     if(!bucket_has_flag(bucket, BucketFlag_KeyInterned))
-        free(bucket_get_key(bucket));
+        romano_free(bucket_get_key(bucket));
 
     if(bucket_get_value_size(bucket) > 8)
-        free(bucket->value);
+        romano_free(bucket->value);
 
     memset(bucket, 0, sizeof(Bucket));
 }
@@ -271,7 +272,7 @@ void hashmap_grow(HashMap* hashmap,
     old_buckets = hashmap->buckets;
     old_capacity = hashmap->capacity;
 
-    hashmap->buckets = (Bucket*)calloc(capacity, sizeof(Bucket));
+    hashmap->buckets = (Bucket*)romano_calloc(capacity, sizeof(Bucket));
     hashmap->capacity = capacity;
     hashmap->size = 0;
 
@@ -292,13 +293,13 @@ void hashmap_grow(HashMap* hashmap,
             hashmap_move_entry(hashmap, bucket, rehash);
         }
 
-        free(old_buckets);
+        romano_free(old_buckets);
     }
 }
 
 HashMap* hashmap_new(size_t initial_capacity)
 {
-    HashMap* hashmap = (HashMap*)malloc(sizeof(HashMap));
+    HashMap* hashmap = (HashMap*)romano_malloc(sizeof(HashMap));
 
     if(hashmap == NULL)
     {
@@ -716,8 +717,8 @@ void hashmap_free(HashMap* hashmap)
             bucket_free(&hashmap->buckets[i]);
         }
 
-        free(hashmap->buckets);
+        romano_free(hashmap->buckets);
     }
 
-    free(hashmap);
+    romano_free(hashmap);
 }

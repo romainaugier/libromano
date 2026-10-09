@@ -109,7 +109,7 @@ ROMANO_API bool fs_chmod(const char* path,
 
 /*
  * Returns the current working directory.
- * out_path will be heap-allocated and must be freed by the user
+ * out_path is allocated with romano_malloc and must be released with romano_free
  * Returns false if the function fails
  */
 ROMANO_API bool fs_get_cwd(char** out_path, size_t* out_len);

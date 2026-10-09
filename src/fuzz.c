@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/fuzz.h"
+#include "libromano/memory.h"
 #include "libromano/logger.h"
 
 #include <float.h>
@@ -686,7 +687,7 @@ void fuzz_report_release(FuzzReport* report)
     if(report == NULL)
         return;
 
-    free(report->failing_input);
+    romano_free(report->failing_input);
     memset(report, 0, sizeof(FuzzReport));
 }
 
@@ -908,7 +909,7 @@ static size_t generate_input(FuzzSource* source, const RunSettings* settings, ui
 
 static size_t minimize_input(FuzzInputFunc target, void* user_data, uint8_t* input, size_t size)
 {
-    uint8_t* candidate = (uint8_t*)malloc(size > 0 ? size : 1);
+    uint8_t* candidate = (uint8_t*)romano_malloc(size > 0 ? size : 1);
     size_t chunk = size / 2;
     size_t attempts = 0;
 
@@ -944,7 +945,7 @@ static size_t minimize_input(FuzzInputFunc target, void* user_data, uint8_t* inp
 
     g_run_info.minimizing = false;
 
-    free(candidate);
+    romano_free(candidate);
 
     return size;
 }
@@ -969,7 +970,7 @@ bool fuzz_run_input(const FuzzOptions* options,
     settings_init(&settings, options, "input");
     report->seed = settings.options.seed;
 
-    buffer = (uint8_t*)malloc(settings.options.max_input_size);
+    buffer = (uint8_t*)romano_malloc(settings.options.max_input_size);
 
     if(buffer == NULL)
     {
@@ -1004,7 +1005,7 @@ bool fuzz_run_input(const FuzzOptions* options,
             if(settings.options.minimize)
                 size = minimize_input(target, user_data, buffer, size);
 
-            report->failing_input = (uint8_t*)malloc(size > 0 ? size : 1);
+            report->failing_input = (uint8_t*)romano_malloc(size > 0 ? size : 1);
 
             if(report->failing_input != NULL)
             {
@@ -1029,7 +1030,7 @@ bool fuzz_run_input(const FuzzOptions* options,
 
     run_end(&settings, report);
 
-    free(buffer);
+    romano_free(buffer);
 
     passed = !report->failed;
 

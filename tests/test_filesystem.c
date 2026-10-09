@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include "libromano/filesystem.h"
+#include "libromano/memory.h"
 
 #define MAX_ENTRIES 32
 
@@ -108,7 +109,7 @@ static void test_queries(void)
 
     TEST_ASSERT(fs_get_cwd(&cwd, &cwd_size));
     TEST_CHECK(cwd != NULL && cwd_size == strlen(cwd) && cwd_size > 0);
-    free(cwd);
+    romano_free(cwd);
 }
 
 static void test_parent_dir(void)
@@ -125,7 +126,7 @@ static void test_parent_dir(void)
 
     parent = fs_parent_dir_new("/usr/local/lib");
     TEST_CHECK_EQ_STR(parent, "/usr/local");
-    free(parent);
+    romano_free(parent);
 
     TEST_CHECK_EQ_UINT(fs_parent_dir_init("/usr/local/lib", buffer, sizeof(buffer)), 0);
     TEST_CHECK_EQ_STR(buffer, "/usr/local");

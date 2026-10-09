@@ -21,6 +21,13 @@ option(RUN_TESTS "Run unit tests" OFF)
 option(WITH_HTTP "Enable HTTP/HTTPS support" OFF)
 option(COVERAGE "Enable code coverage instrumentation (GCC/Clang)" OFF)
 option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
+option(ROMANO_MIMALLOC "Allocate with the bundled mimalloc (ext/mimalloc)" ON)
+
+# Sanitizers and valgrind only see the C runtime allocator
+if(ROMANO_MIMALLOC AND (ADDRSAN OR LEAKSAN OR THREADSAN))
+    message(STATUS "Sanitizers enabled, libromano allocates with the C runtime instead of mimalloc")
+    set(ROMANO_MIMALLOC OFF)
+endif()
 
 if(RUN_TESTS)
     message(STATUS "RUN_TESTS enabled, building and running tests")

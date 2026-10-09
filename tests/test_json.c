@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include "libromano/json.h"
+#include "libromano/memory.h"
 
 static const char g_document[] =
     "{\n"
@@ -218,7 +219,7 @@ static void test_build_and_dump(void)
     TEST_CHECK_EQ_UINT(dumped_size, strlen(dumped));
     TEST_CHECK_EQ_STR(dumped, "{\"array\": [1,-2,2.5,3.0,null],\"str\": \"tab\\there \\u0001 'q' \\\"dq\\\"\","
                               "\"flag\": false,\"none\": null,\"gone\": 7}");
-    free(dumped);
+    romano_free(dumped);
 
     json_array_pop(json, array, 4);
     json_array_pop(json, array, 0);
@@ -242,13 +243,13 @@ static void test_build_and_dump(void)
     TEST_ASSERT(dumped != NULL);
     TEST_CHECK_EQ_STR(dumped, "{\"str\": \"tab\\there \\u0001 'q' \\\"dq\\\"\",\"flag\": true,\"none\": \"now a string\","
                               "\"array\": [-2,2.5,3.0,9]}");
-    free(dumped);
+    romano_free(dumped);
 
     dumped = json_dumps(json, 2, NULL);
     TEST_ASSERT(dumped != NULL);
     TEST_CHECK(strstr(dumped, "\n  \"flag\": true") != NULL);
     TEST_CHECK(strstr(dumped, "\n    9\n  ]") != NULL);
-    free(dumped);
+    romano_free(dumped);
 
     value = json_u64_new(json, 0);
     json_null_set(json, value);
@@ -304,8 +305,8 @@ static void test_files(void)
     b = json_dumps(reloaded, 0, NULL);
     TEST_CHECK_EQ_STR(a, b);
 
-    free(a);
-    free(b);
+    romano_free(a);
+    romano_free(b);
     json_free(reloaded);
 
     TEST_CHECK(!json_dumpf(json, 0, "/this/directory/does/not/exist.json"));
@@ -449,7 +450,7 @@ static bool property_roundtrip(FuzzSource* source, void* user_data)
 
     if(parsed == NULL)
     {
-        free(dumped);
+        romano_free(dumped);
         json_free(json);
         TEST_FUZZ_CHECK_MSG(false, "dumped document does not parse back");
     }
@@ -460,8 +461,8 @@ static bool property_roundtrip(FuzzSource* source, void* user_data)
     TEST_FUZZ_CHECK_MSG(equal, "roundtrip changed the document: %.200s", dumped);
     TEST_FUZZ_CHECK_MSG(dumped_again != NULL && strcmp(dumped, dumped_again) == 0, "dumps is not stable: %.200s", dumped);
 
-    free(dumped);
-    free(dumped_again);
+    romano_free(dumped);
+    romano_free(dumped_again);
     json_free(parsed);
     json_free(json);
 
@@ -496,15 +497,15 @@ static bool target_parse(const uint8_t* data, size_t size, void* user_data)
 
     if(reparsed == NULL)
     {
-        free(dumped);
+        romano_free(dumped);
         TEST_FUZZ_CHECK_MSG(false, "dumped document does not parse back");
     }
 
     dumped_again = json_dumps(reparsed, 0, NULL);
     stable = dumped_again != NULL && strcmp(dumped, dumped_again) == 0;
 
-    free(dumped);
-    free(dumped_again);
+    romano_free(dumped);
+    romano_free(dumped_again);
     json_free(reparsed);
 
     TEST_FUZZ_CHECK(stable);

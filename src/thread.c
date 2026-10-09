@@ -3,6 +3,7 @@
 /* All rights reserved. */
 
 #include "libromano/thread.h"
+#include "libromano/memory.h"
 #include "libromano/atomic.h"
 #include "libromano/error.h"
 
@@ -48,7 +49,7 @@ size_t get_num_procs(void)
 
 Mutex* mutex_new(void)
 {
-    Mutex* new_mutex = malloc(sizeof(Mutex));
+    Mutex* new_mutex = romano_malloc(sizeof(Mutex));
 
 #if defined(ROMANO_WIN)
     InitializeCriticalSection(new_mutex);
@@ -112,12 +113,12 @@ void mutex_free(Mutex* mutex)
     pthread_mutex_destroy(mutex);
 #endif /* defined(ROMANO_WIN) */
 
-    free(mutex);
+    romano_free(mutex);
 }
 
 ConditionalVariable* conditionalvariable_new(void)
 {
-    ConditionalVariable* new_cond_var = malloc(sizeof(ConditionalVariable));
+    ConditionalVariable* new_cond_var = romano_malloc(sizeof(ConditionalVariable));
 
 #if defined(ROMANO_WIN)
     InitializeConditionVariable(new_cond_var);
@@ -214,7 +215,7 @@ void conditionalvariable_free(ConditionalVariable* cond_var)
     pthread_cond_destroy(cond_var);
 #endif /* defined(ROMANO_LINUX) */
 
-    free(cond_var);
+    romano_free(cond_var);
 }
 
 struct Thread {
@@ -245,7 +246,7 @@ void thread_init(Thread* thread, ThreadFunc func, void* arg)
 
 Thread* thread_create(ThreadFunc func, void* arg)
 {
-    Thread* new_thread = (Thread*)calloc(1, sizeof(Thread));
+    Thread* new_thread = (Thread*)romano_calloc(1, sizeof(Thread));
 
     if(new_thread == NULL)
     {
@@ -325,7 +326,7 @@ void thread_detach(Thread* thread)
     pthread_detach(thread->_thread_handle);
 #endif /* defined(ROMANO_WIN) */
 
-    free(thread);
+    romano_free(thread);
 }
 
 void thread_join(Thread* thread)
@@ -342,5 +343,5 @@ void thread_join(Thread* thread)
     pthread_join(thread->_thread_handle, NULL);
 #endif /* defined(ROMANO_WIN) */
 
-    free(thread);
+    romano_free(thread);
 }

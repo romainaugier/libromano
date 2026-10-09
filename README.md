@@ -68,7 +68,7 @@ Use these functions when working with dynamically allocated (heap) instances of 
  * Allocate and initialize a new X struct on the heap.
  * Equivalent to:
  *   X* x_new() {
- *       X* x = malloc(sizeof(X));
+ *       X* x = romano_malloc(sizeof(X));
  *       x_init(x);
  *       return x;
  *   }
@@ -80,7 +80,7 @@ X* x_new();
  * Equivalent to:
  *   void x_free(X* x) {
  *       x_release(x);
- *       free(x);
+ *       romano_free(x);
  *   }
  */
 void x_free(X*);
@@ -91,6 +91,12 @@ X* x = x_new();
 /* ... */
 x_free(x);
 ```
+
+### Allocator
+
+libromano allocates with [mimalloc](https://github.com/microsoft/mimalloc) (MIT, bundled in `ext/mimalloc` and compiled into the library) through `romano_malloc`, `romano_calloc`, `romano_realloc`, `romano_free`, `romano_strndup` and `romano_aligned_alloc` / `romano_aligned_free` (`libromano/memory.h`). Memory returned by libromano, such as `fs_get_cwd`, `base64_encode` or `json_dumps`, is released with `romano_free`, never with `free`.
+
+Sanitizer builds (`--addrsan`, `--leaksan`, `--threadsan`) use the C runtime instead, so that ASan and valgrind see every allocation. It can also be turned off with `-DROMANO_MIMALLOC=OFF` (CMake) or `targets(cc, common, mimalloc=false)` / `bob build --no-mimalloc`.
 
 ## Tests
 
