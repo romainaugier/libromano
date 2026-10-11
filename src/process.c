@@ -488,12 +488,19 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     capture_out = (options->flags & ProcessFlag_CaptureStdout) != 0 || merge;
     capture_err = (options->flags & ProcessFlag_CaptureStderr) != 0 && !merge;
 
-    for(i = 0; options->argv[i] != NULL; i++)
+    if(options->raw_command_line != NULL)
     {
-        if(i > 0)
-            process_buffer_append(&cmd, " ", 1);
+        process_buffer_append(&cmd, options->raw_command_line, strlen(options->raw_command_line));
+    }
+    else
+    {
+        for(i = 0; options->argv[i] != NULL; i++)
+        {
+            if(i > 0)
+                process_buffer_append(&cmd, " ", 1);
 
-        process_quote_arg(&cmd, options->argv[i]);
+            process_quote_arg(&cmd, options->argv[i]);
+        }
     }
 
     if(options->env != NULL)

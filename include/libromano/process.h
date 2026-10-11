@@ -35,6 +35,12 @@ typedef struct ProcessOptions {
      * forever. A process with a timeout runs in its own process group on POSIX
      */
     uint32_t timeout_ms;
+
+    /*
+     * Windows only: the command line given to CreateProcess as is instead of argv quoted with the
+     * C runtime rules, for programs parsing it differently (cmd.exe /s /c "..."). Ignored on POSIX
+     */
+    const char* raw_command_line;
 } ProcessOptions;
 
 typedef struct ProcessResult {
