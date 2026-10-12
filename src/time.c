@@ -8,7 +8,7 @@
 #include <time.h>
 #endif /* defined(ROMANO_LINUX) || defined(ROMANO_APPLE) */
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_WIN) && !defined(ROMANO_MINGW)
 
 void gettimeofday(timeval_t* tv, timezone_t* tz)
 {
@@ -42,7 +42,7 @@ void gettimeofday(timeval_t* tv, timezone_t* tz)
     }
 }
 
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_WIN) && !defined(ROMANO_MINGW) */
 
 
 uint64_t time_monotonic_ns(void)

@@ -11,7 +11,7 @@
 
 ROMANO_CPP_ENTER
 
-#if defined(ROMANO_WIN)
+#if defined(ROMANO_WIN) && !defined(ROMANO_MINGW)
 #include <Windows.h>
 
 struct timezone {
@@ -38,13 +38,16 @@ typedef TIMEVAL timeval_t;
 
 ROMANO_API void gettimeofday(timeval_t* tv, timezone_t* tz);
 
-#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
+#elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE) || defined(ROMANO_MINGW)
+#if defined(ROMANO_MINGW)
+#include <Windows.h>
+#endif /* defined(ROMANO_MINGW) */
 #include <sys/time.h>
 
 typedef struct timezone timezone_t;
 typedef struct timeval timeval_t;
 
-#endif /* defined(ROMANO_WIN) */
+#endif /* defined(ROMANO_WIN) && !defined(ROMANO_MINGW) */
 
 /*
  * Returns a monotonic timestamp in nanoseconds, only meaningful as a difference between two calls

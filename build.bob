@@ -45,7 +45,7 @@ def targets(cc, common, mimalloc=true) {
     }
 
     # x86_64 builds use AVX2/FMA, the AVX-512 kernel gets its own flags
-    if sys.arch == Arch.X86_64 {
+    if cc.arch == Arch.X86_64 {
         lib.simd(Cpu.Avx2, Cpu.Fma);
         lib.link(cc.objects("sgemm_avx512")
             .use(common)
@@ -65,16 +65,18 @@ def targets(cc, common, mimalloc=true) {
                 # at startup) and 64 MiB arenas, MIMALLOC_ALLOW_THP=1 / MIMALLOC_ARENA_RESERVE override them
                 .define({"MI_DEFAULT_ALLOW_THP": 0, "MI_DEFAULT_ARENA_RESERVE": "65536L"})
                 .sources("ext/mimalloc/src/static.c")
-                .include("ext/mimalloc/include"));
+                .include("ext/mimalloc/include")
+                # Without it mimalloc initializes twice on MinGW, from its TLS callback and from a constructor
+                .when(cc.kind == Compiler.MinGW, def(t) { t.define("MI_MINGW_UCRT64", 1); }));
 
-        if sys.os == Os.Windows {
+        if cc.os == Os.Windows {
             lib.link("psapi", "shell32", "user32", "advapi32", "bcrypt", Vis.Public);
         }
     }
 
-    if sys.os == Os.Windows {
+    if cc.os == Os.Windows {
         lib.link("wsock32", "ws2_32", "Shlwapi", "Pathcch", "PowrProf", "dbghelp", Vis.Public);
-    } else if sys.os == Os.Macos {
+    } else if cc.os == Os.Macos {
         lib.define("ACCELERATE_NEW_LAPACK").link_flags("-framework", "Accelerate", Vis.Public);
     }
 
@@ -99,7 +101,7 @@ def build(config=Config.Release, mimalloc=true) {
 def test(config=Config.Debug, filter="", network=false, mimalloc=true) {
     let cc = toolchain.detect()?.out_dir(f"build/{config.name.lower()}");
     let common = profile(cc, config)
-        .when(sys.arch == Arch.X86_64, def(t) { t.simd(Cpu.Avx2, Cpu.Fma); });
+        .when(cc.arch == Arch.X86_64, def(t) { t.simd(Cpu.Avx2, Cpu.Fma); });
     let lib = targets(cc, common, mimalloc=mimalloc)?;
     let tmp = (cc.dir / "tests_tmp").abs();
 

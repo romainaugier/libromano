@@ -98,6 +98,11 @@
 #error "Unknown compiler"
 #endif /* defined(_MSC_VER) */
 
+/* gcc or clang with the MinGW-w64 runtime, which has its own POSIX-like headers (sys/time.h, pthread.h) */
+#if defined(__MINGW32__)
+#define ROMANO_MINGW
+#endif /* defined(__MINGW32__) */
+
 #if !defined(ROMANO_VERSION_STR)
 #define ROMANO_VERSION_STR "Debug"
 #endif /* !defined(ROMANO_VERSION_STR) */
