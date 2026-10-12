@@ -141,7 +141,8 @@ static bool fs_makedir(const char* path)
         return true;
 
 #if defined(ROMANO_WIN)
-    return (bool)CreateDirectoryA(path, NULL);
+    /* Another thread may create it between the check and here (parallel builds creating object directories) */
+    return CreateDirectoryA(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
 #elif defined(ROMANO_LINUX) || defined(ROMANO_APPLE)
     return mkdir(path, 0755) == 0 || errno == EEXIST; /* drwxr-xr-x */
 #else
