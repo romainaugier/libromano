@@ -404,6 +404,32 @@ static void process_join_readers(HANDLE* threads, ProcessReader** readers, DWORD
             CancelSynchronousIo(threads[i]);
 }
 
+/* The POSIX signal closest to the exception a crashed process exited with, 0 for an ordinary exit code */
+static int process_exception_signal(DWORD code)
+{
+    switch(code)
+    {
+        case 0xC0000005: /* access violation */
+        case 0xC00000FD: /* stack overflow */
+        case 0xC0000006: /* in page error */
+            return 11;
+        case 0xC000001D: /* illegal instruction */
+        case 0xC0000096: /* privileged instruction */
+            return 4;
+        case 0xC0000094: /* integer division by zero */
+        case 0xC0000095: /* integer overflow */
+        case 0xC000008E: /* float division by zero */
+        case 0xC0000090: /* float invalid operation */
+            return 8;
+        case 0x80000003: /* breakpoint */
+            return 5;
+        case 0xC0000409: /* fast fail: abort(), buffer overrun checks */
+            return 6;
+        default:
+            return 0;
+    }
+}
+
 /* https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments */
 static void process_quote_arg(ProcessBuffer* cmd, const char* arg)
 {
@@ -566,9 +592,18 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
         si.hStdError = err_write;
     }
 
-    /* With a timeout the whole process tree goes in a job, to end it all as the POSIX version kills the group */
-    if(options->timeout_ms > 0)
-        job = CreateJobObjectA(NULL, NULL);
+    /*
+     * With a timeout the whole process tree goes in a job, to end it all as the POSIX version kills the group. A crash
+     * in the job ends the process at once, instead of waiting for Windows Error Reporting or a just-in-time debugger
+     */
+    if(options->timeout_ms > 0 && (job = CreateJobObjectA(NULL, NULL)) != NULL)
+    {
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits;
+
+        memset(&limits, 0, sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION));
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
+        SetInformationJobObject(job, JobObjectExtendedLimitInformation, &limits, sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION));
+    }
 
     ok = CreateProcessA(NULL,
                         cmd.data,
@@ -639,6 +674,7 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
 
     GetExitCodeProcess(pi.hProcess, &exit_code);
     result->exit_code = (int)exit_code;
+    result->signal = result->timed_out ? 0 : process_exception_signal(exit_code);
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
