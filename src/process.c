@@ -370,6 +370,7 @@ fail:
 typedef struct ProcessReader {
     HANDLE pipe;
     ProcessBuffer buffer;
+    volatile LONG stop;
 } ProcessReader;
 
 static DWORD WINAPI process_reader_thread(LPVOID param)
@@ -378,10 +379,29 @@ static DWORD WINAPI process_reader_thread(LPVOID param)
     char chunk[16384];
     DWORD n;
 
-    while(ReadFile(reader->pipe, chunk, sizeof(chunk), &n, NULL) && n > 0)
+    while(InterlockedCompareExchange(&reader->stop, 0, 0) == 0 && ReadFile(reader->pipe, chunk, sizeof(chunk), &n, NULL) && n > 0)
         process_buffer_append(&reader->buffer, chunk, (size_t)n);
 
     return 0;
+}
+
+/*
+ * A process the child started (mspdbsrv.exe, a daemon) can keep the write ends of the pipes after the child exited:
+ * the readers get what is left, then their blocking reads are cancelled instead of waiting for that process to end
+ */
+static void process_join_readers(HANDLE* threads, ProcessReader** readers, DWORD count)
+{
+    DWORD i;
+
+    if(WaitForMultipleObjects(count, threads, TRUE, 2000) != WAIT_TIMEOUT)
+        return;
+
+    for(i = 0; i < count; i++)
+        InterlockedExchange(&readers[i]->stop, 1);
+
+    while(WaitForMultipleObjects(count, threads, TRUE, 50) == WAIT_TIMEOUT)
+        for(i = 0; i < count; i++)
+            CancelSynchronousIo(threads[i]);
 }
 
 /* https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments */
@@ -463,6 +483,8 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     HANDLE out_write = NULL;
     HANDLE err_write = NULL;
     HANDLE threads[2];
+    ProcessReader* readers[2];
+    HANDLE job = NULL;
     DWORD thread_count = 0;
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
@@ -544,12 +566,16 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
         si.hStdError = err_write;
     }
 
+    /* With a timeout the whole process tree goes in a job, to end it all as the POSIX version kills the group */
+    if(options->timeout_ms > 0)
+        job = CreateJobObjectA(NULL, NULL);
+
     ok = CreateProcessA(NULL,
                         cmd.data,
                         NULL,
                         NULL,
                         TRUE,
-                        0,
+                        job != NULL ? CREATE_SUSPENDED : 0,
                         options->env != NULL ? env_block.data : NULL,
                         options->cwd,
                         &si,
@@ -568,21 +594,45 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
     if(!ok)
         goto fail;
 
+    if(job != NULL)
+    {
+        if(!AssignProcessToJobObject(job, pi.hProcess))
+        {
+            CloseHandle(job);
+            job = NULL;
+        }
+
+        ResumeThread(pi.hThread);
+    }
+
     if(capture_out)
+    {
+        readers[thread_count] = &out_reader;
         threads[thread_count++] = CreateThread(NULL, 0, process_reader_thread, &out_reader, 0, NULL);
+    }
 
     if(capture_err)
+    {
+        readers[thread_count] = &err_reader;
         threads[thread_count++] = CreateThread(NULL, 0, process_reader_thread, &err_reader, 0, NULL);
+    }
 
     if(WaitForSingleObject(pi.hProcess, options->timeout_ms > 0 ? (DWORD)options->timeout_ms : INFINITE) == WAIT_TIMEOUT)
     {
-        TerminateProcess(pi.hProcess, 1);
+        if(job != NULL)
+            TerminateJobObject(job, 1);
+        else
+            TerminateProcess(pi.hProcess, 1);
+
         WaitForSingleObject(pi.hProcess, INFINITE);
         result->timed_out = true;
     }
 
+    if(job != NULL)
+        CloseHandle(job);
+
     if(thread_count > 0)
-        WaitForMultipleObjects(thread_count, threads, TRUE, INFINITE);
+        process_join_readers(threads, readers, thread_count);
 
     for(i = 0; i < thread_count; i++)
         CloseHandle(threads[i]);
@@ -612,6 +662,9 @@ bool process_run(const ProcessOptions* options, ProcessResult* result)
 
 fail:
     g_current_error = (ErrorCode)GetLastError();
+
+    if(job != NULL)
+        CloseHandle(job);
 
     if(out_reader.pipe != NULL)
         CloseHandle(out_reader.pipe);
